@@ -1,7 +1,7 @@
 ENTRY(_start);
 SECTIONS
 {
-    KERNEL_BASE = 0x00000000;
+    KERNEL_BASE = 0xC0000000;
 
     . = KERNEL_BASE + 0x00110000;
     . = ALIGN(4096);

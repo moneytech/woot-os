@@ -30,6 +30,55 @@ _multiboot_header:
 extern kmain
 global _start
 _start:
+; enable PSE
+    mov eax, cr4
+    or eax, 0x10
+    mov cr4, eax
+
+; make sure page directory is zeroed
+    mov ecx, PAGE_SIZE / 4
+    mov edi, bootPageDir - KERNEL_BASE
+    xor eax, eax
+    rep stosd
+
+; identity map memory below kernel base
+    mov ecx, KERNEL_BASE >> LARGE_PAGE_SHIFT
+    mov edi, bootPageDir - KERNEL_BASE
+    mov eax, 0x83
+.next_id_pde:
+    stosd
+    add eax, LARGE_PAGE_SIZE
+    loop .next_id_pde
+
+; map kernel space
+    mov ecx, KERNEL_PAGE_COUNT
+    mov edi, bootPageDir + KERNEL_PAGE_NUMBER * 4 - KERNEL_BASE
+    mov eax, 0x83
+.next_kernel_pde:
+    stosd
+    add eax, LARGE_PAGE_SIZE
+    loop .next_kernel_pde
+
+; enable paging
+    mov eax, bootPageDir - KERNEL_BASE
+    mov cr3, eax
+    mov eax, cr0
+    or eax, 0x80000000
+    mov cr0, eax
+
+; jump to higher half
+    mov eax, .starthi
+    jmp eax
+.starthi:
+
+; unmap memory below kernel base
+    mov ecx, KERNEL_BASE >> LARGE_PAGE_SHIFT
+    mov edi, bootPageDir - KERNEL_BASE
+    xor eax, eax
+    rep stosd
+    mov eax, cr3    ; invalidate TLB
+    mov cr3, eax
+
 ; save multiboot magin value and info pointer
     mov [mbootMagic], eax
     mov [mbootInfoPtr], ebx
@@ -49,27 +98,6 @@ _start:
 
 ; set up known stack
     mov esp, kernelStack + STACK_SIZE
-
-; enable PSE
-    mov eax, cr4
-    or eax, 0x10
-    mov cr4, eax
-
-; identity map whole address space (using large pages)
-    mov ecx, 1 << PAGE_SHIFT
-    mov edi, bootPageDir
-    mov eax, 0x83
-.next_pde:
-    stosd
-    add eax, 1 << LARGE_PAGE_SHIFT
-    loop .next_pde
-
-; enable paging
-    mov eax, bootPageDir
-    mov cr3, eax
-    mov eax, cr0
-    or eax, 0x80000000
-    mov cr0, eax
 
 ; call kmain
     xor ebp, ebp
