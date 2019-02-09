@@ -3,6 +3,13 @@ TOP_DIR = $(shell realpath .)
 SYSTEM_DIR = root/system
 MOUNTPOINT = /mnt
 
+CC ?= clang
+CXX ?= clang++
+LD ?= ld
+AS ?= as
+AR ?= ar
+ASM ?= yasm
+
 THREADS = 8
 
 SUBDIRS = kernel
