@@ -1,16 +1,15 @@
 #include <bitmap.hpp>
-#include <new.h>
-#include <string.h>
+#include <memory.hpp>
 #include <sysdefs.h>
 
 Bitmap::Bitmap(size_t bitCount, bool set) :
     bitCount(bitCount),
     dwordCount((bitCount + 31) / 32),
-    bits(new (PAGE_SIZE) uint32_t[dwordCount]),
+    bits(new uint32_t[dwordCount]),
     deleteBits(true),
     ones(set ? bitCount : 0)
 {
-    lmemset(bits, set ? ~0 : 0, dwordCount);
+    SetMemory32(bits, set ? ~0 : 0, dwordCount);
 }
 
 Bitmap::Bitmap(size_t bitCount, void *buffer, bool set) :
@@ -20,7 +19,7 @@ Bitmap::Bitmap(size_t bitCount, void *buffer, bool set) :
     deleteBits(false),
     ones(set ? bitCount : 0)
 {
-    lmemset(bits, set ? ~0 : 0, dwordCount);
+    SetMemory32(bits, set ? ~0 : 0, dwordCount);
 }
 
 size_t Bitmap::GetBitCount() const

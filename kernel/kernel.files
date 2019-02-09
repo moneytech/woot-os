@@ -1,8 +1,16 @@
 bitmap.cpp
+cpu.asm
+gdt.cpp
 include/bitmap.hpp
+include/cpu.hpp
+include/gdt.hpp
 include/memory.hpp
+include/misc.hpp
+include/multiboot.h
+include/new.hpp
 include/types.hpp
 memory.cpp
+new.cpp
 paging.cpp
 Makefile
 include/paging.hpp

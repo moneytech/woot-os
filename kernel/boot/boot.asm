@@ -88,12 +88,7 @@ _start:
 ; set up known stack
     mov esp, kernelStack + STACK_SIZE
 
-; initialize paging properly
-    push dword [mbootInfoPtr]
-    call initializePaging
-    add esp, 4
-
-; set up know GDT
+; set up known GDT
     lgdt [gdtDescr]
     jmp 0x0008:.fixCS
 .fixCS:
@@ -103,8 +98,23 @@ _start:
     mov fs, ax
     mov gs, ax
     mov ss, ax
+
+; set up TSS
+    mov eax, tss
+    mov edi, gdt + 0x2A
+    stosw
+    shr eax, 16
+    stosb
+    inc edi
+    inc edi
+    mov [edi], ah
     mov ax, 0x002B
     ltr ax
+
+; initialize paging properly
+    push dword [mbootInfoPtr]
+    call initializePaging
+    add esp, 4
 
 ; call kmain
     xor ebp, ebp
@@ -141,6 +151,10 @@ kernelStack:
 
 align PAGE_SIZE
 bootPageDir:
+    resb PAGE_SIZE
+
+align PAGE_SIZE
+tss:
     resb PAGE_SIZE
 
 align PAGE_SIZE

@@ -10,6 +10,10 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
+typedef unsigned char uchar;
+typedef unsigned short ushort;
+typedef unsigned int uint;
+
 #ifdef __i386__
 typedef int32_t intptr_t;
 typedef uint32_t uintptr_t;
