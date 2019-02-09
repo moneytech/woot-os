@@ -28,8 +28,14 @@ _multiboot_header:
     dd VIDEO_USE_TEXT, VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_BPP
 
 extern kmain
+extern initializePaging
 global _start
 _start:
+; save multiboot magin value and info pointer
+    mov [mbootMagic - KERNEL_BASE], eax
+    add ebx, KERNEL_BASE    ; adjust multiboot info pointer
+    mov [mbootInfoPtr - KERNEL_BASE], ebx
+
 ; enable PSE
     mov eax, cr4
     or eax, 0x10
@@ -79,9 +85,13 @@ _start:
     mov eax, cr3    ; invalidate TLB
     mov cr3, eax
 
-; save multiboot magin value and info pointer
-    mov [mbootMagic], eax
-    mov [mbootInfoPtr], ebx
+; set up known stack
+    mov esp, kernelStack + STACK_SIZE
+
+; initialize paging properly
+    push dword [mbootInfoPtr]
+    call initializePaging
+    add esp, 4
 
 ; set up know GDT
     lgdt [gdtDescr]
@@ -95,9 +105,6 @@ _start:
     mov ss, ax
     mov ax, 0x002B
     ltr ax
-
-; set up known stack
-    mov esp, kernelStack + STACK_SIZE
 
 ; call kmain
     xor ebp, ebp
@@ -114,12 +121,12 @@ _start:
 segment .data
 align PAGE_SIZE
 gdt:
-    dq 0x0000000000000000 ; null 0x0000
-    dq 0x00CF9A000000FFFF ; kernel code 0x0008
-    dq 0x00CF92000000FFFF ; kernel data 0x0010
-    dq 0x00CFFA000000FFFF ; user code 0x0018
-    dq 0x00CFF2000000FFFF ; user data 0x0020
-    dq 0x0040890000000067 ; tss 0x0028
+    dq 0x0000000000000000   ; null 0x0000
+    dq 0x00CF9A000000FFFF   ; kernel code 0x0008
+    dq 0x00CF92000000FFFF   ; kernel data 0x0010
+    dq 0x00CFFA000000FFFF   ; user code 0x0018
+    dq 0x00CFF2000000FFFF   ; user data 0x0020
+    dq 0x0040890000000067   ; tss 0x0028
 .end
 
 gdtDescr:

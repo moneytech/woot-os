@@ -1,4 +1,11 @@
+bitmap.cpp
+include/bitmap.hpp
+include/memory.hpp
+include/types.hpp
+memory.cpp
+paging.cpp
 Makefile
+include/paging.hpp
 main.cpp
 boot/boot.asm
 boot/grub/grub.cfg
