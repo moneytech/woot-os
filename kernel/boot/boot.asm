@@ -34,6 +34,7 @@ _multiboot_header:
 extern kmain
 extern initializePaging
 extern initializeHeap
+extern initializeDebugStream
 extern isr0
 extern __init_array_start
 extern __init_array_end
@@ -179,6 +180,10 @@ _start:
     add edx, 4
     jmp .next_constructor
 .constructors_done:
+
+; initialize debug stream
+.init_debug_stream:
+    call initializeDebugStream
 
 ; call kmain
 .call_kmain:

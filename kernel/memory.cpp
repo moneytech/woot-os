@@ -5,25 +5,25 @@ void Memory::Zero(void *dst, size_t n)
     Set(dst, 0, n);
 }
 
-void Memory::Set(void *dst, int val, size_t n)
+void Memory::Set(void *dst, uint8_t val, size_t n)
 {
     uint8_t *buf = (uint8_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void Memory::Set16(void *dst, int val, size_t n)
+void Memory::Set16(void *dst, uint16_t val, size_t n)
 {
     uint16_t *buf = (uint16_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void Memory::Set32(void *dst, int val, size_t n)
+void Memory::Set32(void *dst, uint32_t val, size_t n)
 {
     uint32_t *buf = (uint32_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void Memory::Set64(void *dst, int val, size_t n)
+void Memory::Set64(void *dst, uint64_t val, size_t n)
 {
     uint64_t *buf = (uint64_t *)dst;
     while(n--) *buf++ = val;

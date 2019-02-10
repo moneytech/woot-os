@@ -3,6 +3,7 @@ OUTFILE = kernel
 # boot/boot.o should be the first file passed to linker
 OBJS = boot/boot.o \
 	bitmap.o \
+	callbackstream.o \
 	character.o \
 	cpu.o \
 	cxa.o \
@@ -12,6 +13,7 @@ OBJS = boot/boot.o \
 	isrs.o \
 	main.o \
 	memory.o \
+	misc.o \
 	new.o \
 	paging.o \
 	random.o \
@@ -21,10 +23,13 @@ OBJS = boot/boot.o \
 	uuid.o
 
 DEPS = link.ld \
+	../common/include/errno.h \
 	../common/include/sysdefs.h \
 	include/bitmap.hpp \
+	include/callbackstream.hpp \
 	include/character.hpp \
 	include/cpu.hpp \
+	include/debug.hpp \
 	include/gdt.hpp \
 	include/heap.hpp \
 	include/ints.hpp \

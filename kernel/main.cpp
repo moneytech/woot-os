@@ -1,9 +1,15 @@
+#include <debug.hpp>
 #include <multiboot.h>
+#include <sysdefs.h>
 #include <types.hpp>
 
 extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
 {
-    *(uint16_t *)0xC00B8000 = 0x1F00 | 'X';
-    return 0x12345678;
+    DEBUG("Starting WOOT v%d.%d (%s)\n",
+          KERNEL_VERSION_MAJOR,
+          KERNEL_VERSION_MINOR,
+          KERNEL_VERSION_DESCRIPTION);
+
+    return 0;
 }
 

@@ -1,5 +1,11 @@
 #pragma once
 
+#include <types.hpp>
+
+class Stream;
+
+extern Stream *DebugStream;
+
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define clamp(_min, _max, val) (max((_min), min((_max), (val))))

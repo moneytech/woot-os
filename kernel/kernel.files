@@ -1,4 +1,8 @@
+callbackstream.cpp
+include/callbackstream.hpp
+include/debug.hpp
 include/random.hpp
+misc.cpp
 random.cpp
 softdiv.cpp
 uuid.cpp
