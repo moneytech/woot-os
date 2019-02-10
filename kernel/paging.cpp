@@ -11,14 +11,6 @@
 //        release them to make sure all processes
 //        see the same kernel all the time.
 
-struct DMAPointerHead
-{
-    uintptr_t Address = 0;
-    size_t Size = 0;
-
-    bool operator ==(DMAPointerHead ph) { return Address == ph.Address; }
-};
-
 extern void *_end;
 
 uintptr_t Paging::memoryTop = (uintptr_t)&_end;
@@ -27,6 +19,7 @@ Bitmap *Paging::pageBitmap;
 uint32_t *Paging::kernel4kPT;
 uintptr_t Paging::kernel4kVA = KERNEL_BASE + KERNEL_SPACE_SIZE - (4 << 20);
 AddressSpace Paging::kernelAddressSpace;
+List<Paging::DMAPointerHead> Paging::dmaPtrList;
 
 void initializePaging(multiboot_info_t *mboot)
 {
@@ -146,12 +139,22 @@ void Paging::Initialize(multiboot_info_t *mboot)
     UnMapPage(kernelAddressSpace, 0, false);
 }
 
+uintptr_t Paging::GetAddressSpace()
+{
+    return cpuGetCR3();
+}
+
+void Paging::FlushTLB()
+{
+    cpuSetCR3(cpuGetCR3());
+}
+
 void Paging::InvalidatePage(uintptr_t addr)
 {
     cpuInvalidatePage(addr);
 }
 
-bool Paging::MapPage(uintptr_t pd, uintptr_t va, uintptr_t pa, bool ps4m, bool user, bool write)
+bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, bool user, bool write)
 {
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
@@ -224,7 +227,7 @@ bool Paging::MapPage(uintptr_t pd, uintptr_t va, uintptr_t pa, bool ps4m, bool u
     return true;
 }
 
-bool Paging::UnMapPage(uintptr_t pd, uintptr_t va, bool ps4m)
+bool Paging::UnMapPage(AddressSpace pd, uintptr_t va, bool ps4m)
 {
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
@@ -321,6 +324,218 @@ bool Paging::UnMapPage(uintptr_t pd, uintptr_t va, bool ps4m)
     return true;
 }
 
+bool Paging::MapPages(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, bool user, bool write, size_t n)
+{
+    for(uintptr_t i = 0; i < n; ++i)
+    {
+        if(!MapPage(pd, va, pa, ps4m, user, write))
+            return false;
+        size_t incr = ps4m ? LARGE_PAGE_SIZE : PAGE_SIZE;
+        va += incr;
+        pa += incr;
+    }
+    return true;
+}
+
+bool Paging::UnMapPages(AddressSpace pd, uintptr_t va, bool ps4m, size_t n)
+{
+    for(uintptr_t i = 0; i < n; ++i)
+    {
+        if(!UnMapPage(pd, va, ps4m))
+            return false;
+        va += ps4m ? LARGE_PAGE_SIZE : PAGE_SIZE;
+    }
+    return true;
+}
+
+void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
+{
+    bool cs = cpuDisableInterrupts();
+    uint startPD = startVA >> 22;
+    uint endPD = (startVA + rangeSize + LARGE_PAGE_SIZE - 1) >> 22;
+    uint32_t *PD = (uint32_t *)alloc4k(pd);
+    if(!PD)
+    {
+        cpuRestoreInterrupts(cs);
+        return;
+    }
+
+    for(uint pdidx = startPD; pdidx < endPD; ++pdidx)
+    {
+        for(uint ptidx = 0; ptidx < PAGE_SIZE / 4; ++ptidx)
+        {
+            uintptr_t va = pdidx << 22 | ptidx << 12;
+            if(va < startVA || (va >= (startVA + rangeSize)))
+                continue;
+            uint32_t *PDE = PD + pdidx;
+            if(!(*PDE & 1)) continue;
+            if(*PDE & 0x80)
+            { // unmap large page
+                *PDE = 0;
+                continue;
+            }
+            uintptr_t ptpa = *PDE & ~(PAGE_SIZE - 1);
+            uint32_t *PT = (uint32_t *)alloc4k(ptpa);
+            if(!PT)
+            {
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            uint32_t *PTE = PT + ptidx;
+            uintptr_t pa = *PTE & ~(PAGE_SIZE - 1);
+            FreePage(pa);
+            *PTE = 0;
+            bool freept = true;
+            for(uint i = 0; i < 1024; ++i)
+            {
+                if(PT[i] & 1)
+                {
+                    freept = false;
+                    break;
+                }
+            }
+            free4k(PT);
+
+            if(freept)
+            {
+                FreePage(ptpa);
+                *PD = 0;
+            }
+        }
+    }
+    free4k(PD);
+    cpuRestoreInterrupts(cs);
+}
+
+void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, size_t rangeSize)
+{
+    bool cs = cpuDisableInterrupts();
+    uint startPD = startVA >> 22;
+    uint endPD = (startVA + rangeSize + LARGE_PAGE_SIZE - 1) >> 22;
+    uint32_t *PD = (uint32_t *)alloc4k(cpuGetCR3());
+    if(!PD)
+    {
+        cpuRestoreInterrupts(cs);
+        return;
+    }
+
+    for(uint pdidx = startPD; pdidx < endPD; ++pdidx)
+    {
+        for(uint ptidx = 0; ptidx < PAGE_SIZE / 4; ++ptidx)
+        {
+            uintptr_t va = pdidx << 22 | ptidx << 12;
+            if(va < startVA || (va >= (startVA + rangeSize)))
+                continue;
+            uint32_t *PDE = PD + pdidx;
+            if(!(*PDE & 1)) continue;
+            if(*PDE & 0x80)
+            { // clone large page
+                //printf("pagingCloneRange: large pages not supported yet\n");
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            uintptr_t ptpa = *PDE & ~(PAGE_SIZE - 1);
+            uint32_t *PT = (uint32_t *)alloc4k(ptpa);
+            if(!PT)
+            {
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            uint32_t *PTE = PT + ptidx;
+            uint32_t ptflags = *PTE & 0x3F;
+            uintptr_t pa = *PTE & ~(PAGE_SIZE - 1);
+            uintptr_t dpa = AllocPage();
+            if(dpa == ~0)
+            {
+                free4k(PT);
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            free4k(PT);
+            // TODO: implement copy on write instead
+            uint8_t *src = (uint8_t *)alloc4k(pa);
+            if(!src)
+            {
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            uint8_t *dst = (uint8_t *)alloc4k(dpa);
+            if(!dst)
+            {
+                free4k(src);
+                free4k(PD);
+                cpuRestoreInterrupts(cs);
+                return;
+            }
+            MoveMemory(dst, src, PAGE_SIZE);
+            free4k(dst);
+            free4k(src);
+            MapPage(dstPd, va, dpa, false, ptflags & 4 ? true : false, ptflags & 2 ? true : false);
+        }
+    }
+    free4k(PD);
+    cpuRestoreInterrupts(cs);
+}
+
+uintptr_t Paging::GetPhysicalAddress(AddressSpace pd, uintptr_t va)
+{
+    bool cs = cpuDisableInterrupts();
+    uint32_t *pdir = (uint32_t *)alloc4k(pd);
+    if(!pdir)
+    {
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+    uint pdidx = va >> 22;
+    uint32_t pdflags = pdir[pdidx] & 0x3F;
+
+    if(!(pdflags & 1))
+    { // not present in page directory
+        free4k(pdir);
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+
+    if(pdir[pdidx] & 0x80)
+    { // 4m mapping
+        uintptr_t offs = va & (LARGE_PAGE_SIZE - 1);
+        uintptr_t pa = (pdir[pdidx] & ~(LARGE_PAGE_SIZE - 1)) + offs;
+        free4k(pdir);
+        cpuRestoreInterrupts(cs);
+        return pa;
+    }
+
+    uintptr_t ptpa = pdir[pdidx] & ~(PAGE_SIZE - 1);
+    free4k(pdir);
+    uint32_t *pt = (uint32_t *)alloc4k(ptpa);
+    if(!pt)
+    {
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+    uint ptidx = va >> 12 & 1023;
+    if(!(pt[ptidx] & 1))
+    { // not present in page table
+        free4k(pt);
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+    uintptr_t pa = pt[ptidx] & ~(PAGE_SIZE - 1);
+    free4k(pt);
+    cpuRestoreInterrupts(cs);
+    return pa + (va & (PAGE_SIZE - 1));
+}
+
+uintptr_t Paging::GetFirstUsableAddress()
+{
+    return memoryTop;
+}
+
 uintptr_t Paging::AllocPage()
 {
     bool cs = cpuDisableInterrupts();
@@ -336,6 +551,77 @@ uintptr_t Paging::AllocPage()
     return addr;
 }
 
+uintptr_t Paging::AllocPage(size_t alignment)
+{
+    if(alignment % PAGE_SIZE)
+        return ~0; // alignment must be multiple of page size
+    if(!alignment) alignment = PAGE_SIZE;
+    uint bit = 0;
+    uint bitCount = pageBitmap->GetBitCount();
+    uint step = alignment / PAGE_SIZE;
+    bool cs = cpuDisableInterrupts();
+
+    for(; bit < bitCount && pageBitmap->GetBit(bit); bit += step);
+    if(bit >= bitCount)
+    {
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+
+    pageBitmap->SetBit(bit, true);
+    cpuRestoreInterrupts(cs);
+    return bit * PAGE_SIZE;
+}
+
+uintptr_t Paging::AllocPages(size_t n)
+{
+    bool cs = cpuDisableInterrupts();
+    uint bit = pageBitmap->FindFirst(false, n);
+    if(bit == ~0)
+    {
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+    for(uint i = 0; i < n; ++i)
+        pageBitmap->SetBit(bit + i, true);
+    uintptr_t addr = bit * PAGE_SIZE;
+    cpuRestoreInterrupts(cs);
+    return addr;
+}
+
+uintptr_t Paging::AllocPages(size_t n, size_t alignment)
+{
+    if(alignment % PAGE_SIZE)
+        return ~0; // alignment must be multiple of page size
+    if(!alignment) alignment = PAGE_SIZE;
+    uint bit = 0;
+    uint bitCount = pageBitmap->GetBitCount();
+    uint step = alignment / PAGE_SIZE;
+    bool cs = cpuDisableInterrupts();
+
+    for(; bit < bitCount; bit += step)
+    {
+        int obit = bit;
+        int okbits = 0;
+        for(; bit < bitCount && !pageBitmap->GetBit(bit) && okbits < n ; ++bit, ++okbits);
+        if(okbits >= n)
+        {
+            bit = obit;
+            break;
+        }
+    }
+    if(bit >= bitCount)
+    {
+        cpuRestoreInterrupts(cs);
+        return ~0;
+    }
+
+    for(int i = 0; i < n; ++ i)
+        pageBitmap->SetBit(bit + i, true);
+    cpuRestoreInterrupts(cs);
+    return bit * PAGE_SIZE;
+}
+
 bool Paging::FreePage(uintptr_t pa)
 {
     uint bit = pa / PAGE_SIZE;
@@ -349,4 +635,100 @@ bool Paging::FreePage(uintptr_t pa)
     pageBitmap->SetBit(bit, false);
     cpuRestoreInterrupts(cs);
     return true;
+}
+
+bool Paging::FreePages(uintptr_t pa, size_t n)
+{
+    for(uint i = 0; i < n; ++i)
+    {
+        if(!FreePage(pa))
+            return false;
+        pa += PAGE_SIZE;
+    }
+    return true;
+}
+
+void *Paging::AllocDMA(size_t size)
+{
+    return AllocDMA(size, PAGE_SIZE);
+}
+
+void *Paging::AllocDMA(size_t size, size_t alignment)
+{
+    if(!size) return nullptr;
+
+    size = align(size, PAGE_SIZE);
+    size_t nPages = size / PAGE_SIZE;
+    uintptr_t pa = AllocPages(nPages, alignment); // allocate n pages in ONE block
+    if(pa == ~0) return nullptr;
+    bool ints = cpuDisableInterrupts();
+    uintptr_t va = 0;
+    if(!dmaPtrList.Count())
+    {
+        va = DMA_HEAP_START;
+        dmaPtrList.Append(DMAPointerHead { va, size });
+    }
+    else
+    {
+        for(auto it = dmaPtrList.begin(); it != dmaPtrList.end(); ++it)
+        {
+            DMAPointerHead ph = *it;
+            uintptr_t blockEnd = ph.Address + ph.Size;
+            auto nextNode = it.GetNextNode();
+
+            if(!nextNode)
+            {
+                va = blockEnd;
+                dmaPtrList.Append(DMAPointerHead { va, size });
+                break;
+            }
+
+            DMAPointerHead nextPh = nextNode->Value;
+            uintptr_t newBlockEnd = blockEnd + size;
+
+            if(nextPh.Address >= newBlockEnd)
+            {
+                va = blockEnd;
+                DMAPointerHead newPh = { va, size };
+                dmaPtrList.InsertBefore(newPh, nextPh, nullptr);
+                break;
+            }
+        }
+    }
+
+    MapPages(GetAddressSpace(), va, pa, false, false, true, nPages);
+    cpuRestoreInterrupts(ints);
+    return (void *)va;
+}
+
+uintptr_t Paging::GetDMAPhysicalAddress(void *ptr)
+{
+    return GetPhysicalAddress(GetAddressSpace(), (uintptr_t)ptr);
+}
+
+void Paging::FreeDMA(void *ptr)
+{
+    uintptr_t va = (uintptr_t)ptr;
+    bool ints = cpuDisableInterrupts();
+    DMAPointerHead ph = { va, 0 };
+    ph = dmaPtrList.Find(ph, nullptr);
+    if(!ph.Address || !ph.Size)
+    {
+        cpuRestoreInterrupts(ints);
+        return;
+    }
+    dmaPtrList.Remove(ph, nullptr, false);
+    size_t size = ph.Size;
+    size_t nPages = size / PAGE_SIZE;
+
+    uintptr_t addressSpace = GetAddressSpace();
+    uintptr_t pa = GetPhysicalAddress(addressSpace, va);
+    if(pa == ~0)
+    {
+        cpuRestoreInterrupts(ints);
+        return;
+    }
+    UnMapPages(addressSpace, va, false, nPages);
+    FreePages(pa, nPages);
+    cpuRestoreInterrupts(ints);
 }

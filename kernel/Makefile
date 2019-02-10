@@ -4,7 +4,11 @@ OUTFILE = kernel
 OBJS = boot/boot.o \
 	bitmap.o \
 	cpu.o \
+	cxa.o \
 	gdt.o \
+	heap.o \
+	ints.o \
+	isrs.o \
 	main.o \
 	memory.o \
 	new.o \
@@ -15,6 +19,9 @@ DEPS = link.ld \
 	include/bitmap.hpp \
 	include/cpu.hpp \
 	include/gdt.hpp \
+	include/heap.hpp \
+	include/ints.hpp \
+	include/list.hpp \
 	include/memory.hpp \
 	include/misc.hpp \
 	include/new.hpp \
@@ -54,8 +61,14 @@ clean:
 
 install: $(KERNEL_FILE)
 
+todo:
+	grep -rnw . --color=auto -e '//[ \t]*TODO:'
+
+fixme:
+	grep -rnw . --color=auto -e '//[ \t]*FIXME:'
+
 $(KERNEL_FILE): $(OUTFILE)
 	cp $(OUTFILE) $(KERNEL_FILE)
 
-.PHONY: clean install
+.PHONY: clean install todo fixme
 

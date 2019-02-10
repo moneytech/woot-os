@@ -10,7 +10,11 @@
 #define MMIO_BASE                   0xD0000000
 
 #define PAGE_SIZE                   0x00001000
+#define PAGE_SHIFT                  12
+#define PAGE_MASK                   0xFFFFF000
 #define LARGE_PAGE_SIZE             0x00400000
+#define LARGE_PAGE_SHIFT            22
+#define LARGE_PAGE_MASK             0xFFC00000
 #define SMALL_PAGES_PER_LARGE_PAGE  (LARGE_PAGE_SIZE / PAGE_SIZE)
 #define KERNEL_SPACE_SIZE           0x10000000
 #define MODULES_SPACE_SIZE          (MMIO_BASE - MODULES_BASE - LARGE_PAGE_SIZE)
