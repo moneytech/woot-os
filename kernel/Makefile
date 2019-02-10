@@ -3,6 +3,7 @@ OUTFILE = kernel
 # boot/boot.o should be the first file passed to linker
 OBJS = boot/boot.o \
 	bitmap.o \
+	character.o \
 	cpu.o \
 	cxa.o \
 	gdt.o \
@@ -12,11 +13,17 @@ OBJS = boot/boot.o \
 	main.o \
 	memory.o \
 	new.o \
-	paging.o
+	paging.o \
+	random.o \
+	softdiv.o \
+	stream.o \
+	string.o \
+	uuid.o
 
 DEPS = link.ld \
 	../common/include/sysdefs.h \
 	include/bitmap.hpp \
+	include/character.hpp \
 	include/cpu.hpp \
 	include/gdt.hpp \
 	include/heap.hpp \
@@ -26,7 +33,12 @@ DEPS = link.ld \
 	include/misc.hpp \
 	include/new.hpp \
 	include/paging.hpp \
-	include/types.hpp
+	include/random.hpp \
+	include/stream.hpp \
+	include/string.hpp \
+	include/types.hpp \
+	include/uuid.hpp \
+	include/vararg.hpp
 
 TOP_DIR ?= ..
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
@@ -39,7 +51,7 @@ ASM ?= yasm
 ASMFLAGS ?= -f elf32 -g dwarf2 -w
 
 COMPILE_FLAGS = -m32 -nostdinc -nostdlib -fno-stack-protector \
-	-Ulinux -Uunix -D__WOOT__=1 -ggdb \
+	-fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb \
 	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include
 
 CFLAGS += $(COMPILE_FLAGS)

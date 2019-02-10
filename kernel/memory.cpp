@@ -1,35 +1,35 @@
 #include <memory.hpp>
 
-void ZeroMemory(void *dst, size_t n)
+void Memory::Zero(void *dst, size_t n)
 {
-    SetMemory(dst, 0, n);
+    Set(dst, 0, n);
 }
 
-void SetMemory(void *dst, int val, size_t n)
+void Memory::Set(void *dst, int val, size_t n)
 {
     uint8_t *buf = (uint8_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void SetMemory16(void *dst, int val, size_t n)
+void Memory::Set16(void *dst, int val, size_t n)
 {
     uint16_t *buf = (uint16_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void SetMemory32(void *dst, int val, size_t n)
+void Memory::Set32(void *dst, int val, size_t n)
 {
     uint32_t *buf = (uint32_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void SetMemory64(void *dst, int val, size_t n)
+void Memory::Set64(void *dst, int val, size_t n)
 {
     uint64_t *buf = (uint64_t *)dst;
     while(n--) *buf++ = val;
 }
 
-void MoveMemory(void *dst, const void *src, size_t n)
+void Memory::Move(void *dst, const void *src, size_t n)
 {
     uint8_t *d = (uint8_t *)dst;
     uint8_t *s = (uint8_t *)src;
@@ -46,7 +46,7 @@ void MoveMemory(void *dst, const void *src, size_t n)
     return;
 }
 
-void MoveMemory2D(void *dst, const void *src, size_t bpl, size_t dstride, size_t sstride, size_t lines)
+void Memory::Move2D(void *dst, const void *src, size_t bpl, size_t dstride, size_t sstride, size_t lines)
 {
     uint8_t *d = (uint8_t *)dst;
     uint8_t *s = (uint8_t *)src;
@@ -56,7 +56,7 @@ void MoveMemory2D(void *dst, const void *src, size_t bpl, size_t dstride, size_t
     {
         while(lines--)
         {
-            MoveMemory(d, s, bpl);
+            Move(d, s, bpl);
             d += dstride;
             s += sstride;
         }
@@ -69,12 +69,12 @@ void MoveMemory2D(void *dst, const void *src, size_t bpl, size_t dstride, size_t
         {
             d -= dstride;
             s -= sstride;
-            MoveMemory(d, s, bpl);
+            Move(d, s, bpl);
         }
     }
 }
 
-int CompareMemory(const void *ptr1, const void *ptr2, size_t n)
+int Memory::Compare(const void *ptr1, const void *ptr2, size_t n)
 {
     uint8_t *p1 = (uint8_t *)ptr1;
     uint8_t *p2 = (uint8_t *)ptr2;

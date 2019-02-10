@@ -9,7 +9,7 @@ Bitmap::Bitmap(size_t bitCount, bool set) :
     deleteBits(true),
     ones(set ? bitCount : 0)
 {
-    SetMemory32(bits, set ? ~0 : 0, dwordCount);
+    Memory::Set32(bits, set ? ~0 : 0, dwordCount);
 }
 
 Bitmap::Bitmap(size_t bitCount, void *buffer, bool set) :
@@ -19,7 +19,7 @@ Bitmap::Bitmap(size_t bitCount, void *buffer, bool set) :
     deleteBits(false),
     ones(set ? bitCount : 0)
 {
-    SetMemory32(bits, set ? ~0 : 0, dwordCount);
+    Memory::Set32(bits, set ? ~0 : 0, dwordCount);
 }
 
 size_t Bitmap::GetBitCount() const

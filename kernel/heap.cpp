@@ -99,7 +99,7 @@ void *Heap::Allocate(size_t size, size_t alignment, bool zero)
             newBlk->Next->Previous = newBlk;
             newBlk->Size = size;
             void *result = (void *)candidate;
-            if(zero) ZeroMemory(result, size);
+            if(zero) Memory::Zero(result, size);
             return result;
         }
     }
@@ -113,7 +113,7 @@ void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
     if(size > blk->Size && (p % alignment || size > getMaxSize(ptr)))
     {   // block needs to be moved
         void *newPtr = Allocate(size, alignment, zero);
-        MoveMemory(newPtr, ptr, blk->Size);
+        Memory::Move(newPtr, ptr, blk->Size);
         Free(ptr);
         return newPtr;
     }
@@ -121,7 +121,7 @@ void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
     if(zero && sizeDiff > 0)
     {
         uintptr_t dataEnd = p + blk->Size;
-        ZeroMemory((void *)dataEnd, sizeDiff);
+        Memory::Zero((void *)dataEnd, sizeDiff);
     }
     blk->Size = size;
     return ptr;

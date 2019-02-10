@@ -1,3 +1,4 @@
+#include <cpu.hpp>
 #include <types.hpp>
 
 extern "C" uintptr_t __dso_handle;
@@ -41,4 +42,9 @@ extern "C" void __cxa_finalize(atexitHandler handler)
             entry->handled = true;
         }
     }
+}
+
+extern "C" void __cxa_pure_virtual()
+{
+    cpuSystemHalt(0xCACACACA);
 }

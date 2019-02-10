@@ -1,3 +1,15 @@
+include/random.hpp
+random.cpp
+softdiv.cpp
+uuid.cpp
+character.cpp
+include/character.hpp
+include/uuid.hpp
+string.cpp
+include/stream.hpp
+include/string.hpp
+include/vararg.hpp
+stream.cpp
 bitmap.cpp
 cpu.asm
 cxa.cpp

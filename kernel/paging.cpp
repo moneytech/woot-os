@@ -85,7 +85,7 @@ void Paging::Initialize(multiboot_info_t *mboot)
     // allocate kernel page directory
     uint32_t *currentPageDir = (uint32_t *)(cpuGetCR3() + KERNEL_BASE);
     kernelPageDir = (uint32_t *)moveMemTop(PAGE_SIZE);
-    ZeroMemory(kernelPageDir, PAGE_SIZE);
+    Memory::Zero(kernelPageDir, PAGE_SIZE);
 
     // allocate page bitmap
     uint64_t ramSize = getRAMSize(mboot);
@@ -97,7 +97,7 @@ void Paging::Initialize(multiboot_info_t *mboot)
 
     // allocate "4k range" page table
     kernel4kPT = (uint32_t *)moveMemTop(PAGE_SIZE);
-    ZeroMemory(kernel4kPT, PAGE_SIZE);
+    Memory::Zero(kernel4kPT, PAGE_SIZE);
 
     // update TSS
     kernelAddressSpace = (AddressSpace)(((uintptr_t)kernelPageDir) - KERNEL_BASE);
@@ -213,7 +213,7 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, boo
             return false;
         }
         pt = (uint32_t *)alloc4k(ptpa);
-        ZeroMemory(pt, PAGE_SIZE);
+        Memory::Zero(pt, PAGE_SIZE);
         pdir[pdidx] = ptpa | 0x07;
     }
     free4k(pdir);
@@ -472,7 +472,7 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
                 cpuRestoreInterrupts(cs);
                 return;
             }
-            MoveMemory(dst, src, PAGE_SIZE);
+            Memory::Move(dst, src, PAGE_SIZE);
             free4k(dst);
             free4k(src);
             MapPage(dstPd, va, dpa, false, ptflags & 4 ? true : false, ptflags & 2 ? true : false);
