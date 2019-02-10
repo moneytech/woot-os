@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ints.hpp>
+#include <spinlock.hpp>
 #include <types.hpp>
 
 extern "C" void initializeHeap();
@@ -20,14 +21,22 @@ class Heap
     static uintptr_t heapStart;
     static uintptr_t heapEnd;
     static size_t heapSize;
-    static size_t defaultAligment;
+    static size_t defaultAlignment;
     static HeapBlock *firstBlock;
     static HeapBlock *lastBlock;
+    static SpinLock lock;
 
     static bool pageFault(Ints::State *state, void *context);
     static size_t getMaxSize(void *ptr);
+    static void *allocate(size_t size, size_t alignment, bool zero);
+    static void *resize(void *ptr, size_t size, size_t alignment, bool zero);
+    static void free(void *ptr);
+    static size_t getSize(void *ptr);
+    static void setDebugName(void *ptr, const char *name);
+    static const char *getDebugName(void *ptr);
+    static bool isOnHeap(void *ptr);
 public:
-    static void Initialize(uintptr_t start, size_t end, size_t defaultAligment);
+    static void Initialize(uintptr_t start, size_t end, size_t defaultAlignment);
     static void *Allocate(size_t size, bool zero);
     static void *Allocate(size_t size, size_t alignment, bool zero);
     static void *Resize(void *ptr, size_t size, size_t alignment, bool zero);

@@ -13,6 +13,7 @@ include/queue.hpp
 include/random.hpp
 include/semaphore.hpp
 include/sequencer.hpp
+include/spinlock.hpp
 include/thread.hpp
 include/time.hpp
 include/tokenizer.hpp
@@ -24,6 +25,7 @@ process.cpp
 random.cpp
 semaphore.cpp
 softdiv.cpp
+spinlock.cpp
 thread.cpp
 time.cpp
 tokenizer.cpp

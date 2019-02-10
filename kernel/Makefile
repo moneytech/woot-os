@@ -25,6 +25,7 @@ OBJS = boot/boot.o \
 	random.o \
 	semaphore.o \
 	softdiv.o \
+	spinlock.o \
 	stream.o \
 	string.o \
 	thread.o \
@@ -59,6 +60,7 @@ DEPS = link.ld \
 	include/random.hpp \
 	include/semaphore.hpp \
 	include/sequencer.hpp \
+	include/spinlock.o \
 	include/stream.hpp \
 	include/string.hpp \
 	include/thread.hpp \

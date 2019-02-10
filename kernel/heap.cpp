@@ -18,9 +18,10 @@ Ints::Handler Heap::pfHandler = { nullptr, Heap::pageFault, nullptr };
 uintptr_t Heap::heapStart;
 uintptr_t Heap::heapEnd;
 size_t Heap::heapSize;
-size_t Heap::defaultAligment;
+size_t Heap::defaultAlignment;
 Heap::HeapBlock *Heap::firstBlock;
 Heap::HeapBlock *Heap::lastBlock;
+SpinLock Heap::lock;
 
 bool Heap::pageFault(Ints::State *state, void *context)
 {
@@ -49,37 +50,7 @@ size_t Heap::getMaxSize(void *ptr)
     return (uintptr_t)nextBlk - p;
 }
 
-void Heap::Initialize(uintptr_t start, size_t end, size_t defaultAligment)
-{
-    // register page fault handler
-    Ints::RegisterHandler(14, &pfHandler);
-
-    // initialize the heap itself
-    heapStart = start;
-    heapEnd = end;
-    heapSize = end - start;
-    Heap::defaultAligment = defaultAligment;
-
-    firstBlock = (HeapBlock *)heapStart;
-    lastBlock = (HeapBlock *)(heapEnd - sizeof(HeapBlock));
-
-    firstBlock->Next = lastBlock;
-    firstBlock->Previous = firstBlock;
-    firstBlock->Size = 0;
-    firstBlock->DebugName = "Heap start";
-
-    lastBlock->Previous = firstBlock;
-    lastBlock->Next = lastBlock;
-    lastBlock->Size = 0;
-    firstBlock->DebugName = "Heap end";
-}
-
-void *Heap::Allocate(size_t size, bool zero)
-{
-    return Allocate(size, 1, zero);
-}
-
-void *Heap::Allocate(size_t size, size_t alignment, bool zero)
+void *Heap::allocate(size_t size, size_t alignment, bool zero)
 {
     for(HeapBlock *curBlk = firstBlock; curBlk != lastBlock; curBlk = curBlk->Next)
     {
@@ -106,13 +77,13 @@ void *Heap::Allocate(size_t size, size_t alignment, bool zero)
     return nullptr;
 }
 
-void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
+void *Heap::resize(void *ptr, size_t size, size_t alignment, bool zero)
 {
     uintptr_t p = (uintptr_t)p;
     HeapBlock *blk = (HeapBlock *)(p - sizeof(HeapBlock));
     if(size > blk->Size && (p % alignment || size > getMaxSize(ptr)))
     {   // block needs to be moved
-        void *newPtr = Allocate(size, alignment, zero);
+        void *newPtr = allocate(size, alignment, zero);
         Memory::Move(newPtr, ptr, blk->Size);
         Free(ptr);
         return newPtr;
@@ -127,34 +98,120 @@ void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
     return ptr;
 }
 
-void Heap::Free(void *ptr)
+void Heap::free(void *ptr)
 {
     HeapBlock *blk = (HeapBlock *)((uintptr_t)ptr - sizeof(HeapBlock));
-
     blk->Previous->Next = blk->Next;
     blk->Next->Previous = blk->Previous;
 }
 
-size_t Heap::GetSize(void *ptr)
+size_t Heap::getSize(void *ptr)
 {
     HeapBlock *blk = (HeapBlock *)((uintptr_t)ptr - sizeof(HeapBlock));
     return blk->Size;
 }
 
-void Heap::SetDebugName(void *ptr, const char *name)
+void Heap::setDebugName(void *ptr, const char *name)
 {
     HeapBlock *blk = (HeapBlock *)((uintptr_t)ptr - sizeof(HeapBlock));
     blk->DebugName = name;
 }
 
-const char *Heap::GetDebugName(void *ptr)
+const char *Heap::getDebugName(void *ptr)
 {
     HeapBlock *blk = (HeapBlock *)((uintptr_t)ptr - sizeof(HeapBlock));
     return blk->DebugName;
 }
 
-bool Heap::IsOnHeap(void *ptr)
+bool Heap::isOnHeap(void *ptr)
 {
     uintptr_t p = (uintptr_t)ptr;
     return p >= (heapStart + 2 * sizeof(HeapBlock)) && p < heapEnd;
+}
+
+void Heap::Initialize(uintptr_t start, size_t end, size_t defaultAligment)
+{
+    // register page fault handler
+    Ints::RegisterHandler(14, &pfHandler);
+
+    // initialize the heap itself
+    heapStart = start;
+    heapEnd = end;
+    heapSize = end - start;
+    Heap::defaultAlignment = defaultAligment;
+
+    firstBlock = (HeapBlock *)heapStart;
+    lastBlock = (HeapBlock *)(heapEnd - sizeof(HeapBlock));
+
+    firstBlock->Next = lastBlock;
+    firstBlock->Previous = firstBlock;
+    firstBlock->Size = 0;
+    firstBlock->DebugName = "Heap start";
+
+    lastBlock->Previous = firstBlock;
+    lastBlock->Next = lastBlock;
+    lastBlock->Size = 0;
+    firstBlock->DebugName = "Heap end";
+}
+
+void *Heap::Allocate(size_t size, bool zero)
+{
+    lock.Acquire();
+    void *res = allocate(size, defaultAlignment, zero);
+    lock.Release();
+    return res;
+}
+
+void *Heap::Allocate(size_t size, size_t alignment, bool zero)
+{
+    lock.Acquire();
+    void *res = allocate(size, alignment, zero);
+    lock.Release();
+    return res;
+}
+
+void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
+{
+    lock.Acquire();
+    void *res = resize(ptr, size, alignment, zero);
+    lock.Release();
+    return res;
+}
+
+void Heap::Free(void *ptr)
+{
+    lock.Acquire();
+    free(ptr);
+    lock.Release();
+}
+
+size_t Heap::GetSize(void *ptr)
+{
+    lock.Acquire();
+    size_t res = getSize(ptr);
+    lock.Release();
+    return res;
+}
+
+void Heap::SetDebugName(void *ptr, const char *name)
+{
+    lock.Acquire();
+    setDebugName(ptr, name);
+    lock.Release();
+}
+
+const char *Heap::GetDebugName(void *ptr)
+{
+    lock.Acquire();
+    const char *res = GetDebugName(ptr);
+    lock.Release();
+    return res;
+}
+
+bool Heap::IsOnHeap(void *ptr)
+{
+    lock.Acquire();
+    bool res = isOnHeap(ptr);
+    lock.Release();
+    return res;
 }
