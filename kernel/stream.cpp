@@ -349,7 +349,7 @@ int64_t Stream::VWriteFmt(const char *fmt, VarArgs args)
                 }
 
                 if(hashFlag)
-                    bw += WriteStr(upperCase ? "0X" : "0x", 0);
+                    bw += WriteStr("0x", 0);
                 bw += WriteHex(val, upperCase, precision, maxDigits, false);
 
                 if(leftJustify)
