@@ -37,6 +37,7 @@ extern kmain
 extern initializePaging
 extern initializeHeap
 extern initializeDebugStream
+extern initializeThreads
 extern isr0
 extern __init_array_start
 extern __init_array_end
@@ -187,6 +188,10 @@ _start:
 .init_debug_stream:
     call initializeDebugStream
 
+; initialize threads
+.init_threads:
+    call initializeThreads
+
 ; call kmain
 .call_kmain:
     xor ebp, ebp
@@ -244,9 +249,14 @@ idtDescr:
 
 segment .bss
 
+global mainKernelThreadStack
+global mainKernelThreadStackEnd
+
 align STACK_SIZE
+mainKernelThreadStack
 kernelStack:
     resb STACK_SIZE
+mainKernelThreadStackEnd
 
 align PAGE_SIZE
 bootPageDir:

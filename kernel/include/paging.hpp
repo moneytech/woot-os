@@ -37,6 +37,7 @@ class Paging
     static void free4k(void *ptr);
 public:
     static void Initialize(multiboot_info_t *mboot);
+    static void BuildAddressSpace(AddressSpace as);
     static uintptr_t GetAddressSpace();
     static void FlushTLB();
     static void InvalidatePage(uintptr_t addr);

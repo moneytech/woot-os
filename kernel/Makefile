@@ -5,42 +5,65 @@ OBJS = boot/boot.o \
 	bitmap.o \
 	callbackstream.o \
 	character.o \
+	cmos.o \
 	cpu.o \
 	cxa.o \
+	elf.o \
 	gdt.o \
 	heap.o \
 	ints.o \
+	irqs.o \
 	isrs.o \
 	main.o \
 	memory.o \
 	misc.o \
+	mutex.o \
 	new.o \
+	objectqueue.o \
 	paging.o \
+	process.o \
 	random.o \
+	semaphore.o \
 	softdiv.o \
 	stream.o \
 	string.o \
+	thread.o \
+	time.o \
+	tokenizer.o \
 	uuid.o
 
 DEPS = link.ld \
 	../common/include/errno.h \
+	../common/include/ktypes.h \
 	../common/include/sysdefs.h \
 	include/bitmap.hpp \
 	include/callbackstream.hpp \
 	include/character.hpp \
+	include/cmos.hpp \
 	include/cpu.hpp \
 	include/debug.hpp \
+	include/elf.hpp \
 	include/gdt.hpp \
 	include/heap.hpp \
 	include/ints.hpp \
+	include/irqs.hpp \
 	include/list.hpp \
 	include/memory.hpp \
 	include/misc.hpp \
+	include/mutex.hpp \
 	include/new.hpp \
+	include/objectqueue.hpp \
 	include/paging.hpp \
+	include/process.hpp \
+	include/queue.hpp \
 	include/random.hpp \
+	include/semaphore.hpp \
+	include/sequencer.hpp \
 	include/stream.hpp \
 	include/string.hpp \
+	include/thread.hpp \
+	include/time.hpp \
+	include/tokenizer.hpp \
 	include/types.hpp \
 	include/uuid.hpp \
 	include/vararg.hpp

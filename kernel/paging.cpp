@@ -138,6 +138,19 @@ void Paging::Initialize(multiboot_info_t *mboot)
     cpuSetCR3(kernelAddressSpace);
 }
 
+void Paging::BuildAddressSpace(AddressSpace as)
+{
+    uint32_t *pdir = (uint32_t *)alloc4k(as);
+    Memory::Zero(pdir, PAGE_SIZE);
+
+    // copy all kernel PDEs
+    Memory::Move(pdir + (KERNEL_BASE >> 22),
+                 kernelPageDir + (KERNEL_BASE >> 22),
+                 (1024 - (KERNEL_BASE >> 22)) * 4);
+
+    free4k(pdir);
+}
+
 uintptr_t Paging::GetAddressSpace()
 {
     return cpuGetCR3();

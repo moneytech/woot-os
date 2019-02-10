@@ -1,3 +1,4 @@
+#include <cpu.hpp>
 #include <debug.hpp>
 #include <multiboot.h>
 #include <sysdefs.h>
@@ -9,6 +10,9 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
           KERNEL_VERSION_MAJOR,
           KERNEL_VERSION_MINOR,
           KERNEL_VERSION_DESCRIPTION);
+
+    for(int i = 0;; ++ i)
+        cpuWaitForInterrupt(1);
 
     return 0;
 }
