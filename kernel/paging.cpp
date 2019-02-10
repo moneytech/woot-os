@@ -7,10 +7,6 @@
 #include <paging.hpp>
 #include <sysdefs.h>
 
-// FIXME: Allocate all kernel PDEs and never
-//        release them to make sure all processes
-//        see the same kernel all the time.
-
 extern void *_end;
 
 uintptr_t Paging::memoryTop = (uintptr_t)&_end;
@@ -123,8 +119,23 @@ void Paging::Initialize(multiboot_info_t *mboot)
         MapPage(kernelAddressSpace, va, pa, false, true);
     }
 
+    // allocate remaining kernel page tables
+    for(uintptr_t va = KERNEL_BASE; va; va += LARGE_PAGE_SIZE)
+    {
+        uint pdOffs = va >> LARGE_PAGE_SHIFT;
+        if(kernelPageDir[pdOffs] & 1)
+            continue;
+        uintptr_t pa = AllocPage();
+        void *pt = alloc4k(pa);
+        Memory::Zero(pt, PAGE_SIZE);
+        free4k(pt);
+        kernelPageDir[pdOffs] = pa | 0x03;
+    }
+
+    MapPage(kernelAddressSpace, 0xFFFFF000, 0, false, true);
+    UnMapPage(kernelAddressSpace, 0xFFFFF000);
+
     cpuSetCR3(kernelAddressSpace);
-    UnMapPage(kernelAddressSpace, 0);
 }
 
 uintptr_t Paging::GetAddressSpace()
@@ -237,7 +248,7 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
 
     free4k(pt);
 
-    if(freept)
+    if(freept && va < KERNEL_BASE)
     {
         FreePage(ptpa);
         pdir[pdidx] = 0;
@@ -316,7 +327,7 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
             }
             free4k(PT);
 
-            if(freept)
+            if(freept && va < KERNEL_BASE)
             {
                 FreePage(ptpa);
                 *PD = 0;
