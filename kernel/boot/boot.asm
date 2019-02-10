@@ -1,5 +1,7 @@
 [bits 32]
 
+; TODO: Get rid of PSE stuff
+
 %define PAGE_SHIFT          12
 %define LARGE_PAGE_SHIFT    22
 %define STACK_SIZE          65536

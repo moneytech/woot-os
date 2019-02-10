@@ -79,10 +79,10 @@ clean:
 install: $(KERNEL_FILE)
 
 todo:
-	grep -rnw . --color=auto -e '//[ \t]*TODO:'
+	grep -rnw . --color=auto -E -e '(;|//)[ \t]*TODO:'
 
 fixme:
-	grep -rnw . --color=auto -e '//[ \t]*FIXME:'
+	grep -rnw . --color=auto -E -e '(;|//)[ \t]*FIXME:'
 
 $(KERNEL_FILE): $(OUTFILE)
 	cp $(OUTFILE) $(KERNEL_FILE)

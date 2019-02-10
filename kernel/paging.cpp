@@ -103,18 +103,6 @@ void Paging::Initialize(multiboot_info_t *mboot)
     kernelAddressSpace = (AddressSpace)(((uintptr_t)kernelPageDir) - KERNEL_BASE);
     GDT::MainTSS->CR3 = kernelAddressSpace;
 
-    // identity map first 3 gigs
-    for(uintptr_t va = 0, pdidx = 0; va < KERNEL_BASE; va += LARGE_PAGE_SIZE, ++pdidx)
-        kernelPageDir[pdidx] = va | 0x83;
-
-    // map mmio space
-    for(uintptr_t va = MMIO_BASE; va; va += LARGE_PAGE_SIZE)
-    {
-        for(int i = 0; i < SMALL_PAGES_PER_LARGE_PAGE; ++i)
-            pageBitmap->SetBit((va / PAGE_SIZE) + i, true);
-        kernelPageDir[va >> 22] = va | 0x83;
-    }
-
     // temporarily map 4k range into current address space
     currentPageDir[kernel4kVA >> 22] = (((uintptr_t)kernel4kPT) - KERNEL_BASE) | 0x03;
 
@@ -132,11 +120,11 @@ void Paging::Initialize(multiboot_info_t *mboot)
     {
         uintptr_t pa = va - KERNEL_BASE;
         pageBitmap->SetBit(pa / PAGE_SIZE, true);
-        MapPage(kernelAddressSpace, va, pa, false, false, true);
+        MapPage(kernelAddressSpace, va, pa, false, true);
     }
 
     cpuSetCR3(kernelAddressSpace);
-    UnMapPage(kernelAddressSpace, 0, false);
+    UnMapPage(kernelAddressSpace, 0);
 }
 
 uintptr_t Paging::GetAddressSpace()
@@ -154,7 +142,7 @@ void Paging::InvalidatePage(uintptr_t addr)
     cpuInvalidatePage(addr);
 }
 
-bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, bool user, bool write)
+bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, bool write)
 {
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
@@ -170,36 +158,7 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, boo
 
     uintptr_t rwflag = write ? 0x02 : 0;
     uintptr_t uflag = user ? 0x04 : 0;
-
-    if(ps4m)
-    {
-        va &= ~(LARGE_PAGE_SIZE - 1);
-        pa &= ~(LARGE_PAGE_SIZE - 1);
-        pdir[pdidx] = pa | 0x81 | rwflag | uflag;
-        InvalidatePage(va);
-        free4k(pdir);
-        cpuRestoreInterrupts(cs);
-        return true;
-    }
-
     uint32_t pdflags = pdir[pdidx] & 0x3F;
-
-    if(pdir[pdidx] & 0x80)
-    { // divide 4m mapping to 1024 4k mappings
-        uintptr_t pdpa = pdir[pdidx] & ~(LARGE_PAGE_SIZE - 1);
-        uintptr_t newptpa = AllocPage();
-        if(newptpa == ~0)
-        {
-            free4k(pdir);
-            cpuRestoreInterrupts(cs);
-            return false;
-        }
-        uint32_t *newpt = (uint32_t *)alloc4k(newptpa);
-        for(uint i = 0; i < 1024; ++i)
-            newpt[i] = (pdpa + i * PAGE_SIZE) | pdflags;
-        pdir[pdidx] = newptpa | 0x07;
-        free4k(newpt);
-    }
 
     uintptr_t ptpa = pdir[pdidx] & ~(PAGE_SIZE - 1);
     uint32_t *pt = nullptr;
@@ -227,7 +186,7 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, boo
     return true;
 }
 
-bool Paging::UnMapPage(AddressSpace pd, uintptr_t va, bool ps4m)
+bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
 {
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
@@ -245,41 +204,6 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va, bool ps4m)
         free4k(pdir);
         cpuRestoreInterrupts(cs);
         return false;
-    }
-
-    if(ps4m)
-    { // unmap 4m mapping
-        va &= ~(LARGE_PAGE_SIZE - 1);
-        if(!(pdir[pdidx] & 0x80))
-        {
-            free4k(pdir);
-            cpuRestoreInterrupts(cs);
-            return false;
-        }
-        pdir[pdidx] = 0;
-        InvalidatePage(va);
-        free4k(pdir);
-        cpuRestoreInterrupts(cs);
-        return true;
-    }
-
-    uint32_t pdflags = pdir[pdidx] & 0x3F;
-
-    if(pdir[pdidx] & 0x80)
-    { // divide 4m mapping to 1024 4k mappings
-        uintptr_t pdpa = pdir[pdidx] & ~(LARGE_PAGE_SIZE - 1);
-        uintptr_t newptpa = AllocPage();
-        if(newptpa == ~0)
-        {
-            free4k(pdir);
-            cpuRestoreInterrupts(cs);
-            return false;
-        }
-        uint32_t *newpt = (uint32_t *)alloc4k(newptpa);
-        for(uint i = 0; i < 1024; ++i)
-            newpt[i] = (pdpa + i * PAGE_SIZE) | pdflags;
-        pdir[pdidx] = newptpa | 0x07;
-        free4k(newpt);
     }
 
     uintptr_t ptpa = pdir[pdidx] & ~(PAGE_SIZE - 1);
@@ -324,26 +248,26 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va, bool ps4m)
     return true;
 }
 
-bool Paging::MapPages(AddressSpace pd, uintptr_t va, uintptr_t pa, bool ps4m, bool user, bool write, size_t n)
+bool Paging::MapPages(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, bool write, size_t n)
 {
     for(uintptr_t i = 0; i < n; ++i)
     {
-        if(!MapPage(pd, va, pa, ps4m, user, write))
+        if(!MapPage(pd, va, pa, user, write))
             return false;
-        size_t incr = ps4m ? LARGE_PAGE_SIZE : PAGE_SIZE;
+        size_t incr = PAGE_SIZE;
         va += incr;
         pa += incr;
     }
     return true;
 }
 
-bool Paging::UnMapPages(AddressSpace pd, uintptr_t va, bool ps4m, size_t n)
+bool Paging::UnMapPages(AddressSpace pd, uintptr_t va, size_t n)
 {
     for(uintptr_t i = 0; i < n; ++i)
     {
-        if(!UnMapPage(pd, va, ps4m))
+        if(!UnMapPage(pd, va))
             return false;
-        va += ps4m ? LARGE_PAGE_SIZE : PAGE_SIZE;
+        va += PAGE_SIZE;
     }
     return true;
 }
@@ -369,11 +293,6 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
                 continue;
             uint32_t *PDE = PD + pdidx;
             if(!(*PDE & 1)) continue;
-            if(*PDE & 0x80)
-            { // unmap large page
-                *PDE = 0;
-                continue;
-            }
             uintptr_t ptpa = *PDE & ~(PAGE_SIZE - 1);
             uint32_t *PT = (uint32_t *)alloc4k(ptpa);
             if(!PT)
@@ -429,13 +348,6 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
                 continue;
             uint32_t *PDE = PD + pdidx;
             if(!(*PDE & 1)) continue;
-            if(*PDE & 0x80)
-            { // clone large page
-                //printf("pagingCloneRange: large pages not supported yet\n");
-                free4k(PD);
-                cpuRestoreInterrupts(cs);
-                return;
-            }
             uintptr_t ptpa = *PDE & ~(PAGE_SIZE - 1);
             uint32_t *PT = (uint32_t *)alloc4k(ptpa);
             if(!PT)
@@ -475,7 +387,7 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
             Memory::Move(dst, src, PAGE_SIZE);
             free4k(dst);
             free4k(src);
-            MapPage(dstPd, va, dpa, false, ptflags & 4 ? true : false, ptflags & 2 ? true : false);
+            MapPage(dstPd, va, dpa, ptflags & 4, ptflags & 2);
         }
     }
     free4k(PD);
@@ -499,15 +411,6 @@ uintptr_t Paging::GetPhysicalAddress(AddressSpace pd, uintptr_t va)
         free4k(pdir);
         cpuRestoreInterrupts(cs);
         return ~0;
-    }
-
-    if(pdir[pdidx] & 0x80)
-    { // 4m mapping
-        uintptr_t offs = va & (LARGE_PAGE_SIZE - 1);
-        uintptr_t pa = (pdir[pdidx] & ~(LARGE_PAGE_SIZE - 1)) + offs;
-        free4k(pdir);
-        cpuRestoreInterrupts(cs);
-        return pa;
     }
 
     uintptr_t ptpa = pdir[pdidx] & ~(PAGE_SIZE - 1);
@@ -696,7 +599,7 @@ void *Paging::AllocDMA(size_t size, size_t alignment)
         }
     }
 
-    MapPages(GetAddressSpace(), va, pa, false, false, true, nPages);
+    MapPages(GetAddressSpace(), va, pa, false, true, nPages);
     cpuRestoreInterrupts(ints);
     return (void *)va;
 }
@@ -728,7 +631,7 @@ void Paging::FreeDMA(void *ptr)
         cpuRestoreInterrupts(ints);
         return;
     }
-    UnMapPages(addressSpace, va, false, nPages);
+    UnMapPages(addressSpace, va, nPages);
     FreePages(pa, nPages);
     cpuRestoreInterrupts(ints);
 }
