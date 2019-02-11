@@ -13,6 +13,7 @@ OBJS = boot/boot.o \
 	elf.o \
 	gdt.o \
 	heap.o \
+	ide/idedrive.o \
 	ints.o \
 	irqs.o \
 	isrs.o \

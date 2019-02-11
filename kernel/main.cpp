@@ -1,4 +1,5 @@
 #include <../ahci/ahcidrive.hpp>
+#include <../ide/idedrive.hpp>
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <multiboot.h>
@@ -18,6 +19,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
 
     PCI::Initialize();
     AHCIDrive::Initialize();
+    IDEDrive::Initialize();
 
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();
@@ -26,6 +28,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     for(int i = 0;; ++i)
         cpuWaitForInterrupt(1);
 
+    IDEDrive::Cleanup();
     AHCIDrive::Cleanup();
     PCI::Cleanup();
 

@@ -4,6 +4,8 @@ callbackstream.cpp
 cmos.cpp
 drive.cpp
 elf.cpp
+ide/idedrive.cpp
+ide/idedrive.hpp
 include/ata.hpp
 include/callbackstream.hpp
 include/cmos.hpp
