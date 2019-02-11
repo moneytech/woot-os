@@ -85,6 +85,7 @@ void Paging::Initialize(multiboot_info_t *mboot)
 
     // allocate page bitmap
     uint64_t ramSize = getRAMSize(mboot);
+    ramSize = min(3u << 30, ramSize); // limit maximum physical memory to 3 gigs
     size_t bitCount = ramSize / PAGE_SIZE;
     size_t byteCount = bitCount / 8;
     void *pageBitmapBits = moveMemTop(align(byteCount, PAGE_SIZE));
