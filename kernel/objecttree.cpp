@@ -10,12 +10,6 @@ void ObjectTree::Initialize()
 {
     Objects = new ObjectTree();
     Item *root = Objects->Get(nullptr);
-
-    Directory *dev = new Directory("dev");
-    root->AddChild(dev);
-    Directory *devBus = new Directory("bus");
-    dev->AddChild(devBus);
-    root->AddChild(new Directory("proc"));
 }
 
 ObjectTree::ObjectTree() :
@@ -40,6 +34,16 @@ ObjectTree::Item *ObjectTree::Get(const char *path)
     if(!path || !path[0] || path[0] == '/' && !path[1])
         return &root;
     return root.GetChild(path);
+}
+
+ObjectTree::Item *ObjectTree::MakeDir(const char *path)
+{
+    if(!path || !path[0] || path[0] == '/' && !path[1])
+        return &root;
+    if(!Lock()) return nullptr;
+    Item *res = root.getChild(path, true);
+    UnLock();
+    return res;
 }
 
 void ObjectTree::DebugDump()
@@ -78,7 +82,7 @@ void ObjectTree::Item::addChild(ObjectTree::Item *item)
     children.Append(item);
 }
 
-ObjectTree::Item *ObjectTree::Item::getChild(const char *name)
+ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
 {
     // skip leading separators
     while(*name == '/')
@@ -91,13 +95,27 @@ ObjectTree::Item *ObjectTree::Item::getChild(const char *name)
 
     // copy path part locally
     char *part = (char *)ALLOCA(partLen + 1);
-    String::Copy(part, name);
+    String::Copy(part, name, partLen);
+    part[partLen] = 0;
 
     // do search
     for(Item *child : children)
     {
-        if(KeyCheck(part))
-            return child; // found a match
+        if(child->KeyCheck(part))
+        {   // found a match
+            return name[partLen] ?
+                        child->getChild(name + partLen, create) :
+                        child;
+        }
+    }
+
+    if(create)
+    {   // try to create new node
+        Directory *dir = new Directory(part);
+        addChild(dir);
+        return name[partLen] ?
+                    dir->getChild(name + partLen, true) :
+                    dir;
     }
 
     // nothing found
@@ -126,7 +144,7 @@ bool ObjectTree::Item::AddChild(ObjectTree::Item *item)
 ObjectTree::Item *ObjectTree::Item::GetChild(const char *name)
 {
     if(!tree->Lock()) return nullptr;
-    Item *res = getChild(name);
+    Item *res = getChild(name, false);
     tree->UnLock();
     return res;
 }

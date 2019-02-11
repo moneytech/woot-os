@@ -12,7 +12,7 @@ public:
         friend class ObjectTree;
         void debugDump(char *workBuffer, size_t bufSize, int indent);
         void addChild(Item *item);
-        Item *getChild(const char *name);
+        Item *getChild(const char *name, bool create);
         bool removeChild(Item *item);
     protected:
         ObjectTree *tree;
@@ -56,6 +56,7 @@ public:
     bool Lock();
     void UnLock();
     Item *Get(const char *path);
+    Item *MakeDir(const char *path);
     void DebugDump();
     ~ObjectTree();
 };
