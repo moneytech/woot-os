@@ -16,6 +16,7 @@ OBJS = boot/boot.o \
 	isrs.o \
 	main.o \
 	memory.o \
+	memorystream.o \
 	misc.o \
 	mutex.o \
 	new.o \
@@ -28,6 +29,7 @@ OBJS = boot/boot.o \
 	softdiv.o \
 	stream.o \
 	string.o \
+	stringbuilder.o \
 	thread.o \
 	time.o \
 	tokenizer.o \
@@ -50,6 +52,7 @@ DEPS = link.ld \
 	include/irqs.hpp \
 	include/list.hpp \
 	include/memory.hpp \
+	include/memorystream.hpp \
 	include/misc.hpp \
 	include/mutex.hpp \
 	include/new.hpp \
@@ -63,6 +66,7 @@ DEPS = link.ld \
 	include/sequencer.hpp \
 	include/stream.hpp \
 	include/string.hpp \
+	include/stringbuilder.hpp \
 	include/thread.hpp \
 	include/time.hpp \
 	include/tokenizer.hpp \

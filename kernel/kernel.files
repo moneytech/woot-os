@@ -6,6 +6,7 @@ include/cmos.hpp
 include/debug.hpp
 include/elf.hpp
 include/irqs.hpp
+include/memorystream.hpp
 include/mutex.hpp
 include/objectqueue.hpp
 include/objecttree.hpp
@@ -14,10 +15,12 @@ include/queue.hpp
 include/random.hpp
 include/semaphore.hpp
 include/sequencer.hpp
+include/stringbuilder.hpp
 include/thread.hpp
 include/time.hpp
 include/tokenizer.hpp
 irqs.cpp
+memorystream.cpp
 misc.cpp
 mutex.cpp
 objectqueue.cpp
@@ -26,6 +29,7 @@ process.cpp
 random.cpp
 semaphore.cpp
 softdiv.cpp
+stringbuilder.cpp
 thread.cpp
 time.cpp
 tokenizer.cpp

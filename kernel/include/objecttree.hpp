@@ -24,7 +24,12 @@ public:
         Item *GetChild(const char *name);
         bool RemoveChild(const char *name);
 
+        // these 2 functions should be only used when tree is locked
+        Item *GetParent();
+        List<Item *> &GetChildren();
+
         virtual bool KeyCheck(const char *name);
+        virtual bool GetDisplayName(char *buf, size_t bufSize);
         virtual ~Item();
     };
 
@@ -40,14 +45,14 @@ private:
     Mutex mutex;
     Item root;
 
-    bool lock();
-    void unLock();
 public:
     static ObjectTree *Objects;
 
     static void Initialize(); // initialize main object tree;
 
     ObjectTree();
+    bool Lock();
+    void UnLock();
     Item *Get(const char *path);
     ~ObjectTree();
 };

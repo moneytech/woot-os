@@ -38,6 +38,8 @@ extern initializePaging
 extern initializeHeap
 extern initializeDebugStream
 extern initializeThreads
+extern cpuInitFPU
+extern cpuEnableSSE
 extern isr0
 extern __init_array_start
 extern __init_array_end
@@ -163,6 +165,16 @@ _start:
     push dword [mbootInfoPtr]
     call initializePaging
     add esp, 4
+
+; init FPU
+.init_fpu:
+    push 0x37F
+    call cpuInitFPU
+    add esp, 4
+
+; enable SSE
+.enable_sse:
+    call cpuEnableSSE
 
 ; initialize kernel heap
 .init_kernel_heap:

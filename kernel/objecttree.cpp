@@ -4,16 +4,6 @@
 
 ObjectTree *ObjectTree::Objects;
 
-bool ObjectTree::lock()
-{
-    return mutex.Acquire(3000);
-}
-
-void ObjectTree::unLock()
-{
-    mutex.Release();
-}
-
 void ObjectTree::Initialize()
 {
     Objects = new ObjectTree();
@@ -25,6 +15,16 @@ ObjectTree::ObjectTree() :
     mutex(true, "objectTree"),
     root(this)
 {
+}
+
+bool ObjectTree::Lock()
+{
+    return mutex.Acquire(3000);
+}
+
+void ObjectTree::UnLock()
+{
+    mutex.Release();
 }
 
 ObjectTree::Item *ObjectTree::Get(const char *path)
@@ -87,20 +87,35 @@ ObjectTree::Item::Item(ObjectTree *tree) :
 ObjectTree::Item::Item(ObjectTree::Item *parent) :
     tree(parent->tree), parent(parent)
 {
-    if(!tree->lock()) return;
+    if(!tree->Lock()) return;
     addChild(this);
-    tree->unLock();
+    tree->UnLock();
 }
 
 ObjectTree::Item *ObjectTree::Item::GetChild(const char *name)
 {
-    if(!tree->lock()) return nullptr;
+    if(!tree->Lock()) return nullptr;
     Item *res = getChild(name);
-    tree->unLock();
+    tree->UnLock();
     return res;
 }
 
+ObjectTree::Item *ObjectTree::Item::GetParent()
+{
+    return parent;
+}
+
+List<ObjectTree::Item *> &ObjectTree::Item::GetChildren()
+{
+    return children;
+}
+
 bool ObjectTree::Item::KeyCheck(const char *name)
+{
+    return false;
+}
+
+bool ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)
 {
     return false;
 }
