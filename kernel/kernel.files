@@ -10,6 +10,7 @@ include/memorystream.hpp
 include/mutex.hpp
 include/objectqueue.hpp
 include/objecttree.hpp
+include/pci.hpp
 include/process.hpp
 include/queue.hpp
 include/random.hpp
@@ -25,6 +26,7 @@ misc.cpp
 mutex.cpp
 objectqueue.cpp
 objecttree.cpp
+pci.cpp
 process.cpp
 random.cpp
 semaphore.cpp

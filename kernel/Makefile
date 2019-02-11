@@ -23,6 +23,7 @@ OBJS = boot/boot.o \
 	objectqueue.o \
 	objecttree.o \
 	paging.o \
+	pci.o \
 	process.o \
 	random.o \
 	semaphore.o \
