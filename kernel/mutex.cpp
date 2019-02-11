@@ -22,6 +22,11 @@ bool Mutex::Acquire(uint timeout, bool tryAcquire)
 {
     bool is = cpuDisableInterrupts();
     Thread *ct = Thread::GetCurrent();
+    if(!ct)
+    {   // just return if threads are not yet initialized
+        cpuRestoreInterrupts(is);
+        return true;
+    }
     if(!Count || Owner == ct)
     {
         if(tryAcquire)
@@ -68,6 +73,11 @@ void Mutex::Release()
 {
     bool is = cpuDisableInterrupts();
     Thread *ct = Thread::GetCurrent();
+    if(!ct)
+    {   // just return if threads are not yet initialized
+        cpuRestoreInterrupts(is);
+        return;
+    }
     if(Owner != ct)
     {
         DEBUG("[mutex] Mutex::Release(): current thread(%d) != Owner(%d)\n", ct->ID, Owner ? Owner->ID : -1);

@@ -21,7 +21,7 @@ size_t Heap::heapSize;
 size_t Heap::defaultAlignment;
 Heap::HeapBlock *Heap::firstBlock;
 Heap::HeapBlock *Heap::lastBlock;
-SpinLock Heap::lock;
+Mutex Heap::mutex("heap");
 
 bool Heap::pageFault(Ints::State *state, void *context)
 {
@@ -40,6 +40,16 @@ bool Heap::pageFault(Ints::State *state, void *context)
         return false;
     }
     return true;
+}
+
+bool Heap::lock()
+{
+    return mutex.Acquire(3000);
+}
+
+void Heap::unLock()
+{
+    mutex.Release();
 }
 
 size_t Heap::getMaxSize(void *ptr)
@@ -156,62 +166,62 @@ void Heap::Initialize(uintptr_t start, size_t end, size_t defaultAligment)
 
 void *Heap::Allocate(size_t size, bool zero)
 {
-    lock.Acquire();
+    if(!lock()) return nullptr;
     void *res = allocate(size, defaultAlignment, zero);
-    lock.Release();
+    unLock();
     return res;
 }
 
 void *Heap::Allocate(size_t size, size_t alignment, bool zero)
 {
-    lock.Acquire();
+    if(!lock()) return nullptr;
     void *res = allocate(size, alignment, zero);
-    lock.Release();
+    unLock();
     return res;
 }
 
 void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
 {
-    lock.Acquire();
+    if(!lock()) nullptr;
     void *res = resize(ptr, size, alignment, zero);
-    lock.Release();
+    unLock();
     return res;
 }
 
 void Heap::Free(void *ptr)
 {
-    lock.Acquire();
+    if(!lock()) return;
     free(ptr);
-    lock.Release();
+    unLock();
 }
 
 size_t Heap::GetSize(void *ptr)
 {
-    lock.Acquire();
+    if(!lock()) return 0;
     size_t res = getSize(ptr);
-    lock.Release();
+    unLock();
     return res;
 }
 
 void Heap::SetDebugName(void *ptr, const char *name)
 {
-    lock.Acquire();
+    if(!lock()) return;
     setDebugName(ptr, name);
-    lock.Release();
+    unLock();
 }
 
 const char *Heap::GetDebugName(void *ptr)
 {
-    lock.Acquire();
+    if(!lock()) return nullptr;
     const char *res = GetDebugName(ptr);
-    lock.Release();
+    unLock();
     return res;
 }
 
 bool Heap::IsOnHeap(void *ptr)
 {
-    lock.Acquire();
+    if(!lock()) return false;
     bool res = isOnHeap(ptr);
-    lock.Release();
+    unLock();
     return res;
 }

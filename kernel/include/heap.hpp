@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ints.hpp>
-#include <spinlock.hpp>
+#include <mutex.hpp>
 #include <types.hpp>
 
 extern "C" void initializeHeap();
@@ -24,9 +24,11 @@ class Heap
     static size_t defaultAlignment;
     static HeapBlock *firstBlock;
     static HeapBlock *lastBlock;
-    static SpinLock lock;
+    static Mutex mutex;
 
     static bool pageFault(Ints::State *state, void *context);
+    static bool lock();
+    static void unLock();
     static size_t getMaxSize(void *ptr);
     static void *allocate(size_t size, size_t alignment, bool zero);
     static void *resize(void *ptr, size_t size, size_t alignment, bool zero);
