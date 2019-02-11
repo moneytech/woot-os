@@ -262,7 +262,7 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     SelfDestruct(selfDestruct)
 {
     ObjectTree::Item *dir = ObjectTree::Objects->MakeDir("/proc");
-    dir->AddChild(this);
+    if(dir) dir->AddChild(this);
     DEntry *cdir = GetCurrentDir();
     //if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
     AddThread(mainThread);
