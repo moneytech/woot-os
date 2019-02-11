@@ -5,10 +5,12 @@
 //#include <filesystem.h>
 #include <memory.hpp>
 #include <mutex.hpp>
+#include <objecttree.hpp>
 #include <process.hpp>
 #include <paging.hpp>
 #include <semaphore.hpp>
 #include <string.hpp>
+#include <stringbuilder.hpp>
 #include <sysdefs.h>
 #include <thread.hpp>
 #include <tokenizer.hpp>
@@ -136,6 +138,16 @@ int Process::processEntryPoint(const char *cmdline)
     return 0;
 }
 
+Process *Process::getByID(pid_t pid)
+{
+    for(Process *proc : processList)
+    {
+        if(pid == proc->ID)
+            return proc;
+    }
+    return nullptr;
+}
+
 void Process::Initialize()
 {
     kernelAddressSpace = Paging::GetAddressSpace();
@@ -190,31 +202,12 @@ uintptr_t Process::NewAddressSpace()
     return newAS;
 }
 
-Process *Process::GetByID_nolock(pid_t pid)
-{
-    for(Process *proc : processList)
-    {
-        if(pid == proc->ID)
-            return proc;
-    }
-    return nullptr;
-}
-
-Process *Process::GetByID(pid_t pid)
-{
-    if(!listLock.Acquire(0, false))
-        return nullptr;
-    Process *res = GetByID_nolock(pid);
-    listLock.Release();
-    return res;
-}
-
 bool Process::Finalize(pid_t pid)
 {
     if(!listLock.Acquire(0, false))
         return false;
     bool res = false;
-    Process *proc = GetByID_nolock(pid);
+    Process *proc = getByID(pid);
     Thread *currentThread = Thread::GetCurrent();
     bool finalizeCurrentThread = false;
     if(proc)
@@ -268,6 +261,8 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     MemoryLock(false, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
+    ObjectTree::Item *dir = ObjectTree::Objects->MakeDir("/proc");
+    dir->AddChild(this);
     DEntry *cdir = GetCurrentDir();
     //if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
     AddThread(mainThread);
@@ -509,6 +504,20 @@ int Process::DeleteSemaphore(int idx)
     }
     lock.Release();
     return res;
+}
+
+bool Process::KeyCheck(const char *name)
+{
+    StringBuilder sb(15);
+    sb.WriteFmt("%d", ID);
+    return !String::Compare(sb.String(), name);
+}
+
+bool Process::GetDisplayName(char *buf, size_t bufSize)
+{
+    StringBuilder sb(buf, bufSize);
+    sb.WriteFmt("%d", ID);
+    return true;
 }
 
 Process::~Process()

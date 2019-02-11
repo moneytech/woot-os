@@ -4,6 +4,7 @@
 #include <ktypes.h>
 #include <list.hpp>
 #include <mutex.hpp>
+#include <objecttree.hpp>
 #include <sequencer.hpp>
 #include <types.hpp>
 
@@ -17,7 +18,7 @@ class Thread;
 #define MAX_MUTEXES             64
 #define MAX_SEMAPHORES          64
 
-class Process
+class Process : public ObjectTree::Item
 {
     static Sequencer<pid_t> id;
     static List<Process *> processList;
@@ -27,6 +28,7 @@ class Process
 
     static uintptr_t buildUserStack(uintptr_t stackPtr, const char *cmdLine, int envCount, const char *envVars[], ELF *elf, uintptr_t retAddr, uintptr_t basePointer);
     static int processEntryPoint(const char *cmdline);
+    static Process *getByID(pid_t pid);
 public:
     pid_t ID;
     Process *Parent;
@@ -56,8 +58,6 @@ public:
     static Process *GetCurrent();
     static DEntry *GetCurrentDir();
     static uintptr_t NewAddressSpace();
-    static Process *GetByID_nolock(pid_t pid);
-    static Process *GetByID(pid_t pid);
     static bool Finalize(pid_t pid);
     static void Dump();
 
@@ -78,5 +78,8 @@ public:
     int NewSemaphore(int initVal);
     Semaphore *GetSemaphore(int idx);
     int DeleteSemaphore(int idx);
-    ~Process();
+
+    virtual bool KeyCheck(const char *name);
+    virtual bool GetDisplayName(char *buf, size_t bufSize);
+    virtual ~Process();
 };
