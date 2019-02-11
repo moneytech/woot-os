@@ -618,7 +618,7 @@ void *Paging::AllocDMA(size_t size, size_t alignment)
             {
                 va = blockEnd;
                 DMAPointerHead newPh = { va, size };
-                dmaPtrList.InsertBefore(newPh, nextPh, nullptr);
+                dmaPtrList.InsertBefore(newPh, nextPh);
                 break;
             }
         }

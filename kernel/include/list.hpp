@@ -71,6 +71,20 @@ public:
         }
     }
 
+    void InsertBefore(T newValue, T value)
+    {
+        for(Node *prev = nullptr, *node = First;; prev = node, node = node->Next)
+        {
+            if(!node || defaultComparer(node->Value, value))
+            {
+                Node *n = new Node(node, newValue);
+                if(prev) prev->Next = n;
+                else First = n;
+                break;
+            }
+        }
+    }
+
     void InsertBefore(T newValue, Comparer comparer)
     {
         if(!comparer) comparer = defaultComparer;
