@@ -63,7 +63,7 @@ char *String::Copy(char *dst, const char *src, size_t n)
 {
     Memory::Zero(dst, n);
     char *ret = dst;
-    for(size_t i = 0; i < n && (*dst++ = *src++););
+    for(size_t i = 0; i < n && (*dst++ = *src++); ++i);
     return ret;
 }
 
