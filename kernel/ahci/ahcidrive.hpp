@@ -88,5 +88,5 @@ public:
     virtual int64_t ReadSectors(void *buffer, uint64_t start, int64_t count);
     virtual int64_t WriteSectors(const void *buffer, uint64_t start, int64_t count);
     virtual void GetDisplayName(char *buf, size_t bufSize);
-    ~AHCIDrive();
+    virtual ~AHCIDrive();
 };

@@ -11,7 +11,6 @@
 #include <paging.hpp>
 #include <pci.hpp>
 #include <semaphore.hpp>
-#include <string.hpp>
 #include <stringbuilder.hpp>
 #include <sysdefs.h>
 #include <time.hpp>
