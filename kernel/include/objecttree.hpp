@@ -10,6 +10,7 @@ public:
     class Item
     {
         friend class ObjectTree;
+        void debugDump(char *workBuffer, size_t bufSize, int indent);
         void addChild(Item *item);
         Item *getChild(const char *name);
         bool removeChild(Item *item);
@@ -18,9 +19,9 @@ public:
         Item *parent;
         List<Item *> children;
 
-        Item(ObjectTree *tree);
-        Item(Item *parent);
+        Item();
     public:
+        bool AddChild(Item *item);
         Item *GetChild(const char *name);
         bool RemoveChild(const char *name);
 
@@ -37,13 +38,14 @@ public:
     {
         char *name;
     public:
-        Directory(Item *parent, const char *name);
+        Directory(const char *name);
         virtual bool KeyCheck(const char *name);
+        virtual bool GetDisplayName(char *buf, size_t bufSize);
         virtual ~Directory();
     };
 private:
     Mutex mutex;
-    Item root;
+    Directory root;
 
 public:
     static ObjectTree *Objects;
@@ -54,5 +56,6 @@ public:
     bool Lock();
     void UnLock();
     Item *Get(const char *path);
+    void DebugDump();
     ~ObjectTree();
 };

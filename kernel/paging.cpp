@@ -659,3 +659,39 @@ void Paging::FreeDMA(void *ptr)
     FreePages(pa, nPages);
     cpuRestoreInterrupts(ints);
 }
+
+size_t Paging::GetTotalPages()
+{
+    return pageBitmap->GetBitCount();
+}
+
+size_t Paging::GetFreePages()
+{
+    bool ints = cpuDisableInterrupts();
+    size_t res = pageBitmap->GetCountOf(false);
+    cpuRestoreInterrupts(ints);
+    return res;
+}
+
+size_t Paging::GetUsedPages()
+{
+    bool ints = cpuDisableInterrupts();
+    size_t res = pageBitmap->GetCountOf(true);
+    cpuRestoreInterrupts(ints);
+    return res;
+}
+
+size_t Paging::GetTotalBytes()
+{
+    return PAGE_SIZE * GetTotalPages();
+}
+
+size_t Paging::GetFreeBytes()
+{
+    return PAGE_SIZE * GetFreePages();
+}
+
+size_t Paging::GetUsedBytes()
+{
+    return PAGE_SIZE * GetUsedPages();
+}

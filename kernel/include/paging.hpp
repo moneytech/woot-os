@@ -59,4 +59,10 @@ public:
     static void *AllocDMA(size_t size, size_t alignment);
     static uintptr_t GetDMAPhysicalAddress(void *ptr);
     static void FreeDMA(void *ptr);
+    static size_t GetTotalPages();
+    static size_t GetFreePages();
+    static size_t GetUsedPages();
+    static size_t GetTotalBytes();
+    static size_t GetFreeBytes();
+    static size_t GetUsedBytes();
 };

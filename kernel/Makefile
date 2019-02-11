@@ -35,44 +35,7 @@ OBJS = boot/boot.o \
 	tokenizer.o \
 	uuid.o
 
-DEPS = link.ld \
-	../common/include/errno.h \
-	../common/include/ktypes.h \
-	../common/include/sysdefs.h \
-	include/bitmap.hpp \
-	include/callbackstream.hpp \
-	include/character.hpp \
-	include/cmos.hpp \
-	include/cpu.hpp \
-	include/debug.hpp \
-	include/elf.hpp \
-	include/gdt.hpp \
-	include/heap.hpp \
-	include/ints.hpp \
-	include/irqs.hpp \
-	include/list.hpp \
-	include/memory.hpp \
-	include/memorystream.hpp \
-	include/misc.hpp \
-	include/mutex.hpp \
-	include/new.hpp \
-	include/objectqueue.hpp \
-	include/objecttree.hpp \
-	include/paging.hpp \
-	include/process.hpp \
-	include/queue.hpp \
-	include/random.hpp \
-	include/semaphore.hpp \
-	include/sequencer.hpp \
-	include/stream.hpp \
-	include/string.hpp \
-	include/stringbuilder.hpp \
-	include/thread.hpp \
-	include/time.hpp \
-	include/tokenizer.hpp \
-	include/types.hpp \
-	include/uuid.hpp \
-	include/vararg.hpp
+DEPS = link.ld
 
 TOP_DIR ?= ..
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel

@@ -1,20 +1,28 @@
+#include <debug.hpp>
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <string.hpp>
+#include <stringbuilder.hpp>
 
 ObjectTree *ObjectTree::Objects;
 
 void ObjectTree::Initialize()
 {
     Objects = new ObjectTree();
-    new Directory(Objects->Get(nullptr), "dev");
-    new Directory(Objects->Get(nullptr), "proc");
+    Item *root = Objects->Get(nullptr);
+
+    Directory *dev = new Directory("dev");
+    root->AddChild(dev);
+    Directory *devBus = new Directory("bus");
+    dev->AddChild(devBus);
+    root->AddChild(new Directory("proc"));
 }
 
 ObjectTree::ObjectTree() :
     mutex(true, "objectTree"),
-    root(this)
+    root("/")
 {
+    root.tree = this;
 }
 
 bool ObjectTree::Lock()
@@ -34,15 +42,39 @@ ObjectTree::Item *ObjectTree::Get(const char *path)
     return root.GetChild(path);
 }
 
+void ObjectTree::DebugDump()
+{
+    if(!Lock())
+    {
+        DEBUG("%s: %s: Lock() failed\n", __FILE__, __PRETTY_FUNCTION__);
+        return;
+    }
+    char buf[64];
+    root.debugDump(buf, sizeof(buf), 0);
+    UnLock();
+}
+
 ObjectTree::~ObjectTree()
 {
     for(Item *it : root.children)
         delete it;
 }
 
+void ObjectTree::Item::debugDump(char *workBuffer, size_t bufSize, int indent)
+{
+    workBuffer[0] = 0;
+    GetDisplayName(workBuffer, bufSize);
+    for(int i = 0; i < indent; ++i)
+        DEBUG(" ");
+    DEBUG("%s\n", workBuffer);
+    for(Item *it : children)
+        it->debugDump(workBuffer, bufSize, indent + 1);
+}
+
 void ObjectTree::Item::addChild(ObjectTree::Item *item)
 {
-    parent = this;
+    item->parent = this;
+    item->tree = tree;
     children.Append(item);
 }
 
@@ -79,17 +111,16 @@ bool ObjectTree::Item::removeChild(ObjectTree::Item *item)
     item->tree = nullptr;
 }
 
-ObjectTree::Item::Item(ObjectTree *tree) :
-    tree(tree), parent(nullptr)
+ObjectTree::Item::Item()
 {
 }
 
-ObjectTree::Item::Item(ObjectTree::Item *parent) :
-    tree(parent->tree), parent(parent)
+bool ObjectTree::Item::AddChild(ObjectTree::Item *item)
 {
-    if(!tree->Lock()) return;
-    addChild(this);
+    if(!tree->Lock()) return false;
+    children.Append(item);
     tree->UnLock();
+    return true;
 }
 
 ObjectTree::Item *ObjectTree::Item::GetChild(const char *name)
@@ -117,7 +148,9 @@ bool ObjectTree::Item::KeyCheck(const char *name)
 
 bool ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)
 {
-    return false;
+    StringBuilder sb(buf, bufSize);
+    sb.WriteFmt("@%P", this);
+    return true;
 }
 
 ObjectTree::Item::~Item()
@@ -127,14 +160,21 @@ ObjectTree::Item::~Item()
         delete child;
 }
 
-ObjectTree::Directory::Directory(ObjectTree::Item *parent, const char *name) :
-    Item(parent), name(String::Duplicate(name))
+ObjectTree::Directory::Directory(const char *name) :
+    name(String::Duplicate(name))
 {
 }
 
 bool ObjectTree::Directory::KeyCheck(const char *name)
 {
     return !String::Compare(this->name, name);
+}
+
+bool ObjectTree::Directory::GetDisplayName(char *buf, size_t bufSize)
+{
+    StringBuilder sb(buf, bufSize);
+    sb.WriteStr(name);
+    return true;
 }
 
 ObjectTree::Directory::~Directory()
