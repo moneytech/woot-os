@@ -79,7 +79,15 @@ void ObjectTree::Item::addChild(ObjectTree::Item *item)
 {
     item->parent = this;
     item->tree = tree;
-    children.Append(item);
+
+    // make sure objects are kept in alphabetical order
+    children.InsertBefore(item, [](auto a, auto b) -> bool
+    {
+        char bufa[64], bufb[64];
+        a->GetDisplayName(bufa, sizeof(bufa));
+        b->GetDisplayName(bufb, sizeof(bufb));
+        return String::Compare(bufa, bufb) > 0;
+    });
 }
 
 ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
@@ -136,7 +144,7 @@ ObjectTree::Item::Item()
 bool ObjectTree::Item::AddChild(ObjectTree::Item *item)
 {
     if(!tree->Lock()) return false;
-    children.Append(item);
+    addChild(item);
     tree->UnLock();
     return true;
 }
@@ -164,11 +172,10 @@ bool ObjectTree::Item::KeyCheck(const char *name)
     return false;
 }
 
-bool ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)
+void ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
     sb.WriteFmt("@%P", this);
-    return true;
 }
 
 ObjectTree::Item::~Item()
@@ -188,11 +195,10 @@ bool ObjectTree::Directory::KeyCheck(const char *name)
     return !String::Compare(this->name, name);
 }
 
-bool ObjectTree::Directory::GetDisplayName(char *buf, size_t bufSize)
+void ObjectTree::Directory::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
     sb.WriteStr(name);
-    return true;
 }
 
 ObjectTree::Directory::~Directory()

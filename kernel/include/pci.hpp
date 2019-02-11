@@ -118,7 +118,7 @@ public:
 
         Device(PCI::Address address, uint16_t vid, uint16_t did, uint8_t cls, uint8_t subCls, uint8_t progif);
         virtual bool KeyCheck(const char *name);
-        virtual bool GetDisplayName(char *buf, size_t bufSize);
+        virtual void GetDisplayName(char *buf, size_t bufSize);
     };
 private:
     static void Check(ObjectTree::Item *dir);

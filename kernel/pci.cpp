@@ -19,11 +19,10 @@ bool PCI::Device::KeyCheck(const char *name)
     return !String::Compare(sb.String(), name);
 }
 
-bool PCI::Device::GetDisplayName(char *buf, size_t bufSize)
+void PCI::Device::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
     sb.WriteFmt("%d.%d.%d", PCI_ADDR_BUS(Address), PCI_ADDR_DEV(Address), PCI_ADDR_FUNC(Address));
-    return true;
 }
 
 void PCI::Check(ObjectTree::Item *dir)

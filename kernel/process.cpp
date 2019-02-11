@@ -513,11 +513,10 @@ bool Process::KeyCheck(const char *name)
     return !String::Compare(sb.String(), name);
 }
 
-bool Process::GetDisplayName(char *buf, size_t bufSize)
+void Process::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
     sb.WriteFmt("%d", ID);
-    return true;
 }
 
 Process::~Process()

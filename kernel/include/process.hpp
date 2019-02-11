@@ -80,6 +80,6 @@ public:
     int DeleteSemaphore(int idx);
 
     virtual bool KeyCheck(const char *name);
-    virtual bool GetDisplayName(char *buf, size_t bufSize);
+    virtual void GetDisplayName(char *buf, size_t bufSize);
     virtual ~Process();
 };
