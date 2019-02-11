@@ -1,9 +1,14 @@
+ahci/ahcidrive.cpp
+ahci/ahcidrive.hpp
 callbackstream.cpp
 cmos.cpp
+drive.cpp
 elf.cpp
+include/ata.hpp
 include/callbackstream.hpp
 include/cmos.hpp
 include/debug.hpp
+include/drive.hpp
 include/elf.hpp
 include/irqs.hpp
 include/memorystream.hpp

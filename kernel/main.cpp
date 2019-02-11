@@ -1,3 +1,4 @@
+#include <../ahci/ahcidrive.hpp>
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <multiboot.h>
@@ -16,6 +17,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
           KERNEL_VERSION_DESCRIPTION);
 
     PCI::Initialize();
+    AHCIDrive::Initialize();
 
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();
@@ -24,6 +26,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     for(int i = 0;; ++i)
         cpuWaitForInterrupt(1);
 
+    AHCIDrive::Cleanup();
     PCI::Cleanup();
 
     return 0;

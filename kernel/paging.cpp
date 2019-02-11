@@ -169,6 +169,8 @@ void Paging::InvalidatePage(uintptr_t addr)
 
 bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, bool write)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
     pa &= ~(PAGE_SIZE - 1);
@@ -213,6 +215,8 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, boo
 
 bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     bool cs = cpuDisableInterrupts();
     va &= ~(PAGE_SIZE - 1);
 
@@ -275,6 +279,8 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
 
 bool Paging::MapPages(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, bool write, size_t n)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     for(uintptr_t i = 0; i < n; ++i)
     {
         if(!MapPage(pd, va, pa, user, write))
@@ -288,6 +294,8 @@ bool Paging::MapPages(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, bo
 
 bool Paging::UnMapPages(AddressSpace pd, uintptr_t va, size_t n)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     for(uintptr_t i = 0; i < n; ++i)
     {
         if(!UnMapPage(pd, va))
@@ -299,6 +307,8 @@ bool Paging::UnMapPages(AddressSpace pd, uintptr_t va, size_t n)
 
 void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     bool cs = cpuDisableInterrupts();
     uint startPD = startVA >> 22;
     uint endPD = (startVA + rangeSize + LARGE_PAGE_SIZE - 1) >> 22;
@@ -354,6 +364,9 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
 
 void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, size_t rangeSize)
 {
+    if(dstPd == ~0) dstPd = GetAddressSpace();
+    if(srcPd == ~0) srcPd = GetAddressSpace();
+
     bool cs = cpuDisableInterrupts();
     uint startPD = startVA >> 22;
     uint endPD = (startVA + rangeSize + LARGE_PAGE_SIZE - 1) >> 22;
@@ -421,6 +434,8 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
 
 uintptr_t Paging::GetPhysicalAddress(AddressSpace pd, uintptr_t va)
 {
+    if(pd == ~0) pd = GetAddressSpace();
+
     bool cs = cpuDisableInterrupts();
     uint32_t *pdir = (uint32_t *)alloc4k(pd);
     if(!pdir)

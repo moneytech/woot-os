@@ -22,7 +22,8 @@ bool PCI::Device::KeyCheck(const char *name)
 void PCI::Device::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
-    sb.WriteFmt("%d.%d.%d", PCI_ADDR_BUS(Address), PCI_ADDR_DEV(Address), PCI_ADDR_FUNC(Address));
+    sb.WriteFmt("%d.%d.%d (%.4X:%.4X)", PCI_ADDR_BUS(Address), PCI_ADDR_DEV(Address), PCI_ADDR_FUNC(Address),
+                VendorID, DeviceID);
 }
 
 void PCI::Check(ObjectTree::Item *dir)

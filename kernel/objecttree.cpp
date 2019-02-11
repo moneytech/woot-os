@@ -21,7 +21,7 @@ ObjectTree::ObjectTree() :
 
 bool ObjectTree::Lock()
 {
-    return mutex.Acquire(3000);
+    return mutex.Acquire(5000);
 }
 
 void ObjectTree::UnLock()

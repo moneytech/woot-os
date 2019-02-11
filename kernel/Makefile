@@ -2,12 +2,14 @@ OUTFILE = kernel
 
 # boot/boot.o should be the first file passed to linker
 OBJS = boot/boot.o \
+	ahci/ahcidrive.o \
 	bitmap.o \
 	callbackstream.o \
 	character.o \
 	cmos.o \
 	cpu.o \
 	cxa.o \
+	drive.o \
 	elf.o \
 	gdt.o \
 	heap.o \
