@@ -71,12 +71,12 @@ public:
         }
     }
 
-    void InsertBefore(T newValue, T value, Comparer comparer)
+    void InsertBefore(T newValue, Comparer comparer)
     {
         if(!comparer) comparer = defaultComparer;
         for(Node *prev = nullptr, *node = First;; prev = node, node = node->Next)
         {
-            if(!node || comparer(node->Value, value))
+            if(!node || comparer(node->Value, newValue))
             {
                 Node *n = new Node(node, newValue);
                 if(prev) prev->Next = n;
