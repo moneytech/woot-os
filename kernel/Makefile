@@ -20,6 +20,7 @@ OBJS = boot/boot.o \
 	mutex.o \
 	new.o \
 	objectqueue.o \
+	objecttree.o \
 	paging.o \
 	process.o \
 	random.o \
@@ -53,6 +54,7 @@ DEPS = link.ld \
 	include/mutex.hpp \
 	include/new.hpp \
 	include/objectqueue.hpp \
+	include/objecttree.hpp \
 	include/paging.hpp \
 	include/process.hpp \
 	include/queue.hpp \

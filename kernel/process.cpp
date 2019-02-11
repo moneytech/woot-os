@@ -15,7 +15,7 @@
 
 Sequencer<pid_t> Process::id(1);
 List<Process *> Process::processList;
-Mutex Process::listLock("procList");
+Mutex Process::listLock(false, "procList");
 uintptr_t Process::kernelAddressSpace;
 
 typedef struct AuxVector
@@ -259,11 +259,13 @@ void Process::Dump()
 }
 
 Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool selfDestruct) :
+    lock(false, "processLock"),
     UserStackPtr(KERNEL_BASE),
     ID(id.GetNext()),
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
     AddressSpace(addressSpace ? addressSpace : NewAddressSpace()),
+    MemoryLock(false, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
     DEntry *cdir = GetCurrentDir();
@@ -430,7 +432,7 @@ int Process::NewMutex()
     {
         if(!Mutexes[i])
         {
-            Mutexes[i] = new Mutex(nullptr);
+            Mutexes[i] = new Mutex(false, nullptr);
             res = i;
             break;
         }

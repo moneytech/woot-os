@@ -21,7 +21,7 @@ size_t Heap::heapSize;
 size_t Heap::defaultAlignment;
 Heap::HeapBlock *Heap::firstBlock;
 Heap::HeapBlock *Heap::lastBlock;
-Mutex Heap::mutex("heap");
+Mutex Heap::mutex(false, "heap");
 
 bool Heap::pageFault(Ints::State *state, void *context)
 {

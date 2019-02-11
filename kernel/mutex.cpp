@@ -7,16 +7,14 @@
 #define MAX_WAITERS 32
 
 // global kernel lock mutex
-Mutex Mutex::GlobalLock("global");
+Mutex Mutex::GlobalLock(false, "global");
 
-Mutex::Mutex(const char *name) :
-    Count(0), Owner(nullptr),
+Mutex::Mutex(bool recursive, const char *name) :
+    Recursive(recursive), Count(0), Owner(nullptr),
     Waiters(new Queue<Thread *>(MAX_WAITERS)),
     Name(name)
 {
 }
-
-// TODO: Remove recursive locks completely
 
 bool Mutex::Acquire(uint timeout, bool tryAcquire)
 {
@@ -34,9 +32,9 @@ bool Mutex::Acquire(uint timeout, bool tryAcquire)
             cpuRestoreInterrupts(is);
             return false;
         }
-        if(Count)
+        if(!Recursive && Count)
         {
-            DEBUG("[mutex] Multiple locks on mutex %s!\n", Name);
+            DEBUG("[mutex] Multiple locks on non-recursive mutex %s!\n", Name);
             cpuSystemHalt(0xBADC0DE2);
         }
         ++Count;

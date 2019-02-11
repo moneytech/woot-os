@@ -2,6 +2,8 @@
 
 #include <types.hpp>
 
+#define ALLOCA(n) __builtin_alloca((n))
+
 class Memory
 {
 public:

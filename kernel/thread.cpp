@@ -3,6 +3,7 @@
 #include <irqs.hpp>
 #include <mutex.hpp>
 #include <new.hpp>
+#include <objecttree.hpp>
 #include <paging.hpp>
 #include <process.hpp>
 #include <semaphore.hpp>
@@ -37,6 +38,7 @@ extern "C" void initializeThreads()
     IRQs::Initialize();
     cpuEnableInterrupts();
 
+    ObjectTree::Initialize();
     Thread::Initialize();
     Process::Initialize();
 

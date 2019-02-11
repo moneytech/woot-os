@@ -8,6 +8,7 @@ include/elf.hpp
 include/irqs.hpp
 include/mutex.hpp
 include/objectqueue.hpp
+include/objecttree.hpp
 include/process.hpp
 include/queue.hpp
 include/random.hpp
@@ -20,6 +21,7 @@ irqs.cpp
 misc.cpp
 mutex.cpp
 objectqueue.cpp
+objecttree.cpp
 process.cpp
 random.cpp
 semaphore.cpp
