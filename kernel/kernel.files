@@ -1,3 +1,6 @@
+v86/v86.cpp
+v86/v86.hpp
+v86/v86asm.asm
 ahci/ahcidrive.cpp
 ahci/ahcidrive.hpp
 callbackstream.cpp

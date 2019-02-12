@@ -37,7 +37,9 @@ OBJS = boot/boot.o \
 	thread.o \
 	time.o \
 	tokenizer.o \
-	uuid.o
+	uuid.o \
+	v86/v86.o \
+	v86/v86asm.o \
 
 DEPS = link.ld
 
