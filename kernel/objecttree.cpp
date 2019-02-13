@@ -29,6 +29,13 @@ void ObjectTree::UnLock()
     mutex.Release();
 }
 
+bool ObjectTree::Contains(const char *path)
+{
+    if(!path || !path[0] || path[0] == '/' && !path[1])
+        return true;
+    return root.ContainsChild(path);
+}
+
 ObjectTree::Item *ObjectTree::Get(const char *path)
 {
     if(!path || !path[0] || path[0] == '/' && !path[1])
@@ -90,6 +97,36 @@ void ObjectTree::Item::addChild(ObjectTree::Item *item)
     });
 }
 
+bool ObjectTree::Item::containsChild(const char *name)
+{
+    // skip leading separators
+    while(*name == '/')
+        ++name;
+
+    // find next separator or end of string
+    size_t partLen = 0;
+    while(name[partLen] != '/' && name[partLen])
+        ++partLen;
+
+    // copy path part locally
+    char *part = new char[partLen + 1];
+    String::Copy(part, name, partLen);
+    part[partLen] = 0;
+
+    // do search
+    for(Item *child : children)
+    {
+        if(child->KeyCheck(part))
+        {   // found a match
+            delete[] part;
+            return name[partLen] ? child->containsChild(name + partLen) : true;
+        }
+    }
+
+    // nothing found
+    return false;
+}
+
 ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
 {
     // skip leading separators
@@ -102,7 +139,7 @@ ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
         ++partLen;
 
     // copy path part locally
-    char *part = (char *)ALLOCA(partLen + 1);
+    char *part = new char[partLen + 1];
     String::Copy(part, name, partLen);
     part[partLen] = 0;
 
@@ -111,9 +148,8 @@ ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
     {
         if(child->KeyCheck(part))
         {   // found a match
-            return name[partLen] ?
-                        child->getChild(name + partLen, create) :
-                        child;
+            delete[] part;
+            return name[partLen] ? child->getChild(name + partLen, create) : child;
         }
     }
 
@@ -121,12 +157,12 @@ ObjectTree::Item *ObjectTree::Item::getChild(const char *name, bool create)
     {   // try to create new node
         Directory *dir = new Directory(part);
         addChild(dir);
-        return name[partLen] ?
-                    dir->getChild(name + partLen, true) :
-                    dir;
+        delete[] part;
+        return name[partLen] ? dir->getChild(name + partLen, true) : dir;
     }
 
     // nothing found
+    delete[] part;
     return nullptr;
 }
 
@@ -149,10 +185,32 @@ bool ObjectTree::Item::AddChild(ObjectTree::Item *item)
     return true;
 }
 
+bool ObjectTree::Item::ContainsChild(const char *name)
+{
+    if(!tree->Lock()) return false;
+    bool res = containsChild(name);
+    tree->UnLock();
+    return res;
+}
+
 ObjectTree::Item *ObjectTree::Item::GetChild(const char *name)
 {
     if(!tree->Lock()) return nullptr;
     Item *res = getChild(name, false);
+    tree->UnLock();
+    return res;
+}
+
+bool ObjectTree::Item::RemoveChild(const char *name)
+{
+    if(!tree->Lock()) return false;
+    Item *item = getChild(name, false);
+    if(!item)
+    {
+        tree->UnLock();
+        return false;
+    }
+    bool res = removeChild(item);
     tree->UnLock();
     return res;
 }
@@ -169,7 +227,9 @@ List<ObjectTree::Item *> &ObjectTree::Item::GetChildren()
 
 bool ObjectTree::Item::KeyCheck(const char *name)
 {
-    return false;
+    char buf[64];
+    GetDisplayName(buf, sizeof(buf));
+    return !String::Compare(buf, name);
 }
 
 void ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)

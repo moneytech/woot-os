@@ -4,6 +4,7 @@ OUTFILE = kernel
 OBJS = boot/boot.o \
 	ahci/ahcidrive.o \
 	bitmap.o \
+	bufferedvolume.o \
 	callbackstream.o \
 	character.o \
 	cmos.o \
@@ -26,6 +27,7 @@ OBJS = boot/boot.o \
 	objectqueue.o \
 	objecttree.o \
 	paging.o \
+	partvolume.o \
 	pci.o \
 	process.o \
 	random.o \
@@ -40,6 +42,8 @@ OBJS = boot/boot.o \
 	uuid.o \
 	v86/v86.o \
 	v86/v86asm.o \
+	volume.o \
+	volumetype.o
 
 DEPS = link.ld
 

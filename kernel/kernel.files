@@ -1,3 +1,11 @@
+bufferedvolume.cpp
+include/bufferedvolume.hpp
+include/partvolume.hpp
+include/volumetype.hpp
+partvolume.cpp
+volumetype.cpp
+include/volume.hpp
+volume.cpp
 v86/v86.cpp
 v86/v86.hpp
 v86/v86asm.asm

@@ -5,6 +5,7 @@
 #include <ints.hpp>
 #include <memory.hpp>
 #include <paging.hpp>
+#include <sysdefs.h>
 
 extern "C" {
 extern uint8_t __V86CodeStart;
@@ -199,7 +200,7 @@ void V86::Initialize()
     Ints::RegisterHandler(0xFD, &enterHandler);
 
     // we need to map first meg (apart from first page so nullptr still works)
-    Paging::MapPages(~0, 1, 1, true, true, 255);
+    Paging::MapPages(~0, PAGE_SIZE, PAGE_SIZE, true, true, 255);
 
     // install int86 trampoline code in conventional memory
     size_t codeSize = &__V86CodeEnd - &__V86CodeStart;

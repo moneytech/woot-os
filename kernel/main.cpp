@@ -3,9 +3,11 @@
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <multiboot.h>
+#include <partvolume.hpp>
 #include <pci.hpp>
 #include <sysdefs.h>
 #include <types.hpp>
+#include <volume.hpp>
 
 #include <../v86/v86.hpp>
 #include <memory.hpp>
@@ -23,6 +25,9 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     PCI::Initialize();
     AHCIDrive::Initialize();
     IDEDrive::Initialize();
+
+    new PartVolumeType(true);
+    Volume::DetectAll();
 
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();

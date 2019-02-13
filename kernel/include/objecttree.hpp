@@ -12,6 +12,7 @@ public:
         friend class ObjectTree;
         void debugDump(char *workBuffer, size_t bufSize, int indent);
         void addChild(Item *item);
+        bool containsChild(const char *name);
         Item *getChild(const char *name, bool create);
         bool removeChild(Item *item);
     protected:
@@ -22,6 +23,7 @@ public:
         Item();
     public:
         bool AddChild(Item *item);
+        bool ContainsChild(const char *name);
         Item *GetChild(const char *name);
         bool RemoveChild(const char *name);
 
@@ -55,6 +57,7 @@ public:
     ObjectTree();
     bool Lock();
     void UnLock();
+    bool Contains(const char *path);
     Item *Get(const char *path);
     Item *MakeDir(const char *path);
     void DebugDump();
