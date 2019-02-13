@@ -8,7 +8,7 @@
 Sequencer<int> Volume::ids(0);
 
 Volume::Volume(Drive *drive, VolumeType *type) :
-    id(ids.GetNext()), drive(drive), fileSystem(nullptr), type(type)
+    id(ids.GetNext()), drive(drive), type(type), FS(nullptr)
 {
 }
 
@@ -32,11 +32,6 @@ int Volume::DetectAll()
     }
     ObjectTree::Objects->UnLock();
     return found;
-}
-
-bool Volume::HasFileSystem()
-{
-    return fileSystem;
 }
 
 size_t Volume::GetSectorSize()

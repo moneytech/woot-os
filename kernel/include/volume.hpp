@@ -16,14 +16,13 @@ class Volume : public ObjectTree::Item
 protected:
     int id;
     Drive *drive;
-    FileSystem *fileSystem;
     VolumeType *type;
 
     Volume(Drive *drive, VolumeType *type);
 public:
-    static int DetectAll();
+    FileSystem *FS;
 
-    bool HasFileSystem();
+    static int DetectAll();
 
     virtual size_t GetSectorSize();
     virtual uint64_t GetSectorCount();

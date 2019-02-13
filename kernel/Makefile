@@ -12,6 +12,8 @@ OBJS = boot/boot.o \
 	cxa.o \
 	drive.o \
 	elf.o \
+	filesystem.o \
+	filesystemtype.o \
 	gdt.o \
 	heap.o \
 	ide/idedrive.o \

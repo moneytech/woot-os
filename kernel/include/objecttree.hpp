@@ -4,6 +4,8 @@
 #include <mutex.hpp>
 #include <types.hpp>
 
+class StringBuilder;
+
 class ObjectTree
 {
 public:

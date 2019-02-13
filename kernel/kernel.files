@@ -1,5 +1,9 @@
 bufferedvolume.cpp
+filesystem.cpp
+filesystemtype.cpp
 include/bufferedvolume.hpp
+include/filesystem.hpp
+include/filesystemtype.hpp
 include/partvolume.hpp
 include/volumetype.hpp
 partvolume.cpp
