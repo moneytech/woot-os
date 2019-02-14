@@ -102,7 +102,7 @@ _start:
 ; unmap memory below kernel base
 .unmap_low:
     mov ecx, KERNEL_BASE >> LARGE_PAGE_SHIFT
-    mov edi, bootPageDir - KERNEL_BASE
+    mov edi, bootPageDir
     xor eax, eax
     rep stosd
     mov eax, cr3    ; invalidate TLB
