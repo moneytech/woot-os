@@ -209,6 +209,7 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, boo
     pt[ptidx] = pa | 0x01 | rwflag | uflag;
     free4k(pt);
 
+    cpuInvalidatePage(va);
     cpuRestoreInterrupts(cs);
     return true;
 }
@@ -273,6 +274,7 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
     }
 
     free4k(pdir);
+    cpuInvalidatePage(va);
     cpuRestoreInterrupts(cs);
     return true;
 }
@@ -359,6 +361,7 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
         }
     }
     free4k(PD);
+    FlushTLB();
     cpuRestoreInterrupts(cs);
 }
 
@@ -429,6 +432,7 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
         }
     }
     free4k(PD);
+    FlushTLB();
     cpuRestoreInterrupts(cs);
 }
 
@@ -640,8 +644,10 @@ void *Paging::AllocDMA(size_t size, size_t alignment)
     }
 
     MapPages(GetAddressSpace(), va, pa, false, true, nPages);
+    void *ptr = (void *)va;
+    Memory::Zero(ptr, size);
     cpuRestoreInterrupts(ints);
-    return (void *)va;
+    return ptr;
 }
 
 uintptr_t Paging::GetDMAPhysicalAddress(void *ptr)
