@@ -175,23 +175,19 @@ uint Time::Sleep(uint millis, bool interruptible)
     return ct->Sleep(millis, interruptible);
 }
 
-time_t time(time_t *tloc)
+time_t Time::GetTime()
 {
     Time::DateTime dt;
     Time::GetDateTime(&dt);
-    time_t t = Time::DateTimeToUnix(&dt);
-    if(tloc) *tloc = t;
-    return t;
+    return Time::DateTimeToUnix(&dt);
 }
 
-int gettimeofday(time_t *t)
+time_t Time::GetTimeOfDay()
 {
-    if(!t) return -EINVAL;
     Time::DateTime dt;
     Time::GetDateTime(&dt);
     dt.Year = 0;
     dt.Month = 0;
     dt.Day = 0;
-    *t = Time::DateTimeToUnix(&dt);
-    return 0;
+    return Time::DateTimeToUnix(&dt);
 }
