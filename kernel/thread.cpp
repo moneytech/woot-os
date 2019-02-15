@@ -33,6 +33,13 @@ asm(
 ".att_syntax\n"
 );
 
+extern "C" int *_get_errno_ptr()
+{
+    static int dummyErrNo = 0;
+    Thread *ct = Thread::GetCurrent();
+    return ct ? &ct->ErrNo : &dummyErrNo;
+}
+
 extern "C" void initializeThreads()
 {
     IRQs::Initialize();

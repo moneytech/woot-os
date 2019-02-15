@@ -49,6 +49,7 @@ public:
 
     // state
     State State;
+    int ErrNo;
 
     // stacks
     size_t KernelStackSize;

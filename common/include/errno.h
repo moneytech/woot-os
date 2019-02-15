@@ -1,5 +1,17 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+
+extern int *_get_errno_ptr();
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
+
+#define errno (*(_get_errno_ptr()))
+
 #define EPERM           1  /* Operation not permitted */
 #define ENOENT          2  /* No such file or directory */
 #define ESRCH           3  /* No such process */
@@ -57,4 +69,3 @@
 #define ENOANO          55  /* No anode */
 #define EBADRQC         56  /* Invalid request code */
 #define EBADSLT         57  /* Invalid slot */
-
