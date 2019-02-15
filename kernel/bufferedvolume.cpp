@@ -29,7 +29,7 @@ bool BufferedVolume::flushBuffer(int bufIdx)
         return true;
     if(!b->Buffer) // buffer has some internal problem
         return false;
-    if(WriteSectors(b->Buffer, b->FirstSector, sectorsPerBuffer) != sectorsPerBuffer)
+    if(drive->WriteSectors(b->Buffer, b->FirstSector, sectorsPerBuffer) != sectorsPerBuffer)
         return false;
     b->Dirty = false;
     return true;
@@ -86,7 +86,7 @@ bool BufferedVolume::loadBuffer(int buffer, int64_t sector)
         bool flushed = flushBuffer(buffer);
         if(!flushed) return false;
     }
-    int sr = ReadSectors(b->Buffer, sector, sectorsPerBuffer);
+    int sr = drive->ReadSectors(b->Buffer, sector, sectorsPerBuffer);
     if(sr < 0) return false;
     b->FirstSector = sector;
     return true;
