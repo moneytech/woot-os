@@ -57,6 +57,7 @@ DEPS = link.ld
 
 TOP_DIR ?= ..
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
+MODULELIST_FILE = $(TOP_DIR)/root/system/modulelist
 
 CC ?= clang
 CXX ?= clang++
@@ -86,7 +87,7 @@ $(OUTFILE): $(OBJS)
 clean:
 	rm -rf $(OBJS) $(OUTFILE)
 
-install: $(KERNEL_FILE)
+install: $(KERNEL_FILE) $(MODULELIST_FILE)
 
 todo:
 	grep -rnw . --color=auto -E -e '(;|//)[ \t]*TODO:'
@@ -96,6 +97,9 @@ fixme:
 
 $(KERNEL_FILE): $(OUTFILE)
 	cp $(OUTFILE) $(KERNEL_FILE)
+
+$(MODULELIST_FILE): modulelist
+	cp modulelist $(MODULELIST_FILE)
 
 .PHONY: clean install todo fixme
 

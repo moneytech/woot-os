@@ -22,6 +22,7 @@ File *File::open(::DEntry *parent, const char *name, int flags)
     Tokenizer path(name, PATH_SEPARATORS, 0);
 
     ::DEntry *dentry = FileSystem::GetDEntry(parent);
+    if(!dentry) return nullptr;
     for(Tokenizer::Token t : path.Tokens)
     {
         if(!String::Compare(".", t.String))
@@ -94,28 +95,27 @@ File *File::Open(const char *name, int flags)
         name = ".";
     Tokenizer path(name, PATH_SEPARATORS, 0);
     if(!path[0]) return nullptr;
-    char *volumeSep = path[0] ? String::Find(path[0], VOLUME_SEPARATOR, false) : nullptr;
-    if(volumeSep) *volumeSep = 0;
+    char *fsSep = path[0] ? String::Find(path[0], FS_SEPARATOR, false) : nullptr;
+    if(fsSep) *fsSep = 0;
 
     if(!FileSystem::Lock())
         return nullptr;
-    bool hasVolume = volumeSep;
-    Volume *vol = nullptr;
-    if(hasVolume)
+    bool hasFs = fsSep;
+    FileSystem *fs = nullptr;
+    if(hasFs)
     {
         StringBuilder sb(MAX_PATH_LENGTH);
-        sb.WriteFmt("%s/%s", VOLUME_DIR, volumeSep ? path[0] : "0");
-        vol = (Volume *)ObjectTree::Objects->Get(sb.String());
-        if(!vol || !vol->FS)
-            return nullptr;
+        sb.WriteFmt("%s/%s", FS_DIR, fsSep ? path[0] : "0");
+        fs = (FileSystem *)ObjectTree::Objects->Get(sb.String());
+        if(!fs) return nullptr;
     }
-    bool absolute = !hasVolume && path[0][0] == '/';
-    ::DEntry *dentry = hasVolume || absolute ? vol->FS->GetRoot() : Process::GetCurrentDir();
+    bool absolute = !hasFs && path[0][0] == '/';
+    ::DEntry *dentry = hasFs || absolute ? fs->GetRoot() : Process::GetCurrentDir();
 
     if(!dentry)
         return nullptr;
 
-    File *file = open(dentry, name + (hasVolume ? path.Tokens[1].Offset : 0), flags);
+    File *file = open(dentry, name + (hasFs ? path.Tokens[1].Offset : 0), flags);
     FileSystem::UnLock();
     return file;
 }

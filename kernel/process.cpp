@@ -176,13 +176,7 @@ Process *Process::GetCurrent()
 DEntry *Process::GetCurrentDir()
 {
     bool ints = cpuDisableInterrupts();
-    Thread *ct = Thread::GetCurrent();
-    if(!ct)
-    {
-        cpuRestoreInterrupts(ints);
-        return nullptr;
-    }
-    Process *cp = ct->Process;
+    Process *cp = GetCurrent();
     if(!cp)
     {
         cpuRestoreInterrupts(ints);

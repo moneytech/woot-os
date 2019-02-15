@@ -4,6 +4,8 @@
 #include <mutex.hpp>
 #include <types.hpp>
 
+#define OBJTREE_MAX_NAME_LEN 63
+
 class StringBuilder;
 
 class ObjectTree

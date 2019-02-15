@@ -21,11 +21,12 @@ class FileSystem : public ObjectTree::Item
     static Mutex mutex;
     static List<DEntry *> dentryCache;
     static List<INode *> inodeCache;
+
+    DEntry *root;
 protected:
     int id;
     Volume *volume;
     FileSystemType *type;
-    DEntry *root;
 
     FileSystem(Volume *volume, FileSystemType *type);
 public:
@@ -41,9 +42,10 @@ public:
 
     INode *GetINode(ino_t number);
     int GetID();
+    void SetRoot(DEntry *dentry);
     DEntry *GetRoot();
 
-    virtual bool GetLabel(char *buffer, size_t num);
+    virtual bool GetLabel(char *buffer, size_t bufSize);
     virtual UUID GetUUID();
     virtual INode *ReadINode(ino_t number);
     virtual bool WriteINode(INode *inode);
@@ -52,4 +54,6 @@ public:
 
     virtual bool KeyCheck(const char *name);
     virtual void GetDisplayName(char *buf, size_t bufSize);
+
+    virtual ~FileSystem();
 };

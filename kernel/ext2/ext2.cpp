@@ -82,6 +82,7 @@ int EXT2FileSystemType::Detect(Volume *vol)
 
     DEBUG("[ext2] Found valid filesystem on volume '%s'\n", volName);
     EXT2 *fs = new EXT2(vol, this, sblock, readOnly);
+    fs->volume->FS = fs;
     ObjectTree::Item *dir = ObjectTree::Objects->MakeDir(FS_DIR);
     if(dir) dir->AddChild(fs);
     delete sblock;
@@ -154,7 +155,7 @@ EXT2::EXT2(class Volume *vol, FileSystemType *type, EXT2::SuperBlock *sblock, bo
         return;
     }
 
-    root = new DEntry("/", nullptr, rootINode);
+    SetRoot(new DEntry("/", nullptr, rootINode));
     superBlock->s_mtime = Time::GetTime();
     ++superBlock->s_mnt_count;
     superDirty = true;
@@ -701,19 +702,18 @@ bool EXT2::zeroBlock(uint32_t block)
 
 EXT2::~EXT2()
 {
-    if(root) PutDEntry(root);
     WriteSuperBlock();
     volume->Synchronize();
     delete superBlock;
     delete[] BGDT;
 }
 
-bool EXT2::GetLabel(char *buffer, size_t num)
+bool EXT2::GetLabel(char *buffer, size_t bufSize)
 {
     if(!superBlock->s_volume_name[0])
         return false;
-    Memory::Zero(buffer, num);
-    String::Compare(buffer, superBlock->s_volume_name, min(16, num));
+    Memory::Zero(buffer, bufSize);
+    Memory::Move(buffer, superBlock->s_volume_name, min(16, bufSize - 1));
     return true;
 }
 

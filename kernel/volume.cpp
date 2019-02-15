@@ -1,5 +1,6 @@
 #include <drive.hpp>
 #include <errno.h>
+#include <filesystem.hpp>
 #include <string.hpp>
 #include <stringbuilder.hpp>
 #include <volume.hpp>
@@ -81,13 +82,19 @@ int Volume::Synchronize()
 
 bool Volume::KeyCheck(const char *name)
 {
-    char buf[16]; StringBuilder sb(buf, sizeof(buf));
+    char buf[OBJTREE_MAX_NAME_LEN + 1];
+    StringBuilder sb(buf, sizeof(buf));
     sb.WriteFmt("%d", id);
-    return !String::Compare(sb.String(), name);
+    return String::Compare(sb.String(), name) || FS && FS->GetLabel(buf, sizeof(buf)) && !String::Compare(buf, name);
 }
 
 void Volume::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
-    sb.WriteFmt("%d (%.2f MiB)", id, (double)(GetSectorCount() * GetSectorSize()) / (double)(1 << 20));
+    if(FS)
+    {
+        char buf[OBJTREE_MAX_NAME_LEN + 1]; FS->GetLabel(buf, sizeof(buf));
+        sb.WriteFmt("%d (%s; %.2f MiB)", id, buf, (double)(GetSectorCount() * GetSectorSize()) / (double)(1 << 20));
+    }
+    else sb.WriteFmt("%d (%.2f MiB)", id, (double)(GetSectorCount() * GetSectorSize()) / (double)(1 << 20));
 }

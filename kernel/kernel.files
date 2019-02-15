@@ -17,6 +17,7 @@ include/inode.hpp
 include/partvolume.hpp
 include/volumetype.hpp
 inode.cpp
+modulelist
 partvolume.cpp
 volumetype.cpp
 include/volume.hpp

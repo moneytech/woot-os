@@ -142,6 +142,7 @@ DEntry *FileSystem::GetDEntry(DEntry *dentry)
 
 void FileSystem::PutDEntry(DEntry *dentry)
 {
+    if(!dentry) return;
     if(!Lock()) return;
     if(!--dentry->ReferenceCount)
     {
@@ -178,6 +179,16 @@ INode *FileSystem::GetINode(ino_t number)
 int FileSystem::GetID()
 {
     return id;
+}
+
+void FileSystem::SetRoot(DEntry *dentry)
+{
+    if(!Lock()) return;
+    if(!dentryCache.Contains(dentry, nullptr))
+        dentryCache.Prepend(dentry);
+    ++dentry->ReferenceCount;
+    root = dentry;
+    UnLock();
 }
 
 DEntry *FileSystem::GetRoot()
@@ -217,14 +228,30 @@ int FileSystem::Synchronize()
 
 bool FileSystem::KeyCheck(const char *name)
 {
-    char buf[16]; StringBuilder sb(buf, sizeof(buf));
+    char buf[OBJTREE_MAX_NAME_LEN + 1];
+    StringBuilder sb(buf, sizeof(buf));
     sb.WriteFmt("%d", id);
-    return !String::Compare(sb.String(), name);
+    return String::Compare(sb.String(), name) || GetLabel(buf, sizeof(buf)) && !String::Compare(buf, name);
 }
 
 void FileSystem::GetDisplayName(char *buf, size_t bufSize)
 {
-    char fstName[64]; type->GetDisplayName(fstName, sizeof(fstName));
+    char buffer[OBJTREE_MAX_NAME_LEN + 1];
     StringBuilder sb(buf, bufSize);
-    sb.WriteFmt("%d (%s)", id, fstName);
+    if(GetLabel(buffer, sizeof(buffer)))
+    {
+        sb.WriteFmt("%d (%s;", id, buffer);
+        type->GetDisplayName(buffer, sizeof(buffer));
+        sb.WriteFmt(" %s)", buffer);
+    }
+    else
+    {
+        type->GetDisplayName(buffer, sizeof(buffer));
+        sb.WriteFmt("%d (%s)", id, buffer);
+    }
+}
+
+FileSystem::~FileSystem()
+{
+    PutDEntry(GetRoot());
 }
