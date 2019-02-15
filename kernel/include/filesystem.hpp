@@ -41,6 +41,7 @@ public:
 
     INode *GetINode(ino_t number);
     int GetID();
+    DEntry *GetRoot();
 
     virtual bool GetLabel(char *buffer, size_t num);
     virtual UUID GetUUID();

@@ -4,11 +4,13 @@ dentry.cpp
 directoryentry.cpp
 ext2/ext2.cpp
 ext2/ext2.hpp
+file.cpp
 filesystem.cpp
 filesystemtype.cpp
 include/bufferedvolume.hpp
 include/dentry.hpp
 include/directoryentry.hpp
+include/file.hpp
 include/filesystem.hpp
 include/filesystemtype.hpp
 include/inode.hpp

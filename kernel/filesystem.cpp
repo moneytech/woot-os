@@ -180,6 +180,11 @@ int FileSystem::GetID()
     return id;
 }
 
+DEntry *FileSystem::GetRoot()
+{
+    return root;
+}
+
 bool FileSystem::GetLabel(char *buf, size_t bufSize)
 {
     return false;

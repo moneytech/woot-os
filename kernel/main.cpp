@@ -15,6 +15,7 @@
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <paging.hpp>
+#include <string.hpp>
 
 extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
 {

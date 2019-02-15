@@ -16,6 +16,7 @@ OBJS = boot/boot.o \
 	drive.o \
 	elf.o \
     ext2/ext2.o \
+    file.o \
 	filesystem.o \
 	filesystemtype.o \
 	gdt.o \
