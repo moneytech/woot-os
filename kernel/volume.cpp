@@ -17,7 +17,17 @@ int Volume::DetectAll()
     if(!ObjectTree::Objects->Lock())
         return -EBUSY;
     ObjectTree::Item *vtDir = ObjectTree::Objects->Get(VOL_TYPE_DIR);
+    if(!vtDir)
+    {
+        ObjectTree::Objects->UnLock();
+        return 0;
+    }
     ObjectTree::Item *drvDir = ObjectTree::Objects->Get(DRV_DIR);
+    if(!drvDir)
+    {
+        ObjectTree::Objects->UnLock();
+        return 0;
+    }
     int found = 0;
     for(ObjectTree::Item *item : drvDir->GetChildren())
     {

@@ -516,7 +516,7 @@ bool Process::KeyCheck(const char *name)
 void Process::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);
-    sb.WriteFmt("%d", ID);
+    sb.WriteFmt("%d (%s)", ID, Name);
 }
 
 Process::~Process()

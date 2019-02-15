@@ -10,13 +10,18 @@ OBJS = boot/boot.o \
 	cmos.o \
 	cpu.o \
 	cxa.o \
+    debug.o \
+    dentry.o \
+    directoryentry.o \
 	drive.o \
 	elf.o \
+    ext2/ext2.o \
 	filesystem.o \
 	filesystemtype.o \
 	gdt.o \
 	heap.o \
 	ide/idedrive.o \
+    inode.o \
 	ints.o \
 	irqs.o \
 	isrs.o \
@@ -59,7 +64,7 @@ ASM ?= yasm
 
 ASMFLAGS ?= -f elf32 -g dwarf2 -w
 
-COMPILE_FLAGS = -m32 -nostdinc -nostdlib -fno-stack-protector \
+COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
 	-fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb \
 	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include
 

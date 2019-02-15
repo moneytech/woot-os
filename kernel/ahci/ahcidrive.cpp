@@ -307,7 +307,7 @@ char *AHCIDrive::getStringFromID(ATAIdentifyResponse *id, uint offset, uint leng
 
 int AHCIDrive::sectorTransfer(bool write, void *buffer, uint64_t start, int64_t count)
 {
-    //printf("[ahcidrive] sectorTransfer: start: %lu\n", start);
+    //DEBUG("[ahcidrive] sectorTransfer: start: %lu\n", start);
 
     if(!count) return 0;
 
@@ -339,7 +339,7 @@ int AHCIDrive::sectorTransfer(bool write, void *buffer, uint64_t start, int64_t 
         parent->CmdTable->PRDT[i].DBA = (uint32_t)bufPtr;
         parent->CmdTable->PRDT[i].DBAU = 0;
         parent->CmdTable->PRDT[i].PRDBC = byteCount - 1;
-        parent->CmdTable->PRDT[i].I = byteCount < bytesPerPRDT;
+        parent->CmdTable->PRDT[i].I = bytesLeft <= bytesPerPRDT;
         bytesLeft -= byteCount;
         bufPtr += byteCount;
     }
@@ -538,12 +538,13 @@ bool AHCIDrive::Controller::interrupt(Ints::State *state, void *context)
     uint32_t IS = ctrl->Registers->IS;
     if(!IS) return false;
 
-    //printf("[ahcidrive] interrupt\n");
+    //DEBUG("[ahcidrive] interrupt\n");
 
     for(int i = 0; i < 32; ++i)
     {
         volatile Port *port = ctrl->Ports[i];
         if(!port || !port->Registers->IS) continue;
+        //DEBUG("            on port %d\n", i);
         port->Registers->IS = ~0; // clear all interrupts flags on this port
         port->Interrupt->Signal(state);
     }
