@@ -2,7 +2,7 @@
 #include <debug.hpp>
 #include <errno.h>
 //#include <file.h>
-//#include <filesystem.h>
+#include <filesystem.hpp>
 #include <memory.hpp>
 #include <mutex.hpp>
 #include <objecttree.hpp>
@@ -264,7 +264,7 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     ObjectTree::Item *dir = ObjectTree::Objects->MakeDir("/proc");
     if(dir) dir->AddChild(this);
     DEntry *cdir = GetCurrentDir();
-    //if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
+    if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
     AddThread(mainThread);
     listLock.Acquire(0, false);
     processList.Append(this);
@@ -525,7 +525,7 @@ Process::~Process()
     bool lockAcquired = listLock.Acquire(0, true);
     for(ELF *elf : Images)
         if(elf) delete elf;
-    //if(CurrentDirectory) FileSystem::PutDEntry(CurrentDirectory);
+    if(CurrentDirectory) FileSystem::PutDEntry(CurrentDirectory);
     processList.Remove(this, nullptr, false);
     if(lockAcquired) listLock.Release();
     if(Name) delete[] Name;

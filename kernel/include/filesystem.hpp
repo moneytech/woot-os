@@ -25,6 +25,7 @@ protected:
     int id;
     Volume *volume;
     FileSystemType *type;
+    DEntry *root;
 
     FileSystem(Volume *volume, FileSystemType *type);
 public:

@@ -21,3 +21,5 @@ typedef uint32_t uintptr_t;
 
 typedef intptr_t ssize_t;
 typedef uintptr_t size_t;
+
+typedef intptr_t off_t;
