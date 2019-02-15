@@ -93,3 +93,16 @@ extern "C" void initializeDebugStream()
 
     DebugStream = new CallBackStream(nullptr, debugWrite);
 }
+
+unsigned long long Misc::PowULL(unsigned long long base, unsigned long long exp)
+{
+    unsigned long long result = 1;
+    for(;;)
+    {
+        if(exp & 1) result *= base;
+        exp >>= 1;
+        if(!exp) break;
+        base *= base;
+    }
+    return result;
+}

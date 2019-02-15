@@ -12,3 +12,9 @@ extern Stream *DebugStream;
 #define align(val, alignment) ((alignment) * (((val) + ((alignment) - 1)) / (alignment)))
 #define swap(T, a, b) { T t = (a); (a) = (b); (b) = (t); }
 #define offsetof __builtin_offsetof
+
+class Misc
+{
+public:
+    static unsigned long long PowULL(unsigned long long base, unsigned long long exp);
+};

@@ -1,32 +1,10 @@
 #include <character.hpp>
+#include <misc.hpp>
 #include <stream.hpp>
 #include <string.hpp>
 #include <uuid.hpp>
 
 const static char *decTable = "0123456789";
-const static uint64_t pow10Table[] =
-{
-    1ull,
-    10ull,
-    100ull,
-    1000ull,
-    10000ull,
-    100000ull,
-    1000000ull,
-    10000000ull,
-    100000000ull,
-    1000000000ull,
-    10000000000ull,
-    100000000000ull,
-    1000000000000ull,
-    10000000000000ull,
-    100000000000000ull,
-    1000000000000000ull,
-    10000000000000000ull,
-    100000000000000000ull,
-    1000000000000000000ull,
-    10000000000000000000ull
-};
 
 char Stream::ReadChar()
 {
@@ -403,12 +381,9 @@ int64_t Stream::VWriteFmt(const char *fmt, VarArgs args)
                     bw += WriteDec(i, 1, -1, showPlus, false, false);
                     bw += WriteByte('.');
                     double f = val - i;
-                    if(precision)
-                    {
-                        precision = precision > sizeof(pow10Table) / sizeof(pow10Table[0]) ?
-                                    sizeof(pow10Table) / sizeof(pow10Table[0]) - 1 : precision;
-                    } else precision = 4;
-                    int64_t ai = (int64_t)(f * pow10Table[precision]);
+                    if(precision) precision = precision > 19 ? 19 : precision;
+                    else precision = 4;
+                    int64_t ai = (int64_t)(f * Misc::PowULL(10, precision));
                     ai = ai < 0 ? - ai : ai;
                     bw += WriteDec(ai, precision, -1, false, false, false);
                 }

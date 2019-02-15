@@ -17,6 +17,11 @@ public:
     static char *Concatenate(char *dst, const char *src);
     static char *Concatenate(char *dst, const char *src, size_t n);
     static char *Tokenize(char *str, const char *delim, char **nextp);
-    static char *Find(const char *s, int c, bool reverse);
+    static char *Find(const char *s, int c, bool reverse = false);
     static char *Find(const char *haystack, const char *needle);
+    static long ToLong(const char *str, char **endptr = nullptr, int base = 0);
+    static unsigned long ToULong(const char *str, char **endptr = nullptr, int base = 0);
+    static long long ToLLong(const char *str, char **endptr = nullptr, int base = 0);
+    static unsigned long long ToULLong(const char *str, char **endptr = nullptr, int base = 0);
+    static double ToDouble(const char *str, char **endptr = nullptr);
 };

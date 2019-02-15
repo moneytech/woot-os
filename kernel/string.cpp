@@ -1,4 +1,7 @@
+#include <character.hpp>
+#include <errno.h>
 #include <memory.hpp>
+#include <misc.hpp>
 #include <string.hpp>
 
 size_t String::Length(const char *str)
@@ -156,4 +159,231 @@ char *String::Find(const char *haystack, const char *needle)
         b = needle;
     }
     return nullptr;
+}
+
+long String::ToLong(const char *str, char **endptr, int base)
+{
+    while(!Character::IsDigit(*str) && *str != '+' && *str != '-') str++; // skip leading non-digits
+    long sign = *str == '-' ? ++str, -1 : (*str == '+' ? ++str, 1 : 1);
+    if((!base || base == 16) && *str == '0' && (str[1] == 'x' || str[1] == 'X'))
+    {
+        str += 2;
+        base = 16;
+    }
+    else if((!base || base == 2) && *str == '0' && (str[1] == 'b' || str[1] == 'B'))
+    {
+        str += 2;
+        base = 2;
+    }
+    if(!base)
+        base = *str == '0' ? 8 : 10; // select default base
+    long result = 0;
+    for(char c = Character::ToLower(*str); c; c = Character::ToLower(*(++str)))
+    {
+        int digit = 0;
+        if(c >= '0' && c <= '9')
+            digit = c - '0';
+        else if(c >= 'a' && c <= 'z')
+            digit = c - 'a';
+        else break;
+        if(digit >= base)
+            break;
+        long val = result * base + digit * sign;
+        if(sign > 0)
+        {
+            if(val < result)
+            {
+                errno = ERANGE;
+                result = __LONG_MAX__;
+                break;
+            }
+        }
+        else
+        {
+            if(val > result)
+            {
+                errno = ERANGE;
+                result = -__LONG_MAX__ - 1;
+                break;
+            }
+        }
+        result = val;
+    }
+    if(endptr) *endptr = (char *)str;
+    return result;
+}
+
+unsigned long String::ToULong(const char *str, char **endptr, int base)
+{
+    while(!Character::IsDigit(*str)) str++; // skip leading non-digits
+    if((!base || base == 16) && *str == '0' && (str[1] == 'x' || str[1] == 'X'))
+    {
+        str += 2;
+        base = 16;
+    }
+    else if((!base || base == 2) && *str == '0' && (str[1] == 'b' || str[1] == 'B'))
+    {
+        str += 2;
+        base = 2;
+    }
+    if(!base)
+        base = *str == '0' ? 8 : 10; // select default base
+    unsigned long result = 0;
+    for(char c = Character::ToLower(*str); c; c = Character::ToLower(*(++str)))
+    {
+        int digit = 0;
+        if(c >= '0' && c <= '9')
+            digit = c - '0';
+        else if(c >= 'a' && c <= 'z')
+            digit = c - 'a';
+        else break;
+        if(digit >= base)
+            break;
+        unsigned long val = result * base + digit;
+        if(val < result)
+        {
+            errno = ERANGE;
+            result = ~0ul;
+            break;
+        }
+        result = val;
+    }
+    if(endptr) *endptr = (char *)str;
+    return result;
+}
+
+long long String::ToLLong(const char *str, char **endptr, int base)
+{
+    while(!Character::IsDigit(*str) && *str != '+' && *str != '-') str++; // skip leading non-digits
+    long long sign = *str == '-' ? ++str, -1 : (*str == '+' ? ++str, 1 : 1);
+    if((!base || base == 16) && *str == '0' && (str[1] == 'x' || str[1] == 'X'))
+    {
+        str += 2;
+        base = 16;
+    }
+    else if((!base || base == 2) && *str == '0' && (str[1] == 'b' || str[1] == 'B'))
+    {
+        str += 2;
+        base = 2;
+    }
+    if(!base)
+        base = *str == '0' ? 8 : 10; // select default base
+    long long result = 0;
+    for(char c = Character::ToLower(*str); c; c = Character::ToLower(*(++str)))
+    {
+        int digit = 0;
+        if(c >= '0' && c <= '9')
+            digit = c - '0';
+        else if(c >= 'a' && c <= 'z')
+            digit = c - 'a';
+        else break;
+        if(digit >= base)
+            break;
+        long long val = result * base + digit * sign;
+        if(sign > 0)
+        {
+            if(val < result)
+            {
+                errno = ERANGE;
+                result = __LONG_LONG_MAX__;
+                break;
+            }
+        }
+        else
+        {
+            if(val > result)
+            {
+                errno = ERANGE;
+                result = -__LONG_LONG_MAX__ - 1;
+                break;
+            }
+        }
+        result = val;
+    }
+    if(endptr) *endptr = (char *)str;
+    return result;
+}
+
+unsigned long long String::ToULLong(const char *str, char **endptr, int base)
+{
+    while(!Character::IsDigit(*str)) str++; // skip leading non-digits
+    if((!base || base == 16) && *str == '0' && (str[1] == 'x' || str[1] == 'X'))
+    {
+        str += 2;
+        base = 16;
+    }
+    else if((!base || base == 2) && *str == '0' && (str[1] == 'b' || str[1] == 'B'))
+    {
+        str += 2;
+        base = 2;
+    }
+    if(!base)
+        base = *str == '0' ? 8 : 10; // select default base
+    unsigned long long result = 0;
+    for(char c = Character::ToLower(*str); c; c = Character::ToLower(*(++str)))
+    {
+        int digit = 0;
+        if(c >= '0' && c <= '9')
+            digit = c - '0';
+        else if(c >= 'a' && c <= 'z')
+            digit = c - 'a';
+        else break;
+        if(digit >= base)
+            break;
+        unsigned long long val = result * base + digit;
+        if(val < result)
+        {
+            errno = ERANGE;
+            result = ~0ull;
+            break;
+        }
+        result = val;
+    }
+    if(endptr) *endptr = (char *)str;
+    return result;
+}
+
+double String::ToDouble(const char *str, char **endptr)
+{
+    while(Character::IsSpace(*str)) str++; // skip leading spaces
+    double sign = *str == '-' ? ++str, -1.0 : (*str == '+' ? ++str, 1.0 : 1.0);
+    double result = 0.0;
+    double esign = 1.0;
+    int f = 0;  // parsing fractional part
+    int e = 0;  // parsing exponent part
+    int es = 0; // encountered exponent sign
+    int ev = 0; // exponent value
+    for(char c = Character::ToLower(*str); c; c = Character::ToLower(*(++str)))
+    {
+        if(c == '.')
+        {
+            if(f) return 0.0;
+            f = 1;
+            continue;
+        }
+        else if(c == 'e')
+        {
+            if(e) return 0.0;
+            e = 1;
+            continue;
+        }
+        else if(c == '-' || c == '+')
+        {
+            if(!e || es) return 0.0;
+            es = 1;
+            esign = c == '-' ? -1.0 : 1.0;
+            continue;
+        }
+        else if(c >= '0' || c <= '9')
+        {
+            int digit = c - '0';
+            if(!f) result = result * 10 + digit;
+            else if(f && !e) result = result + (double)digit / (double)Misc::PowULL(10, f++);
+            else if(e) ev = ev * 10 + digit;
+            else return 0.0;
+        }
+        else return 0.0;
+    }
+    result = result * sign * Misc::PowULL(10, ev * esign);
+    return result;
 }
