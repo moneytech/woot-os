@@ -1,12 +1,11 @@
 #include <cpu.hpp>
+#include <debug.hpp>
 #include <heap.hpp>
 #include <ints.hpp>
 #include <memory.hpp>
 #include <misc.hpp>
 #include <paging.hpp>
 #include <sysdefs.h>
-
-// TODO: add garbage collection of unused pages
 
 void initializeHeap()
 {
@@ -111,8 +110,24 @@ void *Heap::resize(void *ptr, size_t size, size_t alignment, bool zero)
 void Heap::free(void *ptr)
 {
     HeapBlock *blk = (HeapBlock *)((uintptr_t)ptr - sizeof(HeapBlock));
+
+    // calculate addresses needed to deallocate unused pages
+    uintptr_t prevEnd = ((uintptr_t)blk->Previous->Data) + blk->Previous->Size;
+    uintptr_t thisEnd = ((uintptr_t)blk->Data) + blk->Size;
+
+    // remove block from the list
     blk->Previous->Next = blk->Next;
     blk->Next->Previous = blk->Previous;
+
+    // free up unused pages possibly created by this deallocation
+    uintptr_t prevEndPagePtr = align(prevEnd, PAGE_SIZE);
+    uintptr_t thisEndPagePtr = PAGE_SIZE * (thisEnd / PAGE_SIZE);
+    for(uintptr_t pagePtr = prevEndPagePtr; pagePtr < thisEndPagePtr; pagePtr += PAGE_SIZE)
+    {
+        uintptr_t phAddr = Paging::GetPhysicalAddress(~0, pagePtr);
+        if(phAddr != ~0) Paging::FreePages(phAddr, 1);
+        Paging::UnMapPage(~0, pagePtr);
+    }
 }
 
 size_t Heap::getSize(void *ptr)
@@ -224,4 +239,22 @@ bool Heap::IsOnHeap(void *ptr)
     bool res = isOnHeap(ptr);
     unLock();
     return res;
+}
+
+uintptr_t Heap::GetHeapStart()
+{
+    return heapStart;
+}
+
+void Heap::Dump()
+{
+    if(!lock()) return;
+    for(HeapBlock *blk = firstBlock;; blk = blk->Next)
+    {
+        DEBUG("p:%p t:%p n:%p d:%p s:%p e:%p\n",
+              blk->Previous, blk, blk->Next, blk->Data, blk->Size, blk->Data + blk->Size);
+        if(blk->Next == blk)
+            break;
+    }
+    unLock();
 }

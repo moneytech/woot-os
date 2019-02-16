@@ -14,11 +14,13 @@
 
 #include <../v86/v86.hpp>
 #include <file.hpp>
+#include <heap.hpp>
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <paging.hpp>
 #include <string.hpp>
 
+char *bufs[100];
 extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
 {
     DEBUG("Starting WOOT v%d.%d (%s)\n",

@@ -65,4 +65,5 @@ public:
     static size_t GetTotalBytes();
     static size_t GetFreeBytes();
     static size_t GetUsedBytes();
+    static void DumpAddressSpace(AddressSpace as);
 };

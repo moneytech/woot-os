@@ -47,4 +47,6 @@ public:
     static void SetDebugName(void *ptr, const char *name);
     static const char *GetDebugName(void *ptr);
     static bool IsOnHeap(void *ptr);
+    static uintptr_t GetHeapStart();
+    static void Dump();
 };

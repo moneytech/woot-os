@@ -1,5 +1,6 @@
 #include <cpu.hpp>
 #include <bitmap.hpp>
+#include <debug.hpp>
 #include <gdt.hpp>
 #include <memory.hpp>
 #include <misc.hpp>
@@ -716,4 +717,16 @@ size_t Paging::GetFreeBytes()
 size_t Paging::GetUsedBytes()
 {
     return PAGE_SIZE * GetUsedPages();
+}
+
+void Paging::DumpAddressSpace(AddressSpace as)
+{
+    bool ints = cpuDisableInterrupts();
+    for(uintptr_t va = PAGE_SIZE; va; va += PAGE_SIZE)
+    {
+        uintptr_t pa = GetPhysicalAddress(as, va);
+        if(pa == ~0) continue;
+        DEBUG("%p -> %p\n", va, pa);
+    }
+    cpuRestoreInterrupts(ints);
 }

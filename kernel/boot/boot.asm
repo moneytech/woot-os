@@ -4,7 +4,7 @@
 
 %define PAGE_SHIFT          12
 %define LARGE_PAGE_SHIFT    22
-%define STACK_SIZE          65536
+%define STACK_SIZE          (64 << 10)
 %define KERNEL_BASE         0xC0000000
 %define KERNEL_SPACE_SIZE   0x10000000
 
