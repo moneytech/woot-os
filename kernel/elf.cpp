@@ -1,6 +1,6 @@
 #include <debug.hpp>
 #include <elf.hpp>
-//#include <file.h>
+#include <file.hpp>
 #include <memory.hpp>
 #include <paging.hpp>
 #include <process.hpp>
@@ -23,25 +23,23 @@ Elf32_Shdr *ELF::getShdr(int i)
 
 ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders)
 {
-    return nullptr;
-#if 0
     File *f = dentry ? File::Open(dentry, filename, O_RDONLY) : File::Open(filename, O_RDONLY);
     if(!f)
     {
-        printf("[elf] Couldn't find '%s' file\n", filename);
+        DEBUG("[elf] Couldn't find '%s' file\n", filename);
         return nullptr;
     }
     Elf32_Ehdr *ehdr = new Elf32_Ehdr;
     if(f->Read(ehdr, sizeof(Elf32_Ehdr)) != sizeof(Elf32_Ehdr))
     {
-        printf("[elf] Couldn't load ELF header\n", filename);
+        DEBUG("[elf] Couldn't load ELF header\n", filename);
         delete ehdr;
         delete f;
         return nullptr;
     }
     if(ehdr->e_ident[0] != 127 || ehdr->e_ident[1] != 'E' || ehdr->e_ident[2] != 'L' || ehdr->e_ident[3] != 'F')
     {
-        printf("[elf] Invalid ELF header magic\n", filename);
+        DEBUG("[elf] Invalid ELF header magic\n", filename);
         delete ehdr;
         delete f;
         return nullptr;
@@ -49,16 +47,16 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
     // load program headers
     if(f->Seek(ehdr->e_phoff, SEEK_SET) != ehdr->e_phoff)
     {
-        printf("[elf] Couldn't seek to program headers\n", filename);
+        DEBUG("[elf] Couldn't seek to program headers\n", filename);
         delete ehdr;
         delete f;
         return nullptr;
     }
     size_t phSize = ehdr->e_phentsize * ehdr->e_phnum;
-    byte *phdrData = new byte[phSize];
+    uint8_t *phdrData = new uint8_t[phSize];
     if(f->Read(phdrData, phSize) != phSize)
     {
-        printf("[elf] Couldn't load program headers\n", filename);
+        DEBUG("[elf] Couldn't load program headers\n", filename);
         delete[] phdrData;
         delete ehdr;
         delete f;
@@ -68,17 +66,17 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
     // load section headers
     if(f->Seek(ehdr->e_shoff, SEEK_SET) != ehdr->e_shoff)
     {
-        printf("[elf] Couldn't seek to section headers\n", filename);
+        DEBUG("[elf] Couldn't seek to section headers\n", filename);
         delete[] phdrData;
         delete ehdr;
         delete f;
         return nullptr;
     }
     size_t shSize = ehdr->e_shentsize * ehdr->e_shnum;
-    byte *shdrData = new byte[shSize];
+    uint8_t *shdrData = new uint8_t[shSize];
     if(f->Read(shdrData, shSize) != shSize)
     {
-        printf("[elf] Couldn't load section headers\n", filename);
+        DEBUG("[elf] Couldn't load section headers\n", filename);
         delete[] shdrData;
         delete[] phdrData;
         delete ehdr;
@@ -165,7 +163,7 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 continue;
             if(f->Seek(phdr->p_offset, SEEK_SET) != phdr->p_offset)
             {
-                printf("[elf] Couldn't seek to data of program header %d in file '%s'\n", i, filename);
+                DEBUG("[elf] Couldn't seek to data of program header %d in file '%s'\n", i, filename);
                 delete f;
                 return nullptr;
             }
@@ -179,7 +177,7 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 uintptr_t va = elf->baseDelta + phdr->p_vaddr + i * PAGE_SIZE;
                 if(user && va >= KERNEL_BASE)
                 {   // user elf can't map any kernel memory
-                    printf("[elf] Invalid user address %p in file '%s'\n", va, filename);
+                    DEBUG("[elf] Invalid user address %p in file '%s'\n", va, filename);
                     delete f;
                     return nullptr;
                 }
@@ -194,23 +192,23 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 pa = Paging::AllocPage();
                 if(pa == ~0)
                 {
-                    printf("[elf] Couldn't allocate memory for data in file '%s'\n", filename);
+                    DEBUG("[elf] Couldn't allocate memory for data in file '%s'\n", filename);
                     delete f;
                     return nullptr;
                 }
-                if(!Paging::MapPage(proc->AddressSpace, va, pa, false, user, true))
+                if(!Paging::MapPage(proc->AddressSpace, va, pa, user, true))
                 {
-                    printf("[elf] Couldn't map memory for data in file '%s'\n", filename);
+                    DEBUG("[elf] Couldn't map memory for data in file '%s'\n", filename);
                     delete f;
                     return nullptr;
                 }
                 elf->endPtr = max(elf->endPtr, va + PAGE_SIZE);
             }
-            byte *buffer = (byte *)(phdr->p_vaddr + elf->baseDelta);
-            memset(buffer, 0, phdr->p_memsz);
+            uint8_t *buffer = (uint8_t *)(phdr->p_vaddr + elf->baseDelta);
+            Memory::Zero(buffer, phdr->p_memsz);
             if(f->Read(buffer, phdr->p_filesz) != phdr->p_filesz)
             {
-                printf("[elf] Couldn't read data of program header %d in file '%s'\n", i, filename);
+                DEBUG("[elf] Couldn't read data of program header %d in file '%s'\n", i, filename);
                 delete f;
                 return nullptr;
             }
@@ -226,16 +224,16 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 Elf32_Shdr *shdr = elf->getShdr(i);
                 if(shdr->sh_type != SHT_DYNAMIC)
                     continue;
-                byte *dyntab = (byte *)(shdr->sh_addr + elf->baseDelta);
+                uint8_t *dyntab = (uint8_t *)(shdr->sh_addr + elf->baseDelta);
                 char *_strtab = (char *)(elf->getShdr(shdr->sh_link)->sh_addr + elf->baseDelta);
                 for(uint coffs = 0; coffs < shdr->sh_size; coffs += shdr->sh_entsize)
                 {
                     Elf32_Dyn *dyn = (Elf32_Dyn *)(dyntab + coffs);
                     if(dyn->d_tag != DT_SONAME)
                         continue;
-                    if(elf->Name) free(elf->Name);
+                    if(elf->Name) delete[] elf->Name;
                     char *soname = _strtab + dyn->d_un.d_val;
-                    elf->Name = strdup(soname);
+                    elf->Name = String::Duplicate(soname);
                 }
             }
 
@@ -244,7 +242,7 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 Elf32_Shdr *shdr = elf->getShdr(i);
                 if(shdr->sh_type != SHT_DYNAMIC)
                     continue;
-                byte *dyntab = (byte *)(shdr->sh_addr + elf->baseDelta);
+                uint8_t *dyntab = (uint8_t *)(shdr->sh_addr + elf->baseDelta);
                 char *_strtab = (char *)(elf->getShdr(shdr->sh_link)->sh_addr + elf->baseDelta);
                 for(uint coffs = 0; coffs < shdr->sh_size; coffs += shdr->sh_entsize)
                 {
@@ -272,12 +270,11 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
 
     if(elf->baseDelta)
     {   // adjust entry point and cleanup proc (if exists)
-        elf->EntryPoint = (int (*)())((byte *)elf->EntryPoint + elf->baseDelta);
+        elf->EntryPoint = (int (*)())((uint8_t *)elf->EntryPoint + elf->baseDelta);
         if(elf->CleanupProc)
-            elf->CleanupProc = (void (*)())((byte *)elf->CleanupProc + elf->baseDelta);
+            elf->CleanupProc = (void (*)())((uint8_t *)elf->CleanupProc + elf->baseDelta);
     }
     return elf;
-#endif // 0
 }
 
 Elf32_Sym *ELF::FindSymbol(const char *name)
