@@ -55,16 +55,22 @@ char *IDEDrive::getStringFromID(ATAIdentifyResponse *id, uint offset, uint lengt
 {
     uint8_t *src = (uint8_t *)id;
     src += offset;
-    char *dst = (char *)new char[length];
+    char *dst = (char *)new char[length + 1];
     Memory::Move(dst, src, length);
     for(uint i = 0; i < length; i += 2)
         swap(char, dst[i], dst[i + 1]);
-    while(--length)
+    for(int i = length; --i;)
     {
-        if(dst[length] != ' ')
+        if(dst[i] != ' ')
             break;
-        dst[length] = 0;
+        dst[i] = 0;
     }
+    dst[length] = 0;
+
+    // skip any leading spaces
+    int skip = 0;
+    while(dst[skip] == ' ') ++skip;
+    if(skip) Memory::Move(dst, dst + skip, (length + 1) - skip);
     return dst;
 }
 
