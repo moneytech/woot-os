@@ -15,6 +15,6 @@ extern Stream *DebugStream;
 
 class Misc
 {
-public:
+public:    
     static unsigned long long PowULL(unsigned long long base, unsigned long long exp);
 };

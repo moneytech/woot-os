@@ -4,8 +4,13 @@
 #include <misc.hpp>
 
 #define USE_VGA_TEXT 1
+#define USE_SERIAL 1
 
 Stream *DebugStream;
+
+#if USE_SERIAL
+extern "C" void debugSerialOut(int chr);
+#endif // USE_SERIAL
 
 #if USE_VGA_TEXT
 static uint16_t *const vgaTextMem = (uint16_t *)0xC00B8000;
@@ -79,7 +84,15 @@ static int64_t debugWrite(const void *buffer, int64_t n)
 #endif // USE_VGA_TEXT
 
         if(c == '\n')
+        {
+#if USE_SERIAL
+            debugSerialOut('\r');
+#endif // USE_SERIAL
             _outb(0xE9, '\r');
+        }
+#if USE_SERIAL
+        debugSerialOut(c);
+#endif // USE_SERIAL
         _outb(0xE9, c);
     }
 }

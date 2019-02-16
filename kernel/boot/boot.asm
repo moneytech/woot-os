@@ -13,6 +13,8 @@
 %define KERNEL_PAGE_NUMBER  (KERNEL_BASE >> LARGE_PAGE_SHIFT)
 %define KERNEL_PAGE_COUNT   (KERNEL_SPACE_SIZE >> LARGE_PAGE_SHIFT)
 
+%define DEBUG_SERIAL_BASE   0x03F8
+
 %define SYSCALL_INT_VECTOR  128
 %define ISR_STUB_SIZE       16  ; this MUST match the size of ISR_ERRCODE and
                                 ; ISR_NOERRCODE macro expansions in isrs.asm
@@ -53,6 +55,18 @@ _start:
     add ebx, KERNEL_BASE    ; adjust multiboot info pointer
     mov [mbootInfoPtr - KERNEL_BASE], ebx
 
+; initialize serial port as early as posible
+.init_serial:
+    cld
+    mov esi, serialInitSequence - KERNEL_BASE
+    mov ecx, (serialInitSequence.end - serialInitSequence) / 2
+.next:
+    mov dx, DEBUG_SERIAL_BASE
+    lodsb
+    add dl, al
+    outsb
+    loop .next
+
 ; enable PSE
 .enable_pse:
     mov eax, cr4
@@ -68,6 +82,7 @@ _start:
 
 ; identity map memory below kernel base
 .map_identity:
+    cld
     mov ecx, KERNEL_BASE >> LARGE_PAGE_SHIFT
     mov edi, bootPageDir - KERNEL_BASE
     mov eax, 0x83
@@ -78,6 +93,7 @@ _start:
 
 ; map kernel space
 .map_kernel:
+    cld
     mov ecx, KERNEL_PAGE_COUNT
     mov edi, bootPageDir + KERNEL_PAGE_NUMBER * 4 - KERNEL_BASE
     mov eax, 0x83
@@ -101,6 +117,7 @@ _start:
 
 ; unmap memory below kernel base
 .unmap_low:
+    cld
     mov ecx, KERNEL_BASE >> LARGE_PAGE_SHIFT
     mov edi, bootPageDir
     xor eax, eax
@@ -125,6 +142,7 @@ _start:
     mov ss, ax
 
 ; set up TSS
+    cld
     mov eax, tss
     mov edi, gdt + 0x2A
     stosw
@@ -138,6 +156,7 @@ _start:
 
 ; set up IDT
 .setup_idt:
+    cld
     mov ecx, 256
     mov edi, idt
     mov edx, isr0
@@ -240,6 +259,18 @@ _start:
     cli
     hlt
 
+global debugSerialOut
+debugSerialOut:
+    mov dx, DEBUG_SERIAL_BASE + 5
+.wait:
+    in al, dx
+    test al, 0x20
+    jz .wait
+    mov dx, DEBUG_SERIAL_BASE
+    mov al, [esp + 4]
+    out dx, al
+    ret
+
 segment .data
 align PAGE_SIZE
 gdt:
@@ -249,7 +280,7 @@ gdt:
     dq 0x00CFFA000000FFFF   ; user code 0x0018
     dq 0x00CFF2000000FFFF   ; user data 0x0020
     dq 0x0040890000000067   ; tss 0x0028
-.end
+.end:
 
 gdtDescr:
     dw gdt.end - gdt - 1
@@ -258,6 +289,16 @@ gdtDescr:
 idtDescr:
     dw idt.end - idt - 1
     dd idt
+
+serialInitSequence:
+    db 1, 0x00  ; disable interrupts
+    db 3, 0x80  ; enable DLAB
+    db 0, 0x01  ; set baud rate
+    db 1, 0x00  ;   to 115200
+    db 3, 0x03  ; disable DLAB and set 8N1 mode
+    db 2, 0xC7  ; set FIFO to 14 bytes
+    db 4, 0x03  ; assert RTS and DTR
+.end:
 
 segment .bss
 
@@ -281,7 +322,7 @@ tss:
 align PAGE_SIZE
 idt:
     resq 256
-.end
+.end:
 
 align PAGE_SIZE
 mbootMagic:
