@@ -17,6 +17,7 @@ OBJS = boot/boot.o \
 	elf.o \
     ext2/ext2.o \
     file.o \
+    filestream.o \
 	filesystem.o \
 	filesystemtype.o \
 	gdt.o \
@@ -67,12 +68,12 @@ ASM ?= yasm
 ASMFLAGS ?= -f elf32 -g dwarf2 -w
 
 COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
-	-fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb \
+    -fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb \
 	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include
 
 CFLAGS += $(COMPILE_FLAGS)
 CXXFLAGS += $(COMPILE_FLAGS) -fno-exceptions -fno-rtti
-LDFLAGS += -melf_i386 -Tlink.ld
+LDFLAGS += -melf_i386 -Tlink.ld -shared -Bsymbolic
 ASFLAGS +=
 ASMFLAGS +=
 
