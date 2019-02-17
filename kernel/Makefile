@@ -31,6 +31,7 @@ OBJS = boot/boot.o \
 	memory.o \
 	memorystream.o \
 	misc.o \
+	module.o \
 	mutex.o \
 	new.o \
 	objectqueue.o \
@@ -56,6 +57,8 @@ OBJS = boot/boot.o \
 
 DEPS = link.ld
 
+MODULES = ps2kbd
+
 TOP_DIR ?= ..
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
 MODULELIST_FILE = $(TOP_DIR)/root/system/modulelist
@@ -73,22 +76,26 @@ COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
 
 CFLAGS += $(COMPILE_FLAGS)
 CXXFLAGS += $(COMPILE_FLAGS) -fno-exceptions -fno-rtti
-LDFLAGS += -melf_i386 -Tlink.ld -shared -Bsymbolic
+LDFLAGS += -melf_i386 -shared -Bsymbolic
 ASFLAGS +=
 ASMFLAGS +=
 
-all: $(DEPS) $(OUTFILE)
+export TOP_DIR CC CXX LD ASM ASMFLAGS CFLAGS CXXFLAGS LDFLAGS ASFLAGS ASMFLAGS
+
+KLDFLAGS = $(LDFLAGS) -Tlink.ld
+
+all: $(DEPS) $(OUTFILE) $(MODULES)
 
 $(OUTFILE): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $(OUTFILE)
+	$(LD) $(KLDFLAGS) $(OBJS) -o $(OUTFILE)
 
 %.o: %.asm
 	$(ASM) $(ASMFLAGS) -o $@ $<
 
-clean:
+clean: clean-modules
 	rm -rf $(OBJS) $(OUTFILE)
 
-install: $(KERNEL_FILE) $(MODULELIST_FILE)
+install: $(KERNEL_FILE) $(MODULELIST_FILE) $(MODULES) install-modules
 
 todo:
 	grep -rnw . --color=auto -E -e '(;|//)[ \t]*TODO:'
@@ -102,5 +109,20 @@ $(KERNEL_FILE): $(OUTFILE)
 $(MODULELIST_FILE): modulelist
 	cp modulelist $(MODULELIST_FILE)
 
-.PHONY: clean install todo fixme
+$(MODULES):
+	for dir in $(MODULES); do \
+		$(MAKE) -j$(THREADS) -C $$dir; \
+	done
+
+install-modules:
+	for dir in $(MODULES); do \
+		$(MAKE) -j$(THREADS) -C $$dir install; \
+	done
+
+clean-modules:
+	for dir in $(MODULES); do \
+		$(MAKE) -j$(THREADS) -C $$dir clean; \
+	done
+
+.PHONY: clean install todo fixme clean-modules install-modules $(MODULES)
 

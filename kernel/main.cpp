@@ -43,17 +43,18 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     new EXT2FileSystemType(true);
     FileSystem::DetectAll();
 
+    // get main kernel process
     Process *kernelProc = Process::GetCurrent();
-    FileSystem *rootFs = (FileSystem *)ObjectTree::Objects->Get(FS_DIR "/WOOT_OS");
-    kernelProc->CurrentDirectory = rootFs ? rootFs->GetRoot() : nullptr;
 
-    // load main kernel module into current process
-    ELF *kernel = ELF::Load(nullptr, KERNEL_FILE, false, true);
-    if(!kernel) DEBUG("[main] Couldn't load main kernel module '%s'.\n"
-                      "       Other modules will most likely fail to load.\n",
-                      KERNEL_FILE);
-    File *f = File::Open(MODULELIST_FILE, O_RDONLY);
-    if(f)
+    // initialize current directory for kernel process
+    if(File *rootDir = File::Open("WOOT_OS:/", O_RDONLY))
+    {
+        kernelProc->CurrentDirectory = FileSystem::GetDEntry(rootDir->DEntry);
+        delete rootDir;
+    }
+
+    // load boot time modules
+    if(File *f = File::Open(MODULELIST_FILE, O_RDONLY))
     {
         FileStream fs(f);
         char buf[256];
@@ -76,9 +77,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
                 DEBUG("[main] Couldn't load module '%s'\n", line);
                 continue;
             }
-            DEBUG("[main] module '%s' has entry point at %p\n", line, module->EntryPoint);
             int res = module->EntryPoint();
-            DEBUG("[main] module '%s'(%p) returned %d\n", line, module->GetBase(), res);
         }
         delete f;
     } else DEBUG("Couldn't open modulelist\n");
@@ -91,6 +90,10 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     //    cpuWaitForInterrupt(1);
 
     DEBUG("Stopping system...\n");
+
+    // 'close' current kernel directory
+    if(kernelProc->CurrentDirectory)
+        FileSystem::PutDEntry(kernelProc->CurrentDirectory);
 
     FileSystem::Cleanup();
     IDEDrive::Cleanup();

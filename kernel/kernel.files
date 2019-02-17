@@ -16,11 +16,16 @@ include/filestream.hpp
 include/filesystem.hpp
 include/filesystemtype.hpp
 include/inode.hpp
+include/module.hpp
 include/partvolume.hpp
 include/volumetype.hpp
 inode.cpp
+module.cpp
+module.ld
 modulelist
 partvolume.cpp
+ps2kbd/Makefile
+ps2kbd/module.cpp
 volumetype.cpp
 include/volume.hpp
 volume.cpp

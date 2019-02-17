@@ -40,6 +40,8 @@ File *File::open(::DEntry *parent, const char *name, int flags)
         ::DEntry *nextDe = FileSystem::GetDEntry(dentry, t.String);
         if(!nextDe)
         {
+            if(dentry != parent)
+                FileSystem::PutDEntry(parent);
             FileSystem::PutDEntry(dentry);
             return nullptr;
         }

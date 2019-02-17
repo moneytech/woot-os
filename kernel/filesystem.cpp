@@ -147,6 +147,8 @@ void FileSystem::PutDEntry(DEntry *dentry)
     if(!--dentry->ReferenceCount)
     {
         dentryCache.Remove(dentry, nullptr, false);
+        if(dentry->Parent)
+            PutDEntry(dentry->Parent);
         delete dentry;
     }
     UnLock();
@@ -253,5 +255,4 @@ void FileSystem::GetDisplayName(char *buf, size_t bufSize)
 
 FileSystem::~FileSystem()
 {
-    PutDEntry(GetRoot());
 }
