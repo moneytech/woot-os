@@ -19,6 +19,7 @@ public:
         bool containsChild(const char *name);
         Item *getChild(const char *name, bool create);
         bool removeChild(Item *item);
+        bool unRegister(Item *item);
     protected:
         ObjectTree *tree;
         Item *parent;
@@ -61,6 +62,8 @@ public:
     ObjectTree();
     bool Lock();
     void UnLock();
+    bool Register(const char *dir, Item *item);
+    bool UnRegister(Item *item);
     bool Contains(const char *path);
     Item *Get(const char *path);
     Item *MakeDir(const char *path);

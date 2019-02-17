@@ -1,5 +1,6 @@
 #include <callbackstream.hpp>
 #include <cpu.hpp>
+#include <debug.hpp>
 #include <memory.hpp>
 #include <misc.hpp>
 

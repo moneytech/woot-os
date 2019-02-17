@@ -16,10 +16,13 @@ include/filestream.hpp
 include/filesystem.hpp
 include/filesystemtype.hpp
 include/inode.hpp
+include/inputdevice.hpp
 include/module.hpp
 include/partvolume.hpp
+include/virtualkey.hpp
 include/volumetype.hpp
 inode.cpp
+inputdevice.cpp
 module.cpp
 module.ld
 modulelist

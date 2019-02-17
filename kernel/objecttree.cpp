@@ -1,4 +1,5 @@
 #include <debug.hpp>
+#include <errno.h>
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <string.hpp>
@@ -27,6 +28,57 @@ bool ObjectTree::Lock()
 void ObjectTree::UnLock()
 {
     mutex.Release();
+}
+
+bool ObjectTree::Register(const char *dir, ObjectTree::Item *item)
+{
+    if(!item)
+    {
+        errno = EINVAL;
+        return false;
+    }
+    if(!Lock())
+    {
+        errno = EBUSY;
+        return false;
+    }
+    char buf[OBJTREE_MAX_NAME_LEN + 1];
+    item->GetDisplayName(buf, sizeof(buf));
+
+    ObjectTree::Item *d = MakeDir(dir);
+    if(!d)
+    {
+        char buf[OBJTREE_MAX_NAME_LEN + 1]; item->GetDisplayName(buf, sizeof(buf));
+        DEBUG("[objecttree] Couldn't open '%s' when registering '%s'\n", dir, buf);
+        UnLock();
+        return false;
+    }
+    if(d->ContainsChild(buf))
+    {
+        DEBUG("[objecttree] '%s' already exists in '%s'\n", buf, dir);
+        UnLock();
+        return false;
+    }
+    if(!d->AddChild(item))
+    {
+        DEBUG("[objecttree] Couldn't register '%s'\n", buf);
+        UnLock();
+        return false;
+    }
+    UnLock();
+    return true;
+}
+
+bool ObjectTree::UnRegister(ObjectTree::Item *item)
+{
+    if(!Lock())
+    {
+        errno = EBUSY;
+        return false;
+    }
+    bool res = root.unRegister(item);
+    UnLock();
+    return res;
 }
 
 bool ObjectTree::Contains(const char *path)
@@ -67,8 +119,10 @@ void ObjectTree::DebugDump()
 
 ObjectTree::~ObjectTree()
 {
+    Lock();
     for(Item *it : root.children)
         delete it;
+    UnLock();
 }
 
 void ObjectTree::Item::debugDump(char *workBuffer, size_t bufSize, int indent)
@@ -171,6 +225,17 @@ bool ObjectTree::Item::removeChild(ObjectTree::Item *item)
     children.Remove(item, nullptr, false);
     item->parent = nullptr;
     item->tree = nullptr;
+}
+
+bool ObjectTree::Item::unRegister(ObjectTree::Item *item)
+{
+    for(Item *i : children)
+    {
+        if(i == item)
+            return true;
+        return i->unRegister(item);
+    }
+    return false;
 }
 
 ObjectTree::Item::Item()

@@ -14,9 +14,6 @@ protected:
 
     VolumeType(const char *name, bool autoRegister);
 public:
-    bool Register();
-    bool UnRegister();
-
     virtual int Detect(Drive *drive);
     virtual void GetDisplayName(char *buf, size_t bufSize);
 };

@@ -5,6 +5,7 @@
 #include <debug.hpp>
 #include <filestream.hpp>
 #include <filesystem.hpp>
+#include <module.hpp>
 #include <multiboot.h>
 #include <partvolume.hpp>
 #include <pci.hpp>
@@ -53,6 +54,9 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         delete rootDir;
     }
 
+    // load main kernel module
+    ELF::Load(nullptr, KERNEL_FILE, false, true);
+
     // load boot time modules
     if(File *f = File::Open(MODULELIST_FILE, O_RDONLY))
     {
@@ -80,20 +84,29 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
             int res = module->EntryPoint();
         }
         delete f;
-    } else DEBUG("Couldn't open modulelist\n");
+    } else DEBUG("[main] Couldn't open modulelist\n");
 
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();
-    DEBUG("\nMemory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
+    DEBUG("\n[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
 
     //for(int i = 0;; ++i)
     //    cpuWaitForInterrupt(1);
 
-    DEBUG("Stopping system...\n");
+    DEBUG("[main] Stopping system...\n");
+
+    // unload modules
+    ObjectTree::Objects->Lock();
+    ObjectTree::Item *dir = ObjectTree::Objects->Get(MODULES_DIR);
+    if(dir) delete dir;
+    ObjectTree::Objects->UnLock();
 
     // 'close' current kernel directory
     if(kernelProc->CurrentDirectory)
+    {
         FileSystem::PutDEntry(kernelProc->CurrentDirectory);
+        kernelProc->CurrentDirectory = nullptr;
+    }
 
     FileSystem::Cleanup();
     IDEDrive::Cleanup();
@@ -101,7 +114,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     PCI::Cleanup();
     V86::Cleanup();
 
-    DEBUG("System stopped.");
+    DEBUG("[main] System stopped.");
     return 0;
 }
 

@@ -266,7 +266,6 @@ class ELF
 public:
     char *Name;
     int (*EntryPoint)();
-    void (*CleanupProc)();
     static ELF *Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders);
 
     Elf32_Sym *FindSymbol(const char *Name);

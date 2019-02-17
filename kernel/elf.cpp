@@ -265,15 +265,10 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
         return nullptr;
     }
 
-    Elf32_Sym *cleanupSym = elf->FindSymbol("Cleanup");
-    elf->CleanupProc = (void (*)())(cleanupSym ? cleanupSym->st_value : 0);
-
+    // adjust entry point
     if(elf->baseDelta)
-    {   // adjust entry point and cleanup proc (if exists)
         elf->EntryPoint = (int (*)())((uint8_t *)elf->EntryPoint + elf->baseDelta);
-        if(elf->CleanupProc)
-            elf->CleanupProc = (void (*)())((uint8_t *)elf->CleanupProc + elf->baseDelta);
-    }
+
     return elf;
 }
 

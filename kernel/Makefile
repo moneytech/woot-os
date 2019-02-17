@@ -24,6 +24,7 @@ OBJS = boot/boot.o \
 	heap.o \
 	ide/idedrive.o \
     inode.o \
+    inputdevice.o \
 	ints.o \
 	irqs.o \
 	isrs.o \

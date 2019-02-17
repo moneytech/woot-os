@@ -1,6 +1,6 @@
 #pragma once
 
-#define MODULES_DIR "/sys/modules"
+#define MODULES_DIR "/sys/mod"
 
 #include <objecttree.hpp>
 
@@ -13,8 +13,6 @@ public:
     CleanupCallback CallbackCleanup = nullptr;
 
     Module(const char *name, bool autoRegister);
-    bool Register();
-    bool UnRegister(const char *name);
 
     virtual void GetDisplayName(char *buf, size_t bufSize);
     virtual ~Module();

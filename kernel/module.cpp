@@ -8,39 +8,7 @@ Module::Module(const char *name, bool autoRegister) :
     name(name)
 {
     if(autoRegister)
-        Register();
-}
-
-bool Module::Register()
-{
-    ObjectTree::Item *dir = ObjectTree::Objects->MakeDir(MODULES_DIR);
-    if(!dir)
-    {
-        DEBUG("[filesystemtype] Couldn't open '%s' when registering '%s'\n", MODULES_DIR, name);
-        return false;
-    }
-    if(dir->ContainsChild(name))
-    {
-        DEBUG("[filesystemtype] Volume type '%s' already exists\n", name);
-        return false;
-    }
-    if(!dir->AddChild(this))
-    {
-        DEBUG("[filesystemtype] Couldn't register volume type '%s'\n", name);
-        return false;
-    }
-    return true;
-}
-
-bool Module::UnRegister(const char *name)
-{
-    ObjectTree::Item *dir = ObjectTree::Objects->MakeDir(MODULES_DIR);
-    if(!dir)
-    {
-        DEBUG("[volumetype] Couldn't open '%s' when unregistering '%s'\n", MODULES_DIR, name);
-        return false;
-    }
-    return dir->RemoveChild(name);
+        ObjectTree::Objects->Register(MODULES_DIR, this);
 }
 
 void Module::GetDisplayName(char *buf, size_t bufSize)

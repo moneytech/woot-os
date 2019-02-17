@@ -6,39 +6,7 @@ FileSystemType::FileSystemType(const char *name, bool autoRegister) :
     name(name)
 {
     if(autoRegister)
-        Register();
-}
-
-bool FileSystemType::Register()
-{
-    ObjectTree::Item *dir = ObjectTree::Objects->MakeDir(FS_TYPE_DIR);
-    if(!dir)
-    {
-        DEBUG("[filesystemtype] Couldn't open '%s' when registering '%s'\n", FS_TYPE_DIR, name);
-        return false;
-    }
-    if(dir->ContainsChild(name))
-    {
-        DEBUG("[filesystemtype] Volume type '%s' already exists\n", name);
-        return false;
-    }
-    if(!dir->AddChild(this))
-    {
-        DEBUG("[filesystemtype] Couldn't register volume type '%s'\n", name);
-        return false;
-    }
-    return true;
-}
-
-bool FileSystemType::UnRegister()
-{
-    ObjectTree::Item *dir = ObjectTree::Objects->MakeDir(FS_TYPE_DIR);
-    if(!dir)
-    {
-        DEBUG("[volumetype] Couldn't open '%s' when unregistering '%s'\n", FS_TYPE_DIR, name);
-        return false;
-    }
-    return dir->RemoveChild(name);
+        ObjectTree::Objects->Register(FS_TYPE_DIR, this);
 }
 
 int FileSystemType::Detect(Volume *volume)

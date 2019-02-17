@@ -15,5 +15,4 @@ extern "C" int _module_start()
 
 static int Cleanup(Module *module)
 {
-    DEBUG("[ps2kbd] Cleanup called\n");
 }
