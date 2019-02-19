@@ -17,6 +17,7 @@
 #include <../v86/v86.hpp>
 #include <file.hpp>
 #include <heap.hpp>
+#include <inputdevice.hpp>
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <paging.hpp>
@@ -82,16 +83,39 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
                 continue;
             }
             int res = module->EntryPoint();
+            if(res < 0)
+                DEBUG("[main] _module_start of module '%s' returned %d\n", res);
         }
         delete f;
     } else DEBUG("[main] Couldn't open modulelist\n");
+
+    // 'probe' loaded modules
+    if(ObjectTree::Objects->Lock())
+    {
+        ObjectTree::Item *modDir = ObjectTree::Objects->Get(MODULES_DIR);
+        if(modDir)
+        {
+            for(ObjectTree::Item *item : modDir->GetChildren())
+            {
+                Module *mod = (Module *)item;
+                mod->Probe();
+            }
+        }
+        ObjectTree::Objects->UnLock();
+    } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
 
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();
     DEBUG("\n[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
 
-    //for(int i = 0;; ++i)
-    //    cpuWaitForInterrupt(1);
+    if(InputDevice *inp = InputDevice::GetDefaultKeyboard())
+    {
+        Semaphore sem(0);
+        inp->Open(&sem);
+        DEBUG("[main] Press any key...\n");
+        inp->GetEvent(nullptr, 0);
+        inp->Close();
+    } else DEBUG("[main] Couldn't find any keyboard\n");
 
     DEBUG("[main] Stopping system...\n");
 

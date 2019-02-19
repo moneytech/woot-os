@@ -27,8 +27,15 @@ module.cpp
 module.ld
 modulelist
 partvolume.cpp
-ps2kbd/Makefile
-ps2kbd/module.cpp
+ps2input/Makefile
+ps2input/module.cpp
+ps2input/ps2.cpp
+ps2input/ps2.hpp
+ps2input/ps2input
+ps2input/ps2kbd.cpp
+ps2input/ps2kbd.hpp
+ps2input/ps2mouse.cpp
+ps2input/ps2mouse.hpp
 volumetype.cpp
 include/volume.hpp
 volume.cpp

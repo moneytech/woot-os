@@ -8,7 +8,10 @@
 #define INP_MAX_TABLET_AXES         6
 #define INP_MAX_CONTROLLER_COORDS   13
 
+#include <mutex.hpp>
 #include <objecttree.hpp>
+#include <queue.hpp>
+#include <semaphore.hpp>
 #include <sequencer.hpp>
 #include <virtualkey.hpp>
 
@@ -69,14 +72,25 @@ public:
                 uint8_t RawData[INP_MAX_RAW_BYTES];
             };
         };
+
+        Event();
+        Event(InputDevice *device, VirtualKey key, bool release); // keyboard event constructor
     };
 protected:
     int id;
     Type type;
+    Mutex mutex;
+    Semaphore *eventSem;
+    Queue<Event> events;
 
     InputDevice(Type type, bool autoRegister);
 public:
-    bool GetEvent(InputDevice::Event *event, int timeout);
+    static InputDevice *GetDefaultKeyboard();
 
+    int Open(Semaphore *semaphore);
+    int GetEvent(InputDevice::Event *event, uint timeout);
+    int Close();
+
+    virtual bool KeyCheck(const char *name);
     virtual void GetDisplayName(char *buf, size_t bufSize);
 };

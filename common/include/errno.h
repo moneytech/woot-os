@@ -12,6 +12,7 @@ extern int *_get_errno_ptr();
 
 #define errno (*(_get_errno_ptr()))
 
+#define ESUCCESS        0  /* No error */
 #define EPERM           1  /* Operation not permitted */
 #define ENOENT          2  /* No such file or directory */
 #define ESRCH           3  /* No such process */

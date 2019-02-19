@@ -11,6 +11,16 @@ Module::Module(const char *name, bool autoRegister) :
         ObjectTree::Objects->Register(MODULES_DIR, this);
 }
 
+int Module::Probe()
+{
+    return CallbackProbe ? CallbackProbe(this) : -ENOSYS;
+}
+
+int Module::Cleanup()
+{
+    return CallbackCleanup ? CallbackCleanup(this) : -ENOSYS;
+}
+
 void Module::GetDisplayName(char *buf, size_t bufSize)
 {
     StringBuilder sb(buf, bufSize);

@@ -58,7 +58,7 @@ OBJS = boot/boot.o \
 
 DEPS = link.ld
 
-MODULES = ps2kbd
+MODULES = ps2input
 
 TOP_DIR ?= ..
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
