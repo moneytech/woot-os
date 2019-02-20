@@ -109,13 +109,20 @@ File *File::Open(const char *name, int flags)
         StringBuilder sb(MAX_PATH_LENGTH);
         sb.WriteFmt("%s/%s", FS_DIR, fsSep ? path[0] : "0");
         fs = (FileSystem *)ObjectTree::Objects->Get(sb.String());
-        if(!fs) return nullptr;
+        if(!fs)
+        {
+            FileSystem::UnLock();
+            return nullptr;
+        }
     }
     bool absolute = !hasFs && path[0][0] == '/';
     ::DEntry *dentry = hasFs || absolute ? fs->GetRoot() : Process::GetCurrentDir();
 
     if(!dentry)
+    {
+        FileSystem::UnLock();
         return nullptr;
+    }
 
     File *file = open(dentry, name + (hasFs ? path.Tokens[1].Offset : 0), flags);
     FileSystem::UnLock();

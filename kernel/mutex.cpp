@@ -78,7 +78,7 @@ void Mutex::Release()
     }
     if(Owner != ct)
     {
-        DEBUG("[mutex] Mutex::Release(): current thread(%d) != Owner(%d)\n", ct->ID, Owner ? Owner->ID : -1);
+        DEBUG("[mutex] Mutex::Release(): '%s' current thread(%d) != Owner(%d)\n", Name, ct->ID, Owner ? Owner->ID : -1);
         cpuRestoreInterrupts(is);
         return;
     }
