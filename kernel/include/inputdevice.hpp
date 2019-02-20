@@ -75,21 +75,20 @@ public:
 
         Event();
         Event(InputDevice *device, VirtualKey key, bool release); // keyboard event constructor
+        Event(InputDevice *device, int axes, int32_t *movement, uint32_t pressed, uint32_t released, uint32_t held); // mouse event constructor
     };
 protected:
     int id;
     Type type;
     Mutex mutex;
-    Semaphore *eventSem;
+    Semaphore eventSem;
     Queue<Event> events;
 
     InputDevice(Type type, bool autoRegister);
 public:
-    static InputDevice *GetDefaultKeyboard();
+    static InputDevice *GetDefault(InputDevice::Type type);
 
-    int Open(Semaphore *semaphore);
     int GetEvent(InputDevice::Event *event, uint timeout);
-    int Close();
 
     virtual bool KeyCheck(const char *name);
     virtual void GetDisplayName(char *buf, size_t bufSize);

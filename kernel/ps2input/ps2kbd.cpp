@@ -176,19 +176,16 @@ bool PS2Keyboard::interrupt(Ints::State *state, void *context)
 {
     PS2Keyboard *kbd = (PS2Keyboard *)context;
     uint8_t data = PS2::ReadData();
-    if(kbd->eventSem)
+    if(data == 0xE0)
     {
-        if(data == 0xE0)
-        {
-            kbd->ex = true;
-            return true;
-        }
-        bool release = data & 0x80;
-        data &= 0x7F;
-        kbd->events.Write(Event(kbd, kbd->ex ? scancodeTableEx[data] : scancodeTable[data], release));
-        kbd->ex = false;
-        kbd->eventSem->Signal(state);
+        kbd->ex = true;
+        return true;
     }
+    bool release = data & 0x80;
+    data &= 0x7F;
+    kbd->events.Write(Event(kbd, kbd->ex ? scancodeTableEx[data] : scancodeTable[data], release));
+    kbd->ex = false;
+    kbd->eventSem.Signal(state);
     return true;
 }
 
@@ -225,6 +222,8 @@ PS2Keyboard::PS2Keyboard() :
 
 PS2Keyboard::~PS2Keyboard()
 {
+    bool ints = cpuDisableInterrupts();
     IRQs::UnRegisterHandler(1, &interruptHandler);
     IRQs::TryDisable(1);
+    cpuRestoreInterrupts(ints);
 }

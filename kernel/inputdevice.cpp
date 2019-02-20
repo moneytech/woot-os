@@ -1,6 +1,7 @@
 #include <cpu.hpp>
 #include <errno.h>
 #include <inputdevice.hpp>
+#include <memory.hpp>
 #include <string.hpp>
 #include <stringbuilder.hpp>
 
@@ -18,13 +19,13 @@ Sequencer<int> InputDevice::ids(0);
 
 InputDevice::InputDevice(InputDevice::Type type, bool autoRegister) :
     id(ids.GetNext()), type(type), mutex(false, "InputDevice::mutex"),
-    eventSem(nullptr), events(64)
+    eventSem(0, "InputDevice::eventSem"), events(64)
 {
     if(autoRegister)
         ObjectTree::Objects->Register(INPUT_DIR, this);
 }
 
-InputDevice *InputDevice::GetDefaultKeyboard()
+InputDevice *InputDevice::GetDefault(Type type)
 {
     if(!ObjectTree::Objects->Lock())
         return nullptr;
@@ -34,7 +35,7 @@ InputDevice *InputDevice::GetDefaultKeyboard()
         for(ObjectTree::Item *item : inpDir->GetChildren())
         {
             InputDevice *dev = (InputDevice *)item;
-            if(dev->type == Type::Keyboard)
+            if(dev->type == type)
             {
                 res = dev;
                 break;
@@ -45,51 +46,21 @@ InputDevice *InputDevice::GetDefaultKeyboard()
     return res;
 }
 
-int InputDevice::Open(Semaphore *semaphore)
-{
-    if(!semaphore) return -EINVAL;
-    if(!mutex.Acquire(5000, false))
-        return -EBUSY;
-    if(eventSem)
-    {
-        mutex.Release();
-        return -EBUSY;
-    }
-    eventSem = semaphore;
-    events.Clear();
-    eventSem->Reset(0);
-    mutex.Release();
-    return ESUCCESS;
-}
-
 int InputDevice::GetEvent(Event *event, uint timeout)
 {
     if(!mutex.Acquire(timeout >= 0 ? timeout : 0, false))
         return -EBUSY;
-    if(!eventSem)
-    {
-        mutex.Release();
-        return -EINVAL;
-    }
-    if(!eventSem->Wait(timeout, false, true))
+    if(!eventSem.Wait(timeout, false, true))
     {
         mutex.Release();
         return 0;
     }
     bool ok = false;
     if(event) *event = events.Read(&ok);
+    else events.Read(&ok);
     cpuEnableInterrupts();
     mutex.Release();
     return ok ? 1 : 0;
-}
-
-int InputDevice::Close()
-{
-    if(!mutex.Acquire(5000, false))
-        return -EBUSY;
-    eventSem = nullptr;
-    mutex.Release();
-    return 0;
 }
 
 bool InputDevice::KeyCheck(const char *name)
@@ -114,4 +85,11 @@ InputDevice::Event::Event(InputDevice *device, VirtualKey key, bool release) :
     DeviceType(device->type), Device(device),
     Keyboard { key, release }
 {
+}
+
+InputDevice::Event::Event(InputDevice *device, int axes, int32_t *movement, uint32_t pressed, uint32_t released, uint32_t held) :
+    DeviceType(device->type), Device(device),
+    Mouse { pressed, held, released }
+{
+    Memory::Move(Mouse.Delta, movement, sizeof(int32_t) * min(axes, INP_MAX_MOUSE_AXES));
 }

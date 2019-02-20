@@ -108,14 +108,33 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     ObjectTree::Objects->DebugDump();
     DEBUG("\n[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
 
-    if(InputDevice *inp = InputDevice::GetDefaultKeyboard())
+    if(InputDevice *kbd = InputDevice::GetDefault(InputDevice::Type::Keyboard))
     {
-        Semaphore sem(0);
-        inp->Open(&sem);
-        DEBUG("[main] Press any key...\n");
-        inp->GetEvent(nullptr, 0);
-        inp->Close();
+        DEBUG("[main] Press any key in 5 secs to test keyboard...\n");
+        if(kbd->GetEvent(nullptr, 5000) >= 0)
+        {
+            InputDevice::Event event;
+            DEBUG("[main] Press ESC to exit.\n");
+            for(;;)
+            {
+                int res = kbd->GetEvent(&event, 0);
+                if(res < 0)
+                {
+                    DEBUG("[main] Keyboard error %d\n", -res);
+                    break;
+                }
+                DEBUG("[main] %s %d\n", event.Keyboard.Release ? "Released" : "Pressed", event.Keyboard.Key);
+                if(event.Keyboard.Release && event.Keyboard.Key == VirtualKey::Escape)
+                    break;
+            }
+        }
     } else DEBUG("[main] Couldn't find any keyboard\n");
+
+    if(InputDevice *mouse = InputDevice::GetDefault(InputDevice::Type::Mouse))
+    {
+        DEBUG("[main] Now use your mouse in 5 secs to test mouse...\n");
+        mouse->GetEvent(nullptr, 5000);
+    } else DEBUG("[main] Couldn't find any mouse\n");
 
     DEBUG("[main] Stopping system...\n");
 
