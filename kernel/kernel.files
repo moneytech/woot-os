@@ -19,6 +19,7 @@ include/inode.hpp
 include/inputdevice.hpp
 include/module.hpp
 include/partvolume.hpp
+include/syscalls.hpp
 include/virtualkey.hpp
 include/volumetype.hpp
 inode.cpp
@@ -36,6 +37,7 @@ ps2input/ps2kbd.cpp
 ps2input/ps2kbd.hpp
 ps2input/ps2mouse.cpp
 ps2input/ps2mouse.hpp
+syscalls.cpp
 volumetype.cpp
 include/volume.hpp
 volume.cpp

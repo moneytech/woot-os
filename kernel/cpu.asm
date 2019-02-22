@@ -1405,6 +1405,20 @@ cpuEnableSSE:
     mov cr4, eax
     ret
 
+global cpuReadMSR
+cpuReadMSR:
+    mov ecx, [esp + 4]
+    rdmsr
+    ret
+
+global cpuWriteMSR
+cpuWriteMSR:
+    mov ecx, [esp + 4]
+    mov eax, [esp + 8]
+    mov edx, [esp + 12]
+    wrmsr
+    ret
+
 global cpuEnterUserMode
 cpuEnterUserMode:
     cli

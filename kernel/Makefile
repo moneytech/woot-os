@@ -47,6 +47,7 @@ OBJS = boot/boot.o \
 	stream.o \
 	string.o \
 	stringbuilder.o \
+    syscalls.o \
 	thread.o \
 	time.o \
 	tokenizer.o \
@@ -83,7 +84,7 @@ ASMFLAGS +=
 
 export TOP_DIR CC CXX LD ASM ASMFLAGS CFLAGS CXXFLAGS LDFLAGS ASFLAGS ASMFLAGS
 
-KLDFLAGS = $(LDFLAGS) -Tlink.ld
+KLDFLAGS = $(LDFLAGS) -Tlink.ld --unresolved-symbols=report-all
 
 all: $(DEPS) $(OUTFILE) $(MODULES)
 

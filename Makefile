@@ -12,7 +12,7 @@ ASM ?= yasm
 
 THREADS = 8
 
-SUBDIRS = kernel
+SUBDIRS = kernel user
 
 export TOP_DIR
 
@@ -28,9 +28,12 @@ clean:
 		$(MAKE) -C $$dir clean; \
 	done
 
+user:
+	$(MAKE) -C user
+
 install: root
 
-root: root/system root/boot/grub root/boot/grub/grub.cfg
+root: root/system root/boot/grub root/bin root/boot/grub/grub.cfg
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir install; \
 	done
@@ -40,6 +43,9 @@ root/system:
 
 root/boot/grub:
 	mkdir -p root/boot/grub
+
+root/bin:
+	mkdir -p root/bin
 
 root/boot/grub/grub.cfg: kernel/boot/grub/grub.cfg
 	cp $? $@
@@ -69,5 +75,5 @@ try-umount:
 distclean: clean clean-hdd-image
 	rm -rf root
 
-.PHONY: clean distclean root kernel
+.PHONY: clean distclean root kernel user
 

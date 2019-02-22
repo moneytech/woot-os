@@ -127,6 +127,7 @@ DEntry *FileSystem::GetDEntry(DEntry *parent, const char *name)
     DEntry *dentry = new DEntry(name, parent, parent->INode->FS->GetINode(ino));
     dentryCache.Prepend(dentry);
     ++dentry->ReferenceCount;
+    GetDEntry(parent);
     UnLock();
     return dentry;
 }
@@ -135,7 +136,13 @@ DEntry *FileSystem::GetDEntry(DEntry *dentry)
 {
     if(!Lock()) return nullptr;
     DEntry *res = dentryCache.Find(dentry, nullptr);
+    if(!res)
+    {
+        UnLock();
+        return nullptr;
+    }
     if(res) ++res->ReferenceCount;
+    if(dentry->Parent) GetDEntry(dentry->Parent);
     UnLock();
     return res;
 }

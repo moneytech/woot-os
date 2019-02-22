@@ -75,6 +75,10 @@ void cpuFXRstor(void *buffer);
 void cpuInitFPU(uint16_t cw);
 void cpuEnableSSE();
 
+// MSRs
+uint64_t cpuReadMSR(uint32_t msr);
+void cpuWriteMSR(uint32_t msr, uint64_t value);
+
 // misc
 void cpuEnterUserMode(uint32_t esp, uint32_t eip);
 

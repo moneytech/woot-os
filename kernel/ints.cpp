@@ -82,9 +82,9 @@ void Ints::CommonHandler(Ints::State *state)
         else
         {
             DEBUG("Unhandled %s %d (%s)\n",
-                  state->InterruptNumber < 32 ? "exception" : "interrupt",
+                  state->InterruptNumber < IRQS_BASE ? "exception" : "interrupt",
                   state->InterruptNumber,
-                  state->InterruptNumber < 32 ? excNames[state->InterruptNumber] : (state->InterruptNumber == SYSCALLS_INT_VECTOR ? "syscall interrupt" : "hardware interrupt"));
+                  state->InterruptNumber < IRQS_BASE ? excNames[state->InterruptNumber] : "hardware interrupt");
 
             if(cp) DEBUG("Process: %d (%s)\n", cp->ID, cp->Name);
             if(ct) DEBUG("Thread: %d (%s)\n", ct->ID, ct->Name);

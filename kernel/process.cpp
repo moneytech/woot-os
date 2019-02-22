@@ -110,7 +110,8 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
 int Process::processEntryPoint(const char *cmdline)
 {
     Tokenizer cmd(cmdline, " ", 2);
-    ELF *elf = ELF::Load(GetCurrentDir(), cmd[0], true, false);
+    DEntry *currentDir = GetCurrentDir();
+    ELF *elf = ELF::Load(currentDir, cmd[0], true, false);
     Process *proc = GetCurrent();
     if(!proc || !elf) return 127;
     if(!elf->EntryPoint)// || !proc->ApplyRelocations())
@@ -256,8 +257,8 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     SelfDestruct(selfDestruct)
 {
     ObjectTree::Item *dir = ObjectTree::Objects->MakeDir("/proc");
-    if(dir) dir->AddChild(this);
-    DEntry *cdir = GetCurrentDir();
+    if(dir) dir->AddChild(this);    
+    DEntry *cdir = Parent ? Parent->GetCurrentDir() : nullptr;
     if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
     AddThread(mainThread);
     listLock.Acquire(0, false);

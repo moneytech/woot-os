@@ -33,9 +33,6 @@
 #define MAX_FS_LABEL_LENGTH 127
 #define MAX_PATH_LENGTH 4095
 
-// syscalls
-#define SYSCALLS_INT_VECTOR 128
-
 // segments
 #define SEG_CODE32_KERNEL   0x0008
 #define SEG_DATA32_KERNEL   0x0010

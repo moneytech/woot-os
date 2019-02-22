@@ -15,7 +15,6 @@
 
 %define DEBUG_SERIAL_BASE   0x03F8
 
-%define SYSCALL_INT_VECTOR  128
 %define ISR_STUB_SIZE       16  ; this MUST match the size of ISR_ERRCODE and
                                 ; ISR_NOERRCODE macro expansions in isrs.asm
 
@@ -173,9 +172,7 @@ _start:
     stosw           ; offset 31..16
     add edx, ISR_STUB_SIZE
     loop .next_idt_entry
-.setup_syscall_idt:
-    mov edi, idt
-    mov byte [edi + 8 * SYSCALL_INT_VECTOR + 5], 0xEE   ; syscall int vector must be accessible from ring 3
+
 .load_idt:
     lidt [idtDescr]
 

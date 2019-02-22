@@ -371,7 +371,9 @@ void Thread::Switch(Ints::State *state, Thread *thread)
 
     state->ESP = thread->StackPointer;
 
-    GDT::MainTSS->ESP0 = thread->KernelStackSize + (uintptr_t)thread->KernelStack; // without that stack overflow happens
+    uintptr_t kernelESP = thread->KernelStackSize + (uintptr_t)thread->KernelStack;
+    GDT::MainTSS->ESP0 = kernelESP; // without that stack overflow happens
+    cpuWriteMSR(0x175, kernelESP); // set up kernel esp for sysenter
 
     cpuSetCR0(cpuGetCR0() | 0x08); // set TS bit
     if(thread->Process)

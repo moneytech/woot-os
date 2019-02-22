@@ -10,6 +10,7 @@
 #include <partvolume.hpp>
 #include <pci.hpp>
 #include <process.hpp>
+#include <syscalls.hpp>
 #include <sysdefs.h>
 #include <types.hpp>
 #include <volume.hpp>
@@ -33,6 +34,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
           KERNEL_VERSION_MINOR,
           KERNEL_VERSION_DESCRIPTION);
 
+    SysCalls::Initialize();
     V86::Initialize();
     PCI::Initialize();
     AHCIDrive::Initialize();
@@ -54,6 +56,9 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         kernelProc->CurrentDirectory = FileSystem::GetDEntry(rootDir->DEntry);
         delete rootDir;
     }
+
+    File *a = File::Open("/bin/usertest", O_RDONLY);
+    delete a;
 
     // load main kernel module
     ELF::Load(nullptr, KERNEL_FILE, false, true);
@@ -104,38 +109,18 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         ObjectTree::Objects->UnLock();
     } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
 
+    for(int i = 0; i < 1; ++i)
+    {
+        Semaphore finished(0);
+        Process *proc = Process::Create("/bin/usertest", &finished);
+        proc->Start();
+        finished.Wait(0, false, false);
+        delete proc;
+    }
+
     DEBUG("Object tree dump:\n");
     ObjectTree::Objects->DebugDump();
     DEBUG("\n[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
-
-    if(InputDevice *kbd = InputDevice::GetDefault(InputDevice::Type::Keyboard))
-    {
-        DEBUG("[main] Press any key in 5 secs to test keyboard...\n");
-        if(kbd->GetEvent(nullptr, 5000) >= 0)
-        {
-            InputDevice::Event event;
-            DEBUG("[main] Press ESC to exit.\n");
-            for(;;)
-            {
-                int res = kbd->GetEvent(&event, 0);
-                if(res < 0)
-                {
-                    DEBUG("[main] Keyboard error %d\n", -res);
-                    break;
-                }
-                DEBUG("[main] %s %d\n", event.Keyboard.Release ? "Released" : "Pressed", event.Keyboard.Key);
-                if(event.Keyboard.Release && event.Keyboard.Key == VirtualKey::Escape)
-                    break;
-            }
-        }
-    } else DEBUG("[main] Couldn't find any keyboard\n");
-
-    if(InputDevice *mouse = InputDevice::GetDefault(InputDevice::Type::Mouse))
-    {
-        DEBUG("[main] Now use your mouse in 5 secs to test mouse...\n");
-        mouse->GetEvent(nullptr, 5000);
-    } else DEBUG("[main] Couldn't find any mouse\n");
-
     DEBUG("[main] Stopping system...\n");
 
     // unload modules
@@ -156,6 +141,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     AHCIDrive::Cleanup();
     PCI::Cleanup();
     V86::Cleanup();
+    SysCalls::Cleanup();
 
     DEBUG("[main] System stopped.");
     return 0;
