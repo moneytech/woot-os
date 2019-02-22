@@ -24,7 +24,8 @@ asm(
 
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
-    [SYS_EXIT] = sys_exit
+    [SYS_EXIT] = sys_exit,
+    [SYS_DEBUG_STR] = sys_debug_str
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -39,6 +40,12 @@ long SysCalls::handler(uintptr_t *args)
 long SysCalls::sys_exit(uintptr_t *args)
 {
     Thread::Finalize(nullptr, args[1]);
+    return 0;
+}
+
+long SysCalls::sys_debug_str(uintptr_t *args)
+{
+    DEBUG("%s", args[1]);
     return 0;
 }
 
