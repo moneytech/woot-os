@@ -4,6 +4,8 @@ CFLAGS = -ggdb -fno-stack-protector -D__WOOT__
 PREFIX = $(shell realpath ..)
 CONFIG_FILE = build/config.mak
 
+export CC CFLAGS
+
 all: configure
 	$(MAKE) -C build
 
