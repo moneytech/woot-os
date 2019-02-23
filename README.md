@@ -4,4 +4,4 @@ Makefiles are meant to be built under Linux. Image creation makefile rules use s
 
 To build, just run `make` in top directory. With a little bit of luck everything will just build. hdd.img file containg ext2 disk image should be created. Image file can be run in a VM or `dd`'d to hard disk and booted on real PC.
 
-Previous versions of this project can be found [here](github.com/pvc988/woot).
+Previous versions of this project can be found [here](https://github.com/pvc988/woot).
