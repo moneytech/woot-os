@@ -34,8 +34,8 @@ int __getpw_a(const char *name, uid_t uid, struct passwd *pw, char **buf, size_t
 	}
 
 	while (!(rv = __getpwent_a(f, pw, buf, size, res)) && *res) {
-		if (name && !strcmp(name, (*res)->pw_name)
-		|| !name && (*res)->pw_uid == uid)
+        if ((name && !strcmp(name, (*res)->pw_name))
+        || (!name && (*res)->pw_uid == uid))
 			break;
 	}
 	fclose(f);
@@ -122,8 +122,8 @@ int __getpw_a(const char *name, uid_t uid, struct passwd *pw, char **buf, size_t
 			goto cleanup_f;
 		}
 
-		if (name && strcmp(name, pw->pw_name)
-		|| !name && uid != pw->pw_uid) {
+        if ((name && strcmp(name, pw->pw_name))
+        || (!name && uid != pw->pw_uid)) {
 			rv = EIO;
 			goto cleanup_f;
 		}

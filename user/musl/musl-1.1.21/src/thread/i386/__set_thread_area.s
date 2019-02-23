@@ -3,7 +3,7 @@
 .hidden __set_thread_area
 .type   __set_thread_area,@function
 __set_thread_area:
-	push %ebx
+    push %ebx
 	push $0x51
 	push $0xfffff
 	push 16(%esp)

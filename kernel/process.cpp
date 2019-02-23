@@ -85,7 +85,7 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
         { AT_PAGESZ, (uintptr_t)PAGE_SIZE },
         //{ AT_PHNUM, (uintptr_t)elf->ehdr->e_phnum },
         //{ AT_PHENT, (uintptr_t)elf->ehdr->e_phentsize },
-        //{ AT_PHDR, (uintptr_t)elf->phdrs }
+        //{ AT_PHDR, (uintptr_t)elf->phdrData }
     };
 
     // aux vectors
@@ -103,7 +103,7 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
     for(i = 0; i < argCount; ++i)
         stackPtr = stackPush(stackPtr, &argPtrs[argCount - i - 1], sizeof(uintptr_t));
     stackPtr = stackPush(stackPtr, &argCount, sizeof argCount);
-    stackPtr = stackPush(stackPtr, &basePointer, sizeof basePointer);
+    //stackPtr = stackPush(stackPtr, &basePointer, sizeof basePointer);
     return stackPtr;
 }
 

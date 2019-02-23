@@ -1,13 +1,21 @@
-CC = clang -m32
-CFLAGS = -ggdb -fno-stack-protector -D__WOOT__
-
 PREFIX = $(shell realpath ..)
 CONFIG_FILE = build/config.mak
+THREADS = 8
 
-export CC CFLAGS
+CC = clang
+CFLAGS = -m32 -O0 -D__WOOT__ -ggdb -I$(PREFIX)/..
+ASFLAGS = --32
+LDFLAGS =
+AR = ar
+RANLIB = ranlib
+
+LIBCC = 
+#$(PREFIX)/../libclang_rt.builtins-i386.a
+
+export CC AR RANLIB CFLAGS ASFLAGS LIBCC
 
 all: configure
-	$(MAKE) -C build
+	$(MAKE) -j8 -C build
 
 clean:
 	$(MAKE) -C build clean
@@ -25,7 +33,7 @@ reconfigure:
 	$(MAKE) configure
 
 $(CONFIG_FILE):
-	mkdir -p build && cd build && ../musl-1.1.21/configure --prefix=$(PREFIX)
+	mkdir -p build && cd build && ../musl-1.1.21/configure --prefix=$(PREFIX) --target=woot
 
 .PHONY: clean install uninstall configure reconfigure
 

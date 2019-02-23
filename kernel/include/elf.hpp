@@ -252,6 +252,8 @@ class Process;
 
 class ELF
 {
+    friend class Process;
+
     Elf32_Ehdr *ehdr;
     uint8_t *phdrData;
     uint8_t *shdrData;

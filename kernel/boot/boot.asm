@@ -173,6 +173,12 @@ _start:
     add edx, ISR_STUB_SIZE
     loop .next_idt_entry
 
+    ; this is here to make porting musl a little bit easier
+    ; TODO: remove when done
+.setup_syscall_idt:
+    mov edi, idt
+    mov byte [edi + 8 * 0x80 + 5], 0xEE   ; syscall int vector must be accessible from ring 3
+
 .load_idt:
     lidt [idtDescr]
 

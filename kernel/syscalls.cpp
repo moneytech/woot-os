@@ -1,21 +1,34 @@
 #include <cpu.hpp>
 #include <debug.hpp>
+#include <errno.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
 #include <thread.hpp>
+
+struct iovec
+{
+    void *iov_base;     /* Starting address */
+    size_t iov_len;     /* Number of bytes to transfer */
+};
 
 extern "C" void sysEnterHandler();
 
 asm(
 ".intel_syntax noprefix\n"
 "sysEnterHandler:\n"
-"push [ebp + 4]\n"
-"mov eax, ebp\n"
+"push ebp\n"
+"mov ebp, esp\n"
+"mov eax, [ebp]\n"
 "add eax, 8\n"
 "push eax\n"
 "call _ZN8SysCalls7handlerEPj\n"
-"pop ecx\n"
-"pop edx\n"
+"add esp, 4\n"
+"leave\n"
+"mov esp, ebp\n"
+"pop ebp\n"
+"mov ecx, esp\n"
+"add ecx, 4\n"
+"pop edx\n"         // return address
 "sysexit\n"
 ".att_syntax\n"
 );
@@ -25,28 +38,92 @@ asm(
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
     [SYS_EXIT] = sys_exit,
-    [SYS_DEBUG_STR] = sys_debug_str
+    [SYS_DEBUG_STR] = sys_debug_str,
+    [SYS_SET_TID_ADDRESS] = sys_set_tid_address,
+    [SYS_SET_THREAD_AREA] = sys_set_thread_area,
+    [SYS_GET_PTHREAD] = sys_get_pthread,
+    [SYS_READV] = sys_readv,
+    [SYS_WRITEV] = sys_writev
 };
 
 long SysCalls::handler(uintptr_t *args)
 {
     uint req = args[0];
+    //DEBUG("[syscalls] sysenter %d\n", req);
     if(req < MAX_SYSCALLS && handlers[req])
-        return handlers[req](args);
-    DEBUG("[syscalls] Unknown syscall %u\n", req);
-    return -1;
+    {
+        long res = handlers[req](args);
+        //DEBUG("[syscalls] sysexit %d\n", req);
+        return res;
+    }
+    DEBUG("[syscalls] Unknown syscall %u (%p)\n", req & ~0x80000000, req);
+    return -ENOSYS;
 }
 
 long SysCalls::sys_exit(uintptr_t *args)
 {
     Thread::Finalize(nullptr, args[1]);
-    return 0;
+    return ESUCCESS;
 }
 
 long SysCalls::sys_debug_str(uintptr_t *args)
 {
     DEBUG("%s", args[1]);
-    return 0;
+    return ESUCCESS;
+}
+
+long SysCalls::sys_set_tid_address(uintptr_t *args)
+{
+    Thread *ct = Thread::GetCurrent();
+    return ct->ID;
+}
+
+long SysCalls::sys_set_thread_area(uintptr_t *args)
+{
+    Thread *ct = Thread::GetCurrent();
+    ct->PThread = (struct pthread *)args[1];
+    return ESUCCESS;
+}
+
+long SysCalls::sys_get_pthread(uintptr_t *args)
+{
+    struct pthread **self = (struct pthread **)args[1];
+    if(!self) return -EINVAL;
+    Thread *ct = Thread::GetCurrent();
+    *self = ct->PThread;
+    return ESUCCESS;
+}
+
+long SysCalls::sys_readv(uintptr_t *args)
+{
+    int fd = args[1];
+    struct iovec *iov = (struct iovec *)args[2];
+    int iovcnt = args[3];
+    if(iovcnt < 0) return -EINVAL;
+    ssize_t res = 0;
+    for(int i = 0; i < iovcnt; ++i)
+    {
+        ssize_t r = DebugStream->Read(iov[i].iov_base, iov[i].iov_len);
+        if(r < 0) return r;
+        res += r;
+    }
+    return res;
+}
+
+long SysCalls::sys_writev(uintptr_t *args)
+{
+    int fd = args[1];
+    struct iovec *iov = (struct iovec *)args[2];
+    int iovcnt = args[3];
+    if(iovcnt < 0) return -EINVAL;
+    ssize_t res = 0;
+    for(int i = 0; i < iovcnt; ++i)
+    {
+        ssize_t r = DebugStream->Write(iov[i].iov_base, iov[i].iov_len);
+        if(r < 0) return r;
+        res += r;
+    }
+    return res;
 }
 
 void SysCalls::Initialize()

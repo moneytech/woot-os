@@ -362,6 +362,20 @@ musl-1.1.21/arch/sh/ksigaction.h
 musl-1.1.21/arch/sh/pthread_arch.h
 musl-1.1.21/arch/sh/reloc.h
 musl-1.1.21/arch/sh/syscall_arch.h
+musl-1.1.21/arch/woot/atomic_arch.h
+musl-1.1.21/arch/woot/bits/alltypes.h.in
+musl-1.1.21/arch/woot/bits/float.h
+musl-1.1.21/arch/woot/bits/limits.h
+musl-1.1.21/arch/woot/bits/posix.h
+musl-1.1.21/arch/woot/bits/setjmp.h
+musl-1.1.21/arch/woot/bits/signal.h
+musl-1.1.21/arch/woot/bits/stat.h
+musl-1.1.21/arch/woot/bits/stdint.h
+musl-1.1.21/arch/woot/bits/syscall.h.in
+musl-1.1.21/arch/woot/crt_arch.h
+musl-1.1.21/arch/woot/pthread_arch.h
+musl-1.1.21/arch/woot/reloc.h
+musl-1.1.21/arch/woot/syscall_arch.h
 musl-1.1.21/arch/x32/atomic_arch.h
 musl-1.1.21/arch/x32/bits/alltypes.h.in
 musl-1.1.21/arch/x32/bits/endian.h
@@ -1787,6 +1801,8 @@ musl-1.1.21/src/setjmp/s390x/setjmp.s
 musl-1.1.21/src/setjmp/setjmp.c
 musl-1.1.21/src/setjmp/sh/longjmp.S
 musl-1.1.21/src/setjmp/sh/setjmp.S
+musl-1.1.21/src/setjmp/woot/longjmp.s
+musl-1.1.21/src/setjmp/woot/setjmp.s
 musl-1.1.21/src/setjmp/x32/longjmp.s
 musl-1.1.21/src/setjmp/x32/setjmp.s
 musl-1.1.21/src/setjmp/x86_64/longjmp.s
@@ -2302,6 +2318,7 @@ musl-1.1.21/src/thread/tss_create.c
 musl-1.1.21/src/thread/tss_delete.c
 musl-1.1.21/src/thread/tss_set.c
 musl-1.1.21/src/thread/vmlock.c
+musl-1.1.21/src/thread/woot/syscall_cp.s
 musl-1.1.21/src/thread/x32/__set_thread_area.s
 musl-1.1.21/src/thread/x32/__unmapself.s
 musl-1.1.21/src/thread/x32/clone.s

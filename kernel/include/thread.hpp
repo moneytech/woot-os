@@ -3,6 +3,7 @@
 #include <ints.hpp>
 #include <ktypes.h>
 #include <objectqueue.hpp>
+#include <pthread.h>
 #include <queue.hpp>
 #include <sequencer.hpp>
 #include <types.hpp>
@@ -84,6 +85,9 @@ public:
     Mutex *WaitingMutex;
     Semaphore *WaitingSemaphore;
     int WakeCount; // used to avoid lost wakeup problem
+
+    // pthread
+    struct pthread *PThread;
 
     static void Initialize();
     static Thread *GetIdleThread();

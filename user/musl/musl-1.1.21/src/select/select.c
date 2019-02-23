@@ -16,7 +16,7 @@ int select(int n, fd_set *restrict rfds, fd_set *restrict wfds, fd_set *restrict
 			return __syscall_ret(-EINVAL);
 		time_t extra_secs = tv->tv_usec / 1000000;
 		ts.tv_nsec = tv->tv_usec % 1000000 * 1000;
-		const time_t max_time = (1ULL<<8*sizeof(time_t)-1)-1;
+        const time_t max_time = (1ULL<<(8*sizeof(time_t)-1))-1;
 		ts.tv_sec = extra_secs > max_time - tv->tv_sec ?
 			max_time : tv->tv_sec + extra_secs;
 	}

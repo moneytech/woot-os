@@ -142,7 +142,7 @@ static int do_glob(char *buf, size_t pos, int type, char *pat, int flags, int (*
 		/* With GLOB_PERIOD, don't allow matching . or .. unless
 		 * fnmatch would match them with FNM_PERIOD rules in effect. */
 		if (p2 && (flags & GLOB_PERIOD) && de->d_name[0]=='.'
-		    && (!de->d_name[1] || de->d_name[1]=='.' && !de->d_name[2])
+            && (!de->d_name[1] || (de->d_name[1]=='.' && !de->d_name[2]))
 		    && fnmatch(pat, de->d_name, fnm_flags | FNM_PERIOD))
 			continue;
 
