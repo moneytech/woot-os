@@ -5,10 +5,10 @@
 #include <paging.hpp>
 #include <process.hpp>
 #include <string.hpp>
-//#include <stringbuilder.hpp>
+#include <stringbuilder.hpp>
 #include <sysdefs.h>
 
-static const char *libDir = "WOOT_OS:/system/";
+static const char *libDir = "/lib";
 
 ELF::ELF(const char *name, Elf32_Ehdr *ehdr, uint8_t *phdrData, uint8_t *shdrData, bool user) :
     Name(String::Duplicate(name)), ehdr(ehdr), phdrData(phdrData), shdrData(shdrData), user(user),
@@ -102,9 +102,9 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
             highest_vaddr = phdr->p_vaddr + phdr->p_memsz;
     }
     elf->base = lowest_vaddr = PAGE_SIZE * (lowest_vaddr / PAGE_SIZE);
-    highest_vaddr = align(highest_vaddr, PAGE_SIZE);
+    elf->top = highest_vaddr = align(highest_vaddr, PAGE_SIZE);
 
-    //printf("%s la: %p ha %p\n", elf->Name, lowest_vaddr, highest_vaddr);
+    //DEBUG("%s la: %p ha %p\n", elf->Name, lowest_vaddr, highest_vaddr);
 
     if(!onlyHeaders && proc)
     {
@@ -154,6 +154,7 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
             elf->baseDelta = candidateStart - lowest_vaddr;
         }
         elf->base += elf->baseDelta;
+        elf->top += elf->baseDelta;
 
         // load the data
         for(uint i = 0; i < ehdr->e_phnum; ++i)
@@ -165,6 +166,9 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
             {
                 DEBUG("[elf] Couldn't seek to data of program header %d in file '%s'\n", i, filename);
                 delete f;
+                delete[] phdrData;
+                delete ehdr;
+                delete elf;
                 return nullptr;
             }
 
@@ -179,6 +183,9 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 {   // user elf can't map any kernel memory
                     DEBUG("[elf] Invalid user address %p in file '%s'\n", va, filename);
                     delete f;
+                    delete[] phdrData;
+                    delete ehdr;
+                    delete elf;
                     return nullptr;
                 }
                 uintptr_t pa = Paging::GetPhysicalAddress(proc->AddressSpace, va);
@@ -194,12 +201,18 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                 {
                     DEBUG("[elf] Couldn't allocate memory for data in file '%s'\n", filename);
                     delete f;
+                    delete[] phdrData;
+                    delete ehdr;
+                    delete elf;
                     return nullptr;
                 }
                 if(!Paging::MapPage(proc->AddressSpace, va, pa, user, true))
                 {
                     DEBUG("[elf] Couldn't map memory for data in file '%s'\n", filename);
                     delete f;
+                    delete[] phdrData;
+                    delete ehdr;
+                    delete elf;
                     return nullptr;
                 }
                 elf->endPtr = max(elf->endPtr, va + PAGE_SIZE);
@@ -210,6 +223,9 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
             {
                 DEBUG("[elf] Couldn't read data of program header %d in file '%s'\n", i, filename);
                 delete f;
+                delete[] phdrData;
+                delete ehdr;
+                delete elf;
                 return nullptr;
             }
         }
@@ -249,15 +265,24 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                     Elf32_Dyn *dyn = (Elf32_Dyn *)(dyntab + coffs);
                     if(dyn->d_tag != DT_NEEDED)
                         continue;
-                    char *soname = _strtab + dyn->d_un.d_val;
+                    char *soname = _strtab + dyn->d_un.d_val;                    
+                    StringBuilder sb(MAX_PATH_LENGTH);
+                    sb.WriteFmt("%s/%s", libDir, soname);
+                    soname = sb.String();
                     if(proc->GetELF(soname))
                         continue;
-                    // printf("[elf] loading DT_NEEDED %s for %s\n", soname, elf->Name);
+                    //DEBUG("[elf] loading DT_NEEDED %s for %s\n", soname, elf->Name);
                     ELF *soELF = Load(dentry, soname, user, false);
                 }
             }
         }
     } else delete f;
+
+    delete[] phdrData;
+    delete ehdr;
+
+    elf->ehdr = (Elf32_Ehdr *)elf->base;
+    elf->phdrData = (uint8_t *)(elf->base + elf->ehdr->e_phoff);
 
     if(!elf->ApplyRelocations())
     {
@@ -388,25 +413,14 @@ ELF::~ELF()
     if(Name) delete[] Name;
     if(process)
     {
-        for(uint i = 0; i < ehdr->e_phnum; ++i)
+        AddressSpace as = process->AddressSpace;
+        for(uintptr_t va = base; va < top; va += PAGE_SIZE)
         {
-            Elf32_Phdr *phdr = (Elf32_Phdr *)(phdrData + ehdr->e_phentsize * i);
-            if(phdr->p_type != PT_LOAD && phdr->p_type != PT_DYNAMIC)
-                continue;
-            size_t pageCount = align(phdr->p_memsz, PAGE_SIZE) / PAGE_SIZE;
-            for(uint i = 0; i < pageCount; ++i)
-            {
-                uintptr_t va = phdr->p_vaddr + i * PAGE_SIZE;
-                uintptr_t pa = Paging::GetPhysicalAddress(process->AddressSpace, va);
-                if(pa == ~0)
-                    continue;
-                Paging::UnMapPage(process->AddressSpace, va);
-                Paging::FreePage(pa);
-            }
+            uintptr_t pa = Paging::GetPhysicalAddress(as, va);
+            Paging::UnMapPage(as, va);
+            if(pa == ~0) continue;
+            Paging::FreePage(pa);
         }
     }
-
     if(shdrData) delete[] shdrData;
-    if(phdrData) delete[] phdrData;
-    if(ehdr) delete ehdr;
 }

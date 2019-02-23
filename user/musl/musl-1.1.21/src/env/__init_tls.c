@@ -145,3 +145,7 @@ static void static_init_tls(size_t *aux)
 }
 
 weak_alias(static_init_tls, __init_tls);
+
+#ifdef __WOOT__
+weak_alias(static_init_tls, __woot_init_tls);
+#endif // __WOOT__

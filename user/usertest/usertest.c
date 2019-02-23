@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <syscall.h>
 
+int a;
+
 void syscall(int n, ...)
 {
     asm("sysenter");

@@ -57,9 +57,6 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         delete rootDir;
     }
 
-    File *a = File::Open("/bin/usertest", O_RDONLY);
-    delete a;
-
     // load main kernel module
     ELF::Load(nullptr, KERNEL_FILE, false, true);
 
@@ -112,6 +109,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     for(int i = 0; i < 1; ++i)
     {
         Semaphore finished(0);
+        //Process *proc = Process::Create("/lib/libc.so", &finished);
         Process *proc = Process::Create("/bin/usertest", &finished);
         proc->Start();
         finished.Wait(0, false, false);
@@ -120,7 +118,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
 
     //DEBUG("Object tree dump:\n");
     //ObjectTree::Objects->DebugDump();
-    DEBUG("\n[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
+    DEBUG("[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
     DEBUG("[main] Stopping system...\n");
 
     // unload modules

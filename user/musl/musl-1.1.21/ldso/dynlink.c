@@ -1334,8 +1334,18 @@ static void dl_debug_state(void)
 
 weak_alias(dl_debug_state, _dl_debug_state);
 
+#ifdef __WOOT__
+extern void __woot_init_tls(size_t *aux);
+#endif // __WOOT__
+
 void __init_tls(size_t *auxv)
 {
+#ifdef __WOOT__
+    if(!pthread_self())
+    {   // TLS was not yet initialized
+        __woot_init_tls(auxv);
+    }
+#endif // __WOOT__
 }
 
 hidden void *__tls_get_new(tls_mod_off_t *v)

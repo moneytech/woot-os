@@ -1,6 +1,11 @@
 SUBDIRS = usertest
 THREADS ?= 8
 
+TOP_DIR ?= $(shell realpath ..)
+
+SRC_LIBC_SO = lib/libc.so
+DST_LIBC_SO = $(TOP_DIR)/root/lib/libc.so
+
 all: musl subdirs
 
 subdirs: musl
@@ -15,7 +20,14 @@ musl:
 clean-musl:
 	$(MAKE) -C musl clean
 
-install:
+install-musl: $(DST_LIBC_SO)
+
+$(DST_LIBC_SO): musl
+	cp $(SRC_LIBC_SO) $@
+
+install: do-install install-musl
+
+do-install:
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir install; \
 	done
@@ -25,5 +37,5 @@ clean: clean-musl
 		$(MAKE) -C $$dir clean; \
 	done
 
-.PHONY: clean install subdirs musl clean-musl
+.PHONY: clean install do-install subdirs musl clean-musl install-musl
 

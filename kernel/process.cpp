@@ -82,10 +82,11 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
     {
         //{ AT_SECURE, (uintptr_t)1 },
         { AT_ENTRY, (uintptr_t)elf->EntryPoint },
+        { AT_BASE, (uintptr_t)(elf->base) },
         { AT_PAGESZ, (uintptr_t)PAGE_SIZE },
-        //{ AT_PHNUM, (uintptr_t)elf->ehdr->e_phnum },
-        //{ AT_PHENT, (uintptr_t)elf->ehdr->e_phentsize },
-        //{ AT_PHDR, (uintptr_t)elf->phdrData }
+        { AT_PHNUM, (uintptr_t)elf->ehdr->e_phnum },
+        { AT_PHENT, (uintptr_t)elf->ehdr->e_phentsize },
+        { AT_PHDR, (uintptr_t)elf->phdrData }
     };
 
     // aux vectors

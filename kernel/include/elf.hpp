@@ -258,6 +258,7 @@ class ELF
     uint8_t *phdrData;
     uint8_t *shdrData;
     uintptr_t base;
+    uintptr_t top;
     uintptr_t baseDelta;
     bool releaseData;
     Process *process;

@@ -1,13 +1,17 @@
-ENTRY(_start);
+ENTRY(_start)
+PHDRS
+{
+    all PT_LOAD FILEHDR PHDRS;
+}
 SECTIONS
 {
     KERNEL_BASE = 0xC0000000;
 
-    . = KERNEL_BASE + 0x00110000;
+    . = KERNEL_BASE + 0x00101000;
     . = ALIGN(4096);
 
     _text_start = .;
-    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) }
+    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) } : all
     _text_end = .;
 
     . = ALIGN(4096);

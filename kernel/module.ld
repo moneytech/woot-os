@@ -1,9 +1,13 @@
-ENTRY(_module_start);
+ENTRY(_module_start)
+PHDRS
+{
+    all PT_LOAD FILEHDR PHDRS;
+}
 SECTIONS
 {
     . = ALIGN(4096);
     _module_text_start = .;
-    .text : { *(.text*) }
+    .text : { *(.text*) } : all
     _module_text_end = .;
 
     . = ALIGN(4096);

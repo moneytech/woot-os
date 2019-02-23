@@ -7,7 +7,7 @@ CUR_DIR = $(shell realpath .)
 
 CFLAGS += -I$(CUR_DIR)
 CXXFLAGS += -I$(CUR_DIR)
-LDFLAGS += -T$(TOP_DIR)/kernel/module.ld -Ttext=0xC8000000
+LDFLAGS += -T$(TOP_DIR)/kernel/module.ld -Ttext=0xC8001000
 
 all: $(OBJS)
 	$(LD) $(LDFLAGS) $(OBJS) -o $(OUTFILE)

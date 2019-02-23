@@ -33,7 +33,7 @@ user:
 
 install: root
 
-root: root/system root/boot/grub root/bin root/boot/grub/grub.cfg
+root: root/system root/boot/grub root/bin root/lib root/boot/grub/grub.cfg
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir install; \
 	done
@@ -46,6 +46,9 @@ root/boot/grub:
 
 root/bin:
 	mkdir -p root/bin
+
+root/lib:
+	mkdir -p root/lib
 
 root/boot/grub/grub.cfg: kernel/boot/grub/grub.cfg
 	cp $? $@
