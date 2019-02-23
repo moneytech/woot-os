@@ -7,16 +7,16 @@ PHDRS
 }
 SECTIONS
 {
-    . = SIZEOF_HEADERS;
+	PAGE_SIZE = 4096;
+	
+	. = 0x08000000;
+    . += SIZEOF_HEADERS;
+    . = ALIGN(PAGE_SIZE);
     .text : { *(.text*) } : text
-    . = ALIGN(4096);
     .rodata : { *(.rodata*) } : text
-    . = ALIGN(4096);
+    . = ALIGN(PAGE_SIZE);
     .data : { *(.data*) } : data
-    . = ALIGN(4096);
     .dynamic : { *(.dynamic*) } : data : dynamic
-    . = ALIGN(4096);
     .bss : { *(.bss*) *(COMMON) } : data
-    . = ALIGN(4096);
     end = .;
 }

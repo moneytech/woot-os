@@ -1,6 +1,7 @@
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <errno.h>
+#include <process.hpp>
 #include <syscalls.hpp>
 #include <sysdefs.h>
 #include <thread.hpp>
@@ -43,7 +44,9 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_SET_THREAD_AREA] = sys_set_thread_area,
     [SYS_GET_PTHREAD] = sys_get_pthread,
     [SYS_READV] = sys_readv,
-    [SYS_WRITEV] = sys_writev
+    [SYS_WRITEV] = sys_writev,
+    [SYS_GETPID] = sys_getpid,
+    [SYS_GETTID] = sys_gettid
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -124,6 +127,16 @@ long SysCalls::sys_writev(uintptr_t *args)
         res += r;
     }
     return res;
+}
+
+long SysCalls::sys_getpid(uintptr_t *args)
+{
+    return Process::GetCurrent()->ID;
+}
+
+long SysCalls::sys_gettid(uintptr_t *args)
+{
+    return Thread::GetCurrent()->ID;
 }
 
 void SysCalls::Initialize()

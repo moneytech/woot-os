@@ -4,7 +4,7 @@ CONFIG_FILE = build/config.mak
 THREADS = 8
 
 CC = clang
-CFLAGS = -m32 -O0 -D__WOOT__ -ggdb -I$(TOP_DIR)
+CFLAGS = -m32 -O0 -D__WOOT__ -ggdb -I$(TOP_DIR)/common/include
 ASFLAGS = --32
 LDFLAGS = -Wl,-T$(TOP_DIR)/user/shared.ld
 AR = ar

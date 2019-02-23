@@ -1,6 +1,6 @@
 #pragma once
 
-#include <syscall.h>
+#include <syscalls.h>
 #include <types.hpp>
 
 class SysCalls
@@ -15,6 +15,8 @@ class SysCalls
     static long sys_get_pthread(uintptr_t *args);
     static long sys_readv(uintptr_t *args);
     static long sys_writev(uintptr_t *args);
+    static long sys_getpid(uintptr_t *args);
+    static long sys_gettid(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();
