@@ -197,7 +197,6 @@
 #define SYS_sync                    (SYS_NOT_IMPL)
 #define SYS_ftruncate               (SYS_NOT_IMPL)
 #define SYS_truncate                (SYS_NOT_IMPL)
-#define SYS_getcwd                  (SYS_NOT_IMPL)
 #define SYS_getgroups               (SYS_NOT_IMPL)
 #define SYS_getpgid                 (SYS_NOT_IMPL)
 #define SYS_getppid                 (SYS_NOT_IMPL)
@@ -220,3 +219,4 @@
 #define SYS_getpid                  SYS_GETPID
 #define SYS_gettid                  SYS_GETTID
 #define SYS_brk                     SYS_BRK
+#define SYS_getcwd                  SYS_GETCWD

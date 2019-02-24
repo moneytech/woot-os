@@ -1,5 +1,6 @@
 #include <cpu.hpp>
 #include <debug.hpp>
+#include <dentry.hpp>
 #include <errno.h>
 #include <paging.hpp>
 #include <process.hpp>
@@ -19,6 +20,7 @@ extern "C" void sysEnterHandler();
 asm(
 ".intel_syntax noprefix\n"
 "sysEnterHandler:\n"
+"sti\n"             // reenable interrupts
 "push ebp\n"
 "mov ebp, esp\n"
 "mov eax, [ebp]\n"
@@ -49,7 +51,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_WRITEV] = sys_writev,
     [SYS_GETPID] = sys_getpid,
     [SYS_GETTID] = sys_gettid,
-    [SYS_BRK] = sys_brk
+    [SYS_BRK] = sys_brk,
+    [SYS_GETCWD] = sys_getcwd
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -193,6 +196,19 @@ long SysCalls::sys_brk(uintptr_t *args)
     cp->CurrentBrk = brk;
     cp->MemoryLock.Release();
     return brk;
+}
+
+long SysCalls::sys_getcwd(uintptr_t *args)
+{
+    char *buf = (char *)args[1];
+    size_t size = (size_t)args[2];
+    if(!buf || !size) return -EINVAL;
+    DEntry *cwd = Process::GetCurrentDir();
+    if(!cwd) return -ENOENT;
+    size_t res = cwd->GetFullPath(buf, size);
+    if(res >= (size - 1))
+        return -ERANGE;
+    return res;
 }
 
 void SysCalls::Initialize()

@@ -10,5 +10,6 @@
 #define SYS_GETPID          7
 #define SYS_GETTID          8
 #define SYS_BRK             9
+#define SYS_GETCWD          10
 
 #define SYS_NOT_IMPL	    0x80000000

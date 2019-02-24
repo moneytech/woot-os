@@ -4,18 +4,19 @@ OBJS = usertest.o
 
 TOP_DIR ?= ../..
 BIN_FILE = $(TOP_DIR)/root/bin/$(OUTFILE)
+START_FILE = $(TOP_DIR)/user/lib/Scrt1.o
+LIBC_FILE = $(TOP_DIR)/user/lib/libc.so
 
 COMMON_FLAGS = -fPIC -ggdb -m32 -fno-stack-protector -nostdinc -nostdlib -I$(TOP_DIR)/common/include -I$(TOP_DIR)/user/include
 CFLAGS += $(COMMON_FLAGS)
 CXXFLAGS += $(COMMON_FLAGS)
-#LDFLAGS += -melf_i386 -T$(TOP_DIR)/user/exec.ld -Ttext=0x02001000 -static $(TOP_DIR)/user/lib/crt1.o -L$(TOP_DIR)/user/lib
-LDFLAGS += -melf_i386 -T$(TOP_DIR)/user/exec.ld -shared $(TOP_DIR)/user/lib/Scrt1.o -L$(TOP_DIR)/user/lib
-LIBS = -lc
+#LDFLAGS += -melf_i386 -T$(TOP_DIR)/user/exec.ld -L$(TOP_DIR)/user/lib
+LDFLAGS += -melf_i386 -T$(TOP_DIR)/user/exec.ld -shared -L$(TOP_DIR)/user/lib
 
 all: $(OUTFILE)
 
-$(OUTFILE): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $(OUTFILE) $(LIBS)
+$(OUTFILE): $(OBJS) $(START_FILE) $(LIBC_FILE)
+	$(LD) $(LDFLAGS) $(START_FILE) $(OBJS) -o $(OUTFILE) -lc
 
 install: $(BIN_FILE)
 
