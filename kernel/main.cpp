@@ -58,7 +58,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     }
 
     // load main kernel module
-    ELF::Load(nullptr, KERNEL_FILE, false, true);
+    ELF::Load(KERNEL_FILE, false, true);
 
     // load boot time modules
     if(File *f = File::Open(MODULELIST_FILE, O_RDONLY))
@@ -78,7 +78,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
                 continue;
 
             DEBUG("[main] Loading module '%s'\n", line);
-            ELF *module = ELF::Load(nullptr, line, false, false);
+            ELF *module = ELF::Load(line, false, false);
             if(!module)
             {
                 DEBUG("[main] Couldn't load module '%s'\n", line);

@@ -8,7 +8,7 @@
 #include <stringbuilder.hpp>
 #include <sysdefs.h>
 
-static const char *libDir = "/lib";
+static const char *libDir = "WOOT_OS:/lib";
 
 ELF::ELF(const char *name, Elf32_Ehdr *ehdr, uint8_t *phdrData, uint8_t *shdrData, bool user) :
     Name(String::Duplicate(name)), ehdr(ehdr), phdrData(phdrData), shdrData(shdrData), user(user),
@@ -21,9 +21,9 @@ Elf32_Shdr *ELF::getShdr(int i)
     return (Elf32_Shdr *)(shdrData + i * ehdr->e_shentsize);
 }
 
-ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders)
+ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders)
 {
-    File *f = dentry ? File::Open(dentry, filename, O_RDONLY) : File::Open(filename, O_RDONLY);
+    File *f = File::Open(filename, O_RDONLY);
     if(!f)
     {
         DEBUG("[elf] Couldn't find '%s' file\n", filename);
@@ -272,7 +272,7 @@ ELF *ELF::Load(DEntry *dentry, const char *filename, bool user, bool onlyHeaders
                     if(proc->GetELF(soname))
                         continue;
                     //DEBUG("[elf] loading DT_NEEDED %s for %s\n", soname, elf->Name);
-                    ELF *soELF = Load(dentry, soname, user, false);
+                    ELF *soELF = Load(soname, user, false);
                 }
             }
         }

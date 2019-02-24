@@ -111,11 +111,10 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
 int Process::processEntryPoint(const char *cmdline)
 {
     Tokenizer cmd(cmdline, " ", 2);
-    DEntry *currentDir = GetCurrentDir();
-    ELF *elf = ELF::Load(currentDir, cmd[0], true, false);
+    ELF *elf = ELF::Load(cmd[0], true, false);
     Process *proc = GetCurrent();
     if(!proc || !elf) return 127;
-    if(!elf->EntryPoint)// || !proc->ApplyRelocations())
+    if(!elf->EntryPoint)
         return 126;
     if(!proc->lock.Acquire(0, false))
         return 126;
