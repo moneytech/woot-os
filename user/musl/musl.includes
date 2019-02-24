@@ -5,4 +5,4 @@ musl-1.1.21/arch/woot/bits
 musl-1.1.21/arch/woot
 musl-1.1.21/src/setjmp/woot
 musl-1.1.21/src/thread/woot
-../..
+../../common/include

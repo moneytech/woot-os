@@ -10,7 +10,6 @@
 #define SYS_mount                   (SYS_NOT_IMPL + 21)
 #define SYS_ptrace                  (SYS_NOT_IMPL + 26)
 #define SYS_kill                    (SYS_NOT_IMPL + 37)
-#define SYS_brk                     (SYS_NOT_IMPL + 45)
 #define SYS_umount2                 (SYS_NOT_IMPL + 52)
 #define SYS_ioctl                   (SYS_NOT_IMPL + 54)
 #define SYS_fcntl                   (SYS_NOT_IMPL + 55)
@@ -220,3 +219,4 @@
 #define SYS_writev                  SYS_WRITEV
 #define SYS_getpid                  SYS_GETPID
 #define SYS_gettid                  SYS_GETTID
+#define SYS_brk                     SYS_BRK

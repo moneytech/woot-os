@@ -1,7 +1,9 @@
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <errno.h>
+#include <paging.hpp>
 #include <process.hpp>
+#include <syscalls.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
 #include <thread.hpp>
@@ -46,7 +48,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_READV] = sys_readv,
     [SYS_WRITEV] = sys_writev,
     [SYS_GETPID] = sys_getpid,
-    [SYS_GETTID] = sys_gettid
+    [SYS_GETTID] = sys_gettid,
+    [SYS_BRK] = sys_brk
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -137,6 +140,59 @@ long SysCalls::sys_getpid(uintptr_t *args)
 long SysCalls::sys_gettid(uintptr_t *args)
 {
     return Thread::GetCurrent()->ID;
+}
+
+long SysCalls::sys_brk(uintptr_t *args)
+{
+    //DEBUG("sys_brk(%p)\n", args[1]);
+    uintptr_t brk = args[1];
+    Process *cp = Process::GetCurrent();
+    if(!cp) return ~0;
+    if(!cp->MemoryLock.Acquire(10 * 1000, false))
+        return ~0;
+
+    if(brk < cp->MinBrk || brk > cp->MaxBrk)
+    {
+        brk = cp->CurrentBrk;
+        cp->MemoryLock.Release();
+        return brk;
+    }
+
+    uintptr_t mappedNeeded = align(brk, PAGE_SIZE);
+
+    if(mappedNeeded > cp->MappedBrk)
+    {   // alloc and map needed memory
+        for(uintptr_t va = cp->MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
+        {
+            uintptr_t pa = Paging::AllocPage();
+            if(pa == ~0)
+            {
+                cp->MemoryLock.Release();;
+                return cp->CurrentBrk;
+            }
+            if(!Paging::MapPage(cp->AddressSpace, va, pa, true, true))
+            {
+                cp->MemoryLock.Release();;
+                return cp->CurrentBrk;
+            }
+        }
+        cp->MappedBrk = mappedNeeded;
+    }
+    else
+    {   // unmap and free excess memory
+        for(uintptr_t va = mappedNeeded; va < cp->MappedBrk; va += PAGE_SIZE)
+        {
+            uintptr_t pa = Paging::GetPhysicalAddress(cp->AddressSpace, va);
+            if(pa != ~0)
+                Paging::FreePage(pa);
+            Paging::UnMapPage(cp->AddressSpace, va);
+        }
+        cp->MappedBrk = mappedNeeded;
+    }
+
+    cp->CurrentBrk = brk;
+    cp->MemoryLock.Release();
+    return brk;
 }
 
 void SysCalls::Initialize()
