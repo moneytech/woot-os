@@ -61,6 +61,7 @@ size_t Heap::getMaxSize(void *ptr)
 
 void *Heap::allocate(size_t size, size_t alignment, bool zero)
 {
+    if(!size) return nullptr;
     for(HeapBlock *curBlk = firstBlock; curBlk != lastBlock; curBlk = curBlk->Next)
     {
         uintptr_t blkData = (uintptr_t)&curBlk->Data;
@@ -88,6 +89,8 @@ void *Heap::allocate(size_t size, size_t alignment, bool zero)
 
 void *Heap::resize(void *ptr, size_t size, size_t alignment, bool zero)
 {
+    if(!ptr) return allocate(size, alignment, zero);
+    else if(!size) { free(ptr); return nullptr; }
     uintptr_t p = (uintptr_t)p;
     HeapBlock *blk = (HeapBlock *)(p - sizeof(HeapBlock));
     if(size > blk->Size && (p % alignment || size > getMaxSize(ptr)))
