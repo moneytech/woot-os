@@ -99,7 +99,7 @@ void *Heap::resize(void *ptr, size_t size, size_t alignment, bool zero)
     {   // block needs to be moved
         void *newPtr = allocate(size, alignment, zero);
         Memory::Move(newPtr, ptr, blk->Size);
-        Free(ptr);
+        free(ptr);
         return newPtr;
     }
     ssize_t sizeDiff = size - blk->Size;
