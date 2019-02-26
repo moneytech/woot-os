@@ -61,6 +61,11 @@ public:
         return allocatedSize;
     }
 
+    T Get(uint idx) const
+    {
+        return idx >= currentSize ? T() : data[idx];
+    }
+
     bool Append(T value)
     {
         if(!upSize()) return false;
