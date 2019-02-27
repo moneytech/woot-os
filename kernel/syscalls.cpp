@@ -55,7 +55,9 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_BRK] = sys_brk,
     [SYS_GETCWD] = sys_getcwd,
     [SYS_OPEN] = sys_open,
-    [SYS_CLOSE] = sys_close
+    [SYS_CLOSE] = sys_close,
+    [SYS_READ] = sys_read,
+    [SYS_WRITE] = sys_write
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -250,6 +252,28 @@ long SysCalls::sys_open(uintptr_t *args)
 long SysCalls::sys_close(uintptr_t *args)
 {
     return Process::GetCurrent()->Close(args[1]);
+}
+
+long SysCalls::sys_read(uintptr_t *args)
+{
+    int handle = (int)args[1];
+    void *buffer = (void *)args[2];
+    size_t count = (size_t)args[3];
+    if(handle < 3) return DebugStream->Read(buffer, count); // temporary hack
+    File *f = Process::GetCurrent()->GetFile(handle);
+    if(!f) return -errno;
+    return f->Read(buffer, count);
+}
+
+long SysCalls::sys_write(uintptr_t *args)
+{
+    int handle = (int)args[1];
+    const void *buffer = (const void *)args[2];
+    size_t count = (size_t)args[3];
+    if(handle < 3) return DebugStream->Write(buffer, count); // temporary hack
+    File *f = Process::GetCurrent()->GetFile(handle);
+    if(!f) return -errno;
+    return f->Write(buffer, count);
 }
 
 void SysCalls::Initialize()

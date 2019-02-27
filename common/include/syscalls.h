@@ -13,5 +13,7 @@
 #define SYS_GETCWD          10
 #define SYS_OPEN            11
 #define SYS_CLOSE           12
+#define SYS_READ            13
+#define SYS_WRITE           14
 
 #define SYS_NOT_IMPL	    0x80000000
