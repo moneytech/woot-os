@@ -111,8 +111,8 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     for(int i = 0; i < 1; ++i)
     {
         Semaphore finished(0);
-        //Process *proc = Process::Create("/lib/libc.so", &finished);
-        Process *proc = Process::Create("/bin/usertest", &finished);
+        //Process *proc = Process::Create("/lib/libc.so -- /bin/usertest", &finished);
+        Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished);
         proc->Start();
         finished.Wait(0, false, false);
         delete proc;

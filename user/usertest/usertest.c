@@ -13,6 +13,10 @@ int main(int argc, char *argv[])
     printf("tid: %d\n", (int)syscall(SYS_gettid));
     printf("cwd: %s\n", getcwd(NULL, 0));
     putenv("TEST_FILE=WOOT_OS:/system/modulelist");
+
+    for(int i = 0; i < argc; ++i)
+        printf("arg: %s\n", argv[i]);
+
     char *env = environ[0];
     for(int i = 0; env; env = environ[++i])
         printf("%s\n", env);

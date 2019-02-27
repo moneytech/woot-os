@@ -8,7 +8,8 @@ Tokenizer::Tokenizer(const char *string, const char *delims, size_t maxTokens) :
     for(int i = 0; ; ++i)
     {
         bool tail = maxTokens && i >= (maxTokens - 1);
-        char *s = tail ? nextp : String::Tokenize(i ? nullptr : stringCopy, delims, &nextp);
+        const char *del = (nextp ? nextp[0] == '"' : stringCopy[0] == '"') ? "\"" : delims;
+        char *s = tail ? nextp : String::Tokenize(i ? nullptr : stringCopy, del, &nextp);
         if(!s) break;
 
         // trim any possible leading delimiters in tail
