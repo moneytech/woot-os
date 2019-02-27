@@ -1,7 +1,7 @@
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <errno.h>
-//#include <file.h>
+#include <file.hpp>
 #include <filesystem.hpp>
 #include <memory.hpp>
 #include <mutex.hpp>
@@ -104,7 +104,6 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
     for(i = 0; i < argCount; ++i)
         stackPtr = stackPush(stackPtr, &argPtrs[argCount - i - 1], sizeof(uintptr_t));
     stackPtr = stackPush(stackPtr, &argCount, sizeof argCount);
-    //stackPtr = stackPush(stackPtr, &basePointer, sizeof basePointer);
     return stackPtr;
 }
 
@@ -130,7 +129,7 @@ int Process::processEntryPoint(const char *cmdline)
     uintptr_t esp = Thread::GetCurrent()->AllocUserStack();
     const char *envVars[] =
     {
-        "PATH=WOOT_OS:/;WOOT_OS:/system",
+        "PATH=WOOT_OS:/bin;WOOT_OS:/system",
         "TEST=value"
     };
     esp = buildUserStack(esp, cmdline, sizeof(envVars) / sizeof(const char *), envVars, elf, 0, 0);
@@ -147,6 +146,30 @@ Process *Process::getByID(pid_t pid)
             return proc;
     }
     return nullptr;
+}
+
+int Process::allocHandleSlot(Handle handle)
+{
+    size_t handlesSize = Handles.Size();
+    for(int i = 0; i < handlesSize; ++i)
+    {
+        if(Handles.Get(i).Type == Handle::Type::Free)
+        {
+            Handles.Set(i, handle);
+            return i;
+        }
+    }
+    if(!Handles.Append(handle))
+        return -ENOMEM;
+    return handlesSize;
+}
+
+void Process::freeHandleSlot(int handle)
+{
+    size_t handlesSize = Handles.Size();
+    if(handle < 0 || handle >= handlesSize)
+        return;
+    Handles.Set(handle, Handle());
 }
 
 void Process::Initialize()
@@ -249,6 +272,7 @@ void Process::Dump()
 Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool selfDestruct) :
     lock(false, "processLock"),
     UserStackPtr(KERNEL_BASE),
+    Handles(8, 8, MAX_HANDLES),
     ID(id.GetNext()),
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
@@ -256,8 +280,12 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     MemoryLock(false, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
+    Handles.Append(Handle(nullptr));
+    Handles.Append(Handle(nullptr));
+    Handles.Append(Handle(nullptr));
+
     ObjectTree::Item *dir = ObjectTree::Objects->MakeDir("/proc");
-    if(dir) dir->AddChild(this);    
+    if(dir) dir->AddChild(this);
     DEntry *cdir = Parent ? Parent->GetCurrentDir() : nullptr;
     if(cdir) CurrentDirectory = FileSystem::GetDEntry(cdir);
     AddThread(mainThread);
@@ -266,48 +294,63 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     listLock.Release();
 }
 
+bool Process::Lock()
+{
+    if(lock.Acquire(5000, false))
+        return true;
+    errno = -EBUSY;
+    return false;
+}
+
+void Process::UnLock()
+{
+    lock.Release();
+}
+
 bool Process::Start()
 {
-    if(!lock.Acquire(0, false))
-        return false;
+    if(!Lock()) return false;
     Thread *t = Threads[0];
-    if(!t) return false;
+    if(!t)
+    {
+        UnLock();
+        return false;
+    }
     t->Enable();
     bool res = t->Resume(false);
-    lock.Release();
+    UnLock();
     return res;
 }
 
 bool Process::AddThread(Thread *thread)
 {
-    if(!lock.Acquire(0, false)) return false;
+    if(!Lock()) return false;
     Threads.Append(thread);
     thread->Process = this;
-    lock.Release();
+    UnLock();
     return true;
 }
 
 bool Process::RemoveThread(Thread *thread)
 {
-    if(!lock.Acquire(0, false)) return false;
+    if(!Lock()) return false;
     bool res = Threads.Remove(thread, nullptr, false) != 0;
     thread->Process = nullptr;
-    lock.Release();
+    UnLock();
     return res;
 }
 
 bool Process::AddELF(ELF *elf)
 {
-    if(!elf || !lock.Acquire(0, false)) return false;
+    if(!elf || !Lock()) return false;
     Images.Append(elf);
-    lock.Release();
+    UnLock();
     return true;
 }
 
 ELF *Process::GetELF(const char *name)
 {
-    if(!lock.Acquire(0, false))
-        return nullptr;
+    if(!Lock()) return nullptr;
     ELF *res = nullptr;
     for(ELF *elf : Images)
     {
@@ -317,14 +360,13 @@ ELF *Process::GetELF(const char *name)
             break;
         }
     }
-    lock.Release();
+    UnLock();
     return res;
 }
 
 Elf32_Sym *Process::FindSymbol(const char *name, ELF *skip, ELF **elf)
 {
-    if(!lock.Acquire(0, false))
-        return nullptr;
+    if(!Lock()) return nullptr;
     for(ELF *e : Images)
     {
         if(e == skip)
@@ -333,89 +375,73 @@ Elf32_Sym *Process::FindSymbol(const char *name, ELF *skip, ELF **elf)
         if(sym)
         {
             if(elf) *elf = e;
-            lock.Release();
+            UnLock();
             return sym;
         }
     }
-    lock.Release();
+    UnLock();
     return nullptr;
 }
 
 bool Process::ApplyRelocations()
 {
-    if(!lock.Acquire(0, false))
-        return false;
+    if(!Lock()) return false;
     for(ELF *e : Images)
     {
         if(!e->ApplyRelocations())
         {
-            lock.Release();
+            UnLock();
             return false;
         }
     }
-    lock.Release();
+    UnLock();
     return true;
 }
 
 int Process::Open(const char *filename, int flags)
 {
-    return -ENOSYS;
-/*    if(!lock.Acquire(0, false))
-        return -EBUSY;
+    if(!filename) return -EINVAL;
+    if(!Lock()) return -errno;
     File *f = File::Open(filename, flags);
-    if(!f)
-    {
-        lock.Release();
-        return -ENOENT;
-    }
-    int fd = 3;
-    for(; fd < MAX_FILE_DESCRIPTORS; ++fd)
-    {
-        if(!FileDescriptors[fd])
-        {
-            FileDescriptors[fd] = f;
-            break;
-        }
-    }
-    if(fd >= MAX_FILE_DESCRIPTORS)
-        fd = -EMFILE;
-    lock.Release();
-    return fd;*/
+    if(!f) return -errno;
+    int res = allocHandleSlot(Handle(f));
+    if(res < 0) delete f;
+    UnLock();
+    return res;
 }
 
-int Process::Close(int fd)
+int Process::Close(int handle)
 {
-    return -ENOSYS;
-/*    if(fd < 0 || fd >= MAX_FILE_DESCRIPTORS)
-        return -EBADF;
-    if(!lock.Acquire(0, false))
-        return -EBUSY;
-    File *f = FileDescriptors[fd];
-    if(!f)
+    if(!Lock()) return -errno;
+    Handle h = Handles.Get(handle);
+    if(h.Type != Handle::Type::File)
     {
-        lock.Release();
+        UnLock();
         return -EBADF;
     }
-    delete f;
-    FileDescriptors[fd] = nullptr;
-    lock.Release();
-    return 0;*/
+    if(h.File) delete h.File;
+    freeHandleSlot(handle);
+    UnLock();
+    return 0;
 }
 
-File *Process::GetFileDescriptor(int fd)
+File *Process::GetFile(int handle)
 {
-    if(fd < 0 || fd >= MAX_FILE_DESCRIPTORS)
+    if(!Lock()) return nullptr;
+    Handle h = Handles.Get(handle);
+    if(h.Type != Handle::Type::File)
+    {
+        errno = EBADF;
+        UnLock();
         return nullptr;
-    if(!lock.Acquire(0, false))
-        return nullptr;
-    File *f = FileDescriptors[fd];
-    lock.Release();
-    return f;
+    }
+    UnLock();
+    return h.File;
 }
 
 int Process::NewMutex()
 {
-    if(!lock.Acquire(0, false))
+/*    if(!lock.Acquire(0, false))
         return -EBUSY;
     int res = -ENOMEM;
     for(int i = 0; i < MAX_MUTEXES; ++i)
@@ -428,21 +454,21 @@ int Process::NewMutex()
         }
     }
     lock.Release();
-    return res;
+    return res;*/
 }
 
 Mutex *Process::GetMutex(int idx)
 {
-    if(idx < 0 || idx >= MAX_MUTEXES || !lock.Acquire(0, false))
+/*    if(idx < 0 || idx >= MAX_MUTEXES || !lock.Acquire(0, false))
         return nullptr;
     Mutex *res = Mutexes[idx];
     lock.Release();
-    return res;
+    return res;*/
 }
 
 int Process::DeleteMutex(int idx)
 {
-    if(idx < 0 || idx >= MAX_MUTEXES)
+/*    if(idx < 0 || idx >= MAX_MUTEXES)
         return -EINVAL;
     if(!lock.Acquire(0, false))
         return -EBUSY;
@@ -454,12 +480,12 @@ int Process::DeleteMutex(int idx)
         res = 0;
     }
     lock.Release();
-    return res;
+    return res;*/
 }
 
 int Process::NewSemaphore(int initVal)
 {
-    if(!lock.Acquire(0, false))
+/*    if(!lock.Acquire(0, false))
         return -EBUSY;
     int res = -ENOMEM;
     for(int i = 0; i < MAX_SEMAPHORES; ++i)
@@ -472,21 +498,21 @@ int Process::NewSemaphore(int initVal)
         }
     }
     lock.Release();
-    return res;
+    return res;*/
 }
 
 Semaphore *Process::GetSemaphore(int idx)
 {
-    if(idx < 0 || idx >= MAX_SEMAPHORES || !lock.Acquire(0, false))
+/*    if(idx < 0 || idx >= MAX_SEMAPHORES || !lock.Acquire(0, false))
         return nullptr;
     Semaphore *res = Semaphores[idx];
     lock.Release();
-    return res;
+    return res;*/
 }
 
 int Process::DeleteSemaphore(int idx)
 {
-    if(idx < 0 || idx >= MAX_SEMAPHORES)
+/*    if(idx < 0 || idx >= MAX_SEMAPHORES)
         return -EINVAL;
     if(!lock.Acquire(0, false))
         return -EBUSY;
@@ -498,7 +524,7 @@ int Process::DeleteSemaphore(int idx)
         res = 0;
     }
     lock.Release();
-    return res;
+    return res;*/
 }
 
 bool Process::KeyCheck(const char *name)
@@ -524,4 +550,21 @@ Process::~Process()
     processList.Remove(this, nullptr, false);
     if(lockAcquired) listLock.Release();
     if(Name) delete[] Name;
+}
+
+Process::Handle::Handle() :
+    Type(Type::Free),
+    Unknown(nullptr)
+{
+}
+
+Process::Handle::Handle(nullptr_t) :
+    Type(Type::Unknown),
+    Unknown(nullptr)
+{
+}
+
+Process::Handle::Handle(::File *file) :
+    Type(Type::File), File(file)
+{
 }

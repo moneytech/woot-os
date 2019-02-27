@@ -34,6 +34,7 @@ OBJS = boot/boot.o \
 	misc.o \
 	module.o \
 	mutex.o \
+    namedmutex.o \
 	new.o \
 	objectqueue.o \
 	objecttree.o \
@@ -61,7 +62,7 @@ DEPS = link.ld
 
 MODULES = ps2input
 
-TOP_DIR ?= ..
+TOP_DIR ?= $(shell realpath ..)
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
 MODULELIST_FILE = $(TOP_DIR)/root/system/modulelist
 

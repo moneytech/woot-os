@@ -66,6 +66,13 @@ public:
         return idx >= currentSize ? T() : data[idx];
     }
 
+    bool Set(uint idx, T value)
+    {
+        if(idx >= currentSize) return false;
+        data[idx] = value;
+        return true;
+    }
+
     bool Append(T value)
     {
         if(!upSize()) return false;

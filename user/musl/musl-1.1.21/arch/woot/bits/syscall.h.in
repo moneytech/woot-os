@@ -5,7 +5,6 @@
 // put unimplemented syscalls here
 #define SYS_read                    (SYS_NOT_IMPL + 3)
 #define SYS_write                   (SYS_NOT_IMPL + 4)
-#define SYS_close                   (SYS_NOT_IMPL + 6)
 #define SYS_lseek                   (SYS_NOT_IMPL + 19)
 #define SYS_mount                   (SYS_NOT_IMPL + 21)
 #define SYS_ptrace                  (SYS_NOT_IMPL + 26)
@@ -220,3 +219,5 @@
 #define SYS_gettid                  SYS_GETTID
 #define SYS_brk                     SYS_BRK
 #define SYS_getcwd                  SYS_GETCWD
+#define SYS_open                    SYS_OPEN
+#define SYS_close                   SYS_CLOSE

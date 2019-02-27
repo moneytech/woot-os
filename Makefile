@@ -1,4 +1,4 @@
-LOOP_DEVICE = /dev/loop2
+LOOP_DEVICE = /dev/loop7
 TOP_DIR = $(shell realpath .)
 SYSTEM_DIR = root/system
 MOUNTPOINT = /mnt

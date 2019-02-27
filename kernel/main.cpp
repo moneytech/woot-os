@@ -22,7 +22,9 @@
 #include <memory.hpp>
 #include <objecttree.hpp>
 #include <paging.hpp>
+#include <random.hpp>
 #include <string.hpp>
+#include <vector.hpp>
 
 #define KERNEL_FILE     "/system/kernel"
 #define MODULELIST_FILE "/system/modulelist"

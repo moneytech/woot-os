@@ -2,6 +2,7 @@
 #include <debug.hpp>
 #include <dentry.hpp>
 #include <errno.h>
+#include <file.hpp>
 #include <paging.hpp>
 #include <process.hpp>
 #include <syscalls.h>
@@ -52,7 +53,9 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_GETPID] = sys_getpid,
     [SYS_GETTID] = sys_gettid,
     [SYS_BRK] = sys_brk,
-    [SYS_GETCWD] = sys_getcwd
+    [SYS_GETCWD] = sys_getcwd,
+    [SYS_OPEN] = sys_open,
+    [SYS_CLOSE] = sys_close
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -105,32 +108,60 @@ long SysCalls::sys_get_pthread(uintptr_t *args)
 
 long SysCalls::sys_readv(uintptr_t *args)
 {
-    int fd = args[1];
+    int handle = args[1];
     struct iovec *iov = (struct iovec *)args[2];
     int iovcnt = args[3];
     if(iovcnt < 0) return -EINVAL;
     ssize_t res = 0;
-    for(int i = 0; i < iovcnt; ++i)
+    if(handle < 3)
+    {   // temporary hack
+        for(int i = 0; i < iovcnt; ++i)
+        {
+            ssize_t r = DebugStream->Read(iov[i].iov_base, iov[i].iov_len);
+            if(r < 0) return r;
+            res += r;
+        }
+    }
+    else
     {
-        ssize_t r = DebugStream->Read(iov[i].iov_base, iov[i].iov_len);
-        if(r < 0) return r;
-        res += r;
+        File *f = Process::GetCurrent()->GetFile(handle);
+        if(!f) return -errno;
+        for(int i = 0; i < iovcnt; ++i)
+        {
+            ssize_t r = f->Read(iov[i].iov_base, iov[i].iov_len);
+            if(r < 0) return r;
+            res += r;
+        }
     }
     return res;
 }
 
 long SysCalls::sys_writev(uintptr_t *args)
 {
-    int fd = args[1];
+    int handle = args[1];
     struct iovec *iov = (struct iovec *)args[2];
     int iovcnt = args[3];
     if(iovcnt < 0) return -EINVAL;
     ssize_t res = 0;
-    for(int i = 0; i < iovcnt; ++i)
+    if(handle < 3)
+    {   // temporary hack
+        for(int i = 0; i < iovcnt; ++i)
+        {
+            ssize_t r = DebugStream->Write(iov[i].iov_base, iov[i].iov_len);
+            if(r < 0) return r;
+            res += r;
+        }
+    }
+    else
     {
-        ssize_t r = DebugStream->Write(iov[i].iov_base, iov[i].iov_len);
-        if(r < 0) return r;
-        res += r;
+        File *f = Process::GetCurrent()->GetFile(handle);
+        if(!f) return -errno;
+        for(int i = 0; i < iovcnt; ++i)
+        {
+            ssize_t r = f->Write(iov[i].iov_base, iov[i].iov_len);
+            if(r < 0) return r;
+            res += r;
+        }
     }
     return res;
 }
@@ -209,6 +240,16 @@ long SysCalls::sys_getcwd(uintptr_t *args)
     if(res >= (size - 1))
         return -ERANGE;
     return res;
+}
+
+long SysCalls::sys_open(uintptr_t *args)
+{
+    return Process::GetCurrent()->Open((const char *)args[1], args[2]);
+}
+
+long SysCalls::sys_close(uintptr_t *args)
+{
+    return Process::GetCurrent()->Close(args[1]);
 }
 
 void SysCalls::Initialize()

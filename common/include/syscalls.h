@@ -11,5 +11,7 @@
 #define SYS_GETTID          8
 #define SYS_BRK             9
 #define SYS_GETCWD          10
+#define SYS_OPEN            11
+#define SYS_CLOSE           12
 
 #define SYS_NOT_IMPL	    0x80000000

@@ -4,7 +4,8 @@
 #include <mutex.hpp>
 #include <types.hpp>
 
-#define OBJTREE_MAX_NAME_LEN 63
+#define OBJTREE_MAX_NAME_LEN    63
+#define OBJTREE_MAX_PATH_LEN    4095
 
 class StringBuilder;
 

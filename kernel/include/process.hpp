@@ -7,19 +7,44 @@
 #include <objecttree.hpp>
 #include <sequencer.hpp>
 #include <types.hpp>
+#include <vector.hpp>
 
 class DEntry;
 class ELF;
 class File;
+class NamedMutex;
 class Semaphore;
 class Thread;
 
-#define MAX_FILE_DESCRIPTORS    128
-#define MAX_MUTEXES             64
-#define MAX_SEMAPHORES          64
+#define MAX_HANDLES 1024
 
 class Process : public ObjectTree::Item
 {
+public:
+    struct Handle
+    {
+        enum class Type
+        {
+            Free = 0,
+            Unknown,
+            File,
+            Mutex,
+            Semaphore,
+            NamedMutex
+        } Type;
+        union
+        {
+            void *Unknown;
+            ::File *File;
+            ::Mutex *Mutex;
+            ::Semaphore *Semaphore;
+            ::NamedMutex *NamedMutex;
+        };
+        Handle();
+        Handle(nullptr_t);
+        Handle(::File *file);
+    };
+private:
     static Sequencer<pid_t> id;
     static List<Process *> processList;
     static Mutex listLock;
@@ -29,6 +54,9 @@ class Process : public ObjectTree::Item
     static uintptr_t buildUserStack(uintptr_t stackPtr, const char *cmdLine, int envCount, const char *envVars[], ELF *elf, uintptr_t retAddr, uintptr_t basePointer);
     static int processEntryPoint(const char *cmdline);
     static Process *getByID(pid_t pid);
+
+    int allocHandleSlot(Handle handle);
+    void freeHandleSlot(int handle);
 public:
     pid_t ID;
     Process *Parent;
@@ -39,9 +67,7 @@ public:
     gid_t GID, EGID;
     DEntry *CurrentDirectory;
     uintptr_t UserStackPtr;
-    File *FileDescriptors[MAX_FILE_DESCRIPTORS];
-    Mutex *Mutexes[MAX_MUTEXES];
-    Semaphore *Semaphores[MAX_SEMAPHORES];
+    Vector<Handle> Handles;
 
     // used for brk() syscall
     Mutex MemoryLock;
@@ -62,6 +88,8 @@ public:
     static void Dump();
 
     Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool SelfDestruct);
+    bool Lock();
+    void UnLock();
     bool Start();
     bool AddThread(Thread *thread);
     bool RemoveThread(Thread *thread);
@@ -70,8 +98,8 @@ public:
     Elf32_Sym *FindSymbol(const char *name, ELF *skip, ELF **elf);
     bool ApplyRelocations();
     int Open(const char *filename, int flags);
-    int Close(int fd);
-    File *GetFileDescriptor(int fd);
+    int Close(int handle);
+    File *GetFile(int handle);
     int NewMutex();
     Mutex *GetMutex(int idx);
     int DeleteMutex(int idx);

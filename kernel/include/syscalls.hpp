@@ -18,6 +18,8 @@ class SysCalls
     static long sys_gettid(uintptr_t *args);
     static long sys_brk(uintptr_t *args);
     static long sys_getcwd(uintptr_t *args);
+    static long sys_open(uintptr_t *args);
+    static long sys_close(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();

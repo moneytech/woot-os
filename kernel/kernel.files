@@ -18,8 +18,10 @@ include/filesystemtype.hpp
 include/inode.hpp
 include/inputdevice.hpp
 include/module.hpp
+include/namedmutex.hpp
 include/partvolume.hpp
 include/syscalls.hpp
+include/vector.hpp
 include/virtualkey.hpp
 include/volumetype.hpp
 inode.cpp
@@ -27,6 +29,7 @@ inputdevice.cpp
 module.cpp
 module.ld
 modulelist
+namedmutex.cpp
 partvolume.cpp
 ps2input/Makefile
 ps2input/module.cpp
