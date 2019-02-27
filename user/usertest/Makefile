@@ -2,6 +2,9 @@ OUTFILE = usertest
 
 OBJS = usertest.o
 
+CC ?= clang
+CXX ?= clang++
+
 TOP_DIR ?= ../..
 BIN_FILE = $(TOP_DIR)/root/bin/$(OUTFILE)
 START_FILE = $(TOP_DIR)/user/lib/Scrt1.o

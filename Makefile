@@ -3,8 +3,9 @@ TOP_DIR = $(shell realpath .)
 SYSTEM_DIR = root/system
 MOUNTPOINT = /mnt
 
-CC ?= clang
-CXX ?= clang++
+CC = clang
+CXX = clang++
+
 LD ?= ld
 AS ?= as
 AR ?= ar
@@ -14,7 +15,7 @@ THREADS = 8
 
 SUBDIRS = kernel user
 
-export TOP_DIR
+export CC CXX LD AS AR ASM TOP_DIR
 
 all: subdirs root hdd-image
 

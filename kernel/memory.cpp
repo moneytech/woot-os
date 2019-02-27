@@ -1,4 +1,11 @@
 #include <memory.hpp>
+#include <misc.hpp>
+
+// some aliases to make certain compilers happy
+#ifdef __clang__
+c_func_alias(memset, _ZN6Memory3SetEPvhj);
+c_func_alias(memcpy, _ZN6Memory4MoveEPvPKvj);
+#endif // __clang__
 
 void Memory::Zero(void *dst, size_t n)
 {

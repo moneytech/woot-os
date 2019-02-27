@@ -96,6 +96,7 @@ static int64_t debugWrite(const void *buffer, int64_t n)
 #endif // USE_SERIAL
         _outb(0xE9, c);
     }
+    return n;
 }
 
 extern "C" void initializeDebugStream()

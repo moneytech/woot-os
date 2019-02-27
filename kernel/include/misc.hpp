@@ -11,8 +11,10 @@ class Stream;
 #define swap(T, a, b) { T t = (a); (a) = (b); (b) = (t); }
 #define offsetof __builtin_offsetof
 
+#define c_func_alias(al, name) extern "C" void al() __attribute__((alias(#name)))
+
 class Misc
 {
-public:    
+public:
     static unsigned long long PowULL(unsigned long long base, unsigned long long exp);
 };

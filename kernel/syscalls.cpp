@@ -63,14 +63,14 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 long SysCalls::handler(uintptr_t *args)
 {
     uint req = args[0];
-    //DEBUG("[syscalls] sysenter %d\n", req);
-    if(req < MAX_SYSCALLS && handlers[req])
+    DEBUG("[syscalls] sysenter %d\n", req);
+    if(req && req < MAX_SYSCALLS && handlers[req])
     {
         long res = handlers[req](args);
-        //DEBUG("[syscalls] sysexit %d\n", req);
+        DEBUG("[syscalls] sysexit %d\n", req);
         return res;
     }
-    DEBUG("[syscalls] Unknown syscall %u (%p)\n", req & ~0x80000000, req);
+    DEBUG("[syscalls] Unknown syscall %u (%p) at %p\n", req & ~0x80000000, req, args[-1]);
     return -ENOSYS;
 }
 

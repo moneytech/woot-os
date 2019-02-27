@@ -202,7 +202,7 @@ void *Heap::Allocate(size_t size, size_t alignment, bool zero)
 
 void *Heap::Resize(void *ptr, size_t size, size_t alignment, bool zero)
 {
-    if(!lock()) nullptr;
+    if(!lock()) return nullptr;
     void *res = resize(ptr, size, alignment, zero);
     unLock();
     return res;

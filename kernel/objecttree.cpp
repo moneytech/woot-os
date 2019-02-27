@@ -83,21 +83,21 @@ bool ObjectTree::UnRegister(ObjectTree::Item *item)
 
 bool ObjectTree::Contains(const char *path)
 {
-    if(!path || !path[0] || path[0] == '/' && !path[1])
+    if(!path || !path[0] || (path[0] == '/' && !path[1]))
         return true;
     return root.ContainsChild(path);
 }
 
 ObjectTree::Item *ObjectTree::Get(const char *path)
 {
-    if(!path || !path[0] || path[0] == '/' && !path[1])
+    if(!path || !path[0] || (path[0] == '/' && !path[1]))
         return &root;
     return root.GetChild(path);
 }
 
 ObjectTree::Item *ObjectTree::MakeDir(const char *path)
 {
-    if(!path || !path[0] || path[0] == '/' && !path[1])
+    if(!path || !path[0] || (path[0] == '/' && !path[1]))
         return &root;
     if(!Lock()) return nullptr;
     Item *res = root.getChild(path, true);
@@ -225,6 +225,7 @@ bool ObjectTree::Item::removeChild(ObjectTree::Item *item)
     children.Remove(item, nullptr, false);
     item->parent = nullptr;
     item->tree = nullptr;
+    return true;
 }
 
 bool ObjectTree::Item::unRegister(ObjectTree::Item *item)

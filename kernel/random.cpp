@@ -7,7 +7,7 @@ uint Random::rsw = 0x10121337;
 
 const uint MaxValue = 0xFFFFFFFFu;
 
-uint Random::SetSeed(uint seed)
+void Random::SetSeed(uint seed)
 {
     // FIXME: needs lock
     rsx = 0x1BADB002 ^ seed;

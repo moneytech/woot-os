@@ -10,6 +10,6 @@ class Random
     static uint rsw;
 public:
     static const uint MaxValue;
-    static uint SetSeed(uint seed);
+    static void SetSeed(uint seed);
     static uint GetValue();
 };

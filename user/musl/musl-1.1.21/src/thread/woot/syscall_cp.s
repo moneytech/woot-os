@@ -19,15 +19,16 @@ __cp_begin:
     movl (%ecx),%eax
     testl %eax,%eax
     jnz __cp_cancel
-    pushl 24(%esp)
-    pushl 32(%esp)
-    pushl 40(%esp)
-    pushl 48(%esp)
-    pushl 56(%esp)
-    pushl 64(%esp)
-    pushl 72(%esp)
+    movl %esp, %eax
+    pushl 48(%eax)
+    pushl 44(%eax)
+    pushl 49(%eax)
+    pushl 36(%eax)
+    pushl 32(%eax)
+    pushl 28(%eax)
+    pushl 24(%eax)
     call __do_teh_syscall
-    addl 28, %esp
+    addl $28, %esp
 __cp_end:
     popl %ebp
     popl %edi

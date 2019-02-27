@@ -85,7 +85,7 @@ bool Volume::KeyCheck(const char *name)
     char buf[OBJTREE_MAX_NAME_LEN + 1];
     StringBuilder sb(buf, sizeof(buf));
     sb.WriteFmt("%d", id);
-    return String::Compare(sb.String(), name) || FS && FS->GetLabel(buf, sizeof(buf)) && !String::Compare(buf, name);
+    return String::Compare(sb.String(), name) || (FS && FS->GetLabel(buf, sizeof(buf)) && !String::Compare(buf, name));
 }
 
 void Volume::GetDisplayName(char *buf, size_t bufSize)

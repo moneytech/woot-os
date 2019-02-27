@@ -441,6 +441,7 @@ File *Process::GetFile(int handle)
 
 int Process::NewMutex()
 {
+    return -ENOSYS;
 /*    if(!lock.Acquire(0, false))
         return -EBUSY;
     int res = -ENOMEM;
@@ -459,6 +460,7 @@ int Process::NewMutex()
 
 Mutex *Process::GetMutex(int idx)
 {
+    return nullptr;
 /*    if(idx < 0 || idx >= MAX_MUTEXES || !lock.Acquire(0, false))
         return nullptr;
     Mutex *res = Mutexes[idx];
@@ -468,6 +470,7 @@ Mutex *Process::GetMutex(int idx)
 
 int Process::DeleteMutex(int idx)
 {
+    return -ENOSYS;
 /*    if(idx < 0 || idx >= MAX_MUTEXES)
         return -EINVAL;
     if(!lock.Acquire(0, false))
@@ -485,6 +488,7 @@ int Process::DeleteMutex(int idx)
 
 int Process::NewSemaphore(int initVal)
 {
+    return -ENOSYS;
 /*    if(!lock.Acquire(0, false))
         return -EBUSY;
     int res = -ENOMEM;
@@ -503,6 +507,7 @@ int Process::NewSemaphore(int initVal)
 
 Semaphore *Process::GetSemaphore(int idx)
 {
+    return nullptr;
 /*    if(idx < 0 || idx >= MAX_SEMAPHORES || !lock.Acquire(0, false))
         return nullptr;
     Semaphore *res = Semaphores[idx];
@@ -512,6 +517,7 @@ Semaphore *Process::GetSemaphore(int idx)
 
 int Process::DeleteSemaphore(int idx)
 {
+    return -ENOSYS;
 /*    if(idx < 0 || idx >= MAX_SEMAPHORES)
         return -EINVAL;
     if(!lock.Acquire(0, false))

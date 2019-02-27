@@ -472,7 +472,7 @@ void AHCIDrive::Initialize()
                                              nullptr, nullptr, resp.MaximumBlockTransfer ? resp.MaximumBlockTransfer : 1);
             drive->Model = getStringFromID(&resp, offsetof(ATAIdentifyResponse, ModelNumber), 40);
             drive->Serial = getStringFromID(&resp, offsetof(ATAIdentifyResponse, SerialNumber), 20);
-            DEBUG("            %s %s %.2f MiB\n", drive->Model, drive->Serial, (double)(drive->Serial, drive->SectorCount * drive->SectorSize) / (1 << 20));
+            DEBUG("            %s %s %.2f MiB\n", drive->Model, drive->Serial, (double)(drive->SectorCount * drive->SectorSize) / (1 << 20));
 
             if(drvDir) drvDir->AddChild(drive);
         }
@@ -704,6 +704,7 @@ int AHCIDrive::Port::Prepare()
     Memory::Zero((void *)CmdHeader, sizeof(HBA_CMD_HEADER));
     Memory::Zero((void *)FIS, sizeof(HBA_FIS));
     Memory::Zero((void *)CmdTable, CmdTableSize);
+    return 0;
 }
 
 int AHCIDrive::Port::IdentifyDrive(ATAIdentifyResponse *resp)
