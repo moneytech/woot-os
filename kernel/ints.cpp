@@ -99,6 +99,17 @@ void Ints::CommonHandler(Ints::State *state)
                   cpuGetCR2());
         }
         DumpState(state);
+
+        DEBUG("Stack trace:\n");
+        uintptr_t *ebp = (uintptr_t *)state->EBP;
+        for(int i = 0; i < 5; ++i)
+        {
+            uintptr_t eip = ebp[1];
+            if(!eip) break;
+            ebp = (uintptr_t *)(*ebp);
+            DEBUG("%p\n", eip);
+        }
+
         if(ct && ct->ID != 1 && ct->ID != 2)
             Thread::Finalize(ct, 127);
         else cpuSystemHalt(state->InterruptNumber);

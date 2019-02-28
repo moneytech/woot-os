@@ -26,6 +26,7 @@
 #include <string.hpp>
 #include <vector.hpp>
 
+#define LOAD_MODULES    1
 #define KERNEL_FILE     "/system/kernel"
 #define MODULELIST_FILE "/system/modulelist"
 
@@ -59,8 +60,9 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         delete rootDir;
     }
 
+#if LOAD_MODULES
     // load main kernel module
-    ELF::Load(KERNEL_FILE, false, true);
+    ELF::Load(KERNEL_FILE, false, true, true);
 
     // load boot time modules
     if(File *f = File::Open(MODULELIST_FILE, O_RDONLY))
@@ -80,7 +82,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
                 continue;
 
             DEBUG("[main] Loading module '%s'\n", line);
-            ELF *module = ELF::Load(line, false, false);
+            ELF *module = ELF::Load(line, false, false, true);
             if(!module)
             {
                 DEBUG("[main] Couldn't load module '%s'\n", line);
@@ -107,12 +109,12 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         }
         ObjectTree::Objects->UnLock();
     } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
-
-    for(int i = 0; i < 1; ++i)
+#endif // LOAD_MODULES
+    for(int i = 0; i < 2; ++i)
     {
         Semaphore finished(0);
-        Process *proc = Process::Create("/lib/libc.so -- /bin/usertest", &finished);
-        //Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished);
+        Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);
+        //Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished, false);
         proc->Start();
         finished.Wait(0, false, false);
         delete proc;

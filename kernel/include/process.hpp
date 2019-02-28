@@ -49,7 +49,10 @@ private:
     static List<Process *> processList;
     static Mutex listLock;
     static uintptr_t kernelAddressSpace;
+
     Mutex lock;
+    bool noAutoRelocs;
+    bool deleteAddressSpace;
 
     static uintptr_t buildUserStack(uintptr_t stackPtr, const char *cmdLine, int envCount, const char *envVars[], ELF *elf, uintptr_t retAddr, uintptr_t basePointer);
     static int processEntryPoint(const char *cmdline);
@@ -57,6 +60,8 @@ private:
 
     int allocHandleSlot(Handle handle);
     void freeHandleSlot(int handle);
+
+    uintptr_t brk(uintptr_t brk);
 public:
     pid_t ID;
     Process *Parent;
@@ -80,10 +85,9 @@ public:
     bool SelfDestruct;
 
     static void Initialize();
-    static Process *Create(const char *filename, Semaphore *finished);
+    static Process *Create(const char *filename, Semaphore *finished, bool noAutoRelocs);
     static Process *GetCurrent();
     static DEntry *GetCurrentDir();
-    static uintptr_t NewAddressSpace();
     static bool Finalize(pid_t pid);
     static void Dump();
 
@@ -97,6 +101,8 @@ public:
     ELF *GetELF(const char *name);
     Elf32_Sym *FindSymbol(const char *name, ELF *skip, ELF **elf);
     bool ApplyRelocations();
+    uintptr_t Brk(uintptr_t brk);
+    uintptr_t SBrk(intptr_t incr);
     int Open(const char *filename, int flags);
     int Close(int handle);
     File *GetFile(int handle);

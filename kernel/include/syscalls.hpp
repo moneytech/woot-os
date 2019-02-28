@@ -22,6 +22,9 @@ class SysCalls
     static long sys_close(uintptr_t *args);
     static long sys_read(uintptr_t *args);
     static long sys_write(uintptr_t *args);
+    static long sys_mmap(uintptr_t *args);
+    static long sys_mmap2(uintptr_t *args);
+    static long sys_mprotect(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();

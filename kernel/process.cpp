@@ -109,14 +109,12 @@ uintptr_t Process::buildUserStack(uintptr_t stackPtr, const char *cmdLine, int e
 
 int Process::processEntryPoint(const char *cmdline)
 {
-    Tokenizer cmd(cmdline, " ", 2);
-    ELF *elf = ELF::Load(cmd[0], true, false);
     Process *proc = GetCurrent();
-    if(!proc || !elf) return 127;
-    if(!elf->EntryPoint)
-        return 126;
-    if(!proc->lock.Acquire(0, false))
-        return 126;
+    Tokenizer cmd(cmdline, " ", 2);
+    ELF *elf = ELF::Load(cmd[0], true, false, !proc->noAutoRelocs);
+    if(!elf) return 127;
+    if(!elf->EntryPoint) return 126;
+    if(!proc->lock.Acquire(0, false)) return 126;
 
     proc->MemoryLock.Acquire(0, false);
     for(ELF *elf : proc->Images)
@@ -172,6 +170,42 @@ void Process::freeHandleSlot(int handle)
     Handles.Set(handle, Handle());
 }
 
+uintptr_t Process::brk(uintptr_t brk)
+{
+    brk = align(brk, PAGE_SIZE);
+
+    if(brk < MinBrk || brk > MaxBrk)
+        return (brk = CurrentBrk);
+
+    uintptr_t mappedNeeded = align(brk, PAGE_SIZE);
+
+    if(mappedNeeded > MappedBrk)
+    {   // alloc and map needed memory
+        for(uintptr_t va = MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
+        {
+            uintptr_t pa = Paging::AllocPage();
+            if(pa == ~0)
+                return CurrentBrk;
+            if(!Paging::MapPage(AddressSpace, va, pa, true, true))
+                return CurrentBrk;
+        }
+        MappedBrk = mappedNeeded;
+    }
+    else
+    {   // unmap and free excess memory
+        for(uintptr_t va = mappedNeeded; va < MappedBrk; va += PAGE_SIZE)
+        {
+            uintptr_t pa = Paging::GetPhysicalAddress(AddressSpace, va);
+            if(pa != ~0) Paging::FreePage(pa);
+            Paging::UnMapPage(AddressSpace, va);
+        }
+        MappedBrk = mappedNeeded;
+    }
+
+    CurrentBrk = brk;
+    return brk;
+}
+
 void Process::Initialize()
 {
     kernelAddressSpace = Paging::GetAddressSpace();
@@ -180,13 +214,14 @@ void Process::Initialize()
     kernelProc->Threads.Append(Thread::GetIdleThread());
 }
 
-Process *Process::Create(const char *filename, Semaphore *finished)
+Process *Process::Create(const char *filename, Semaphore *finished, bool noAutoRelocs)
 {
     if(!filename) return nullptr;
     Thread *thread = new Thread("main", nullptr, (void *)processEntryPoint, (uintptr_t)filename,
                                 DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE,
                                 nullptr, finished, !finished);
     Process *proc = new Process(filename, thread, 0, finished);
+    proc->noAutoRelocs = noAutoRelocs;
     return proc;
 }
 
@@ -209,15 +244,6 @@ DEntry *Process::GetCurrentDir()
     DEntry *de = cp->CurrentDirectory;
     cpuRestoreInterrupts(ints);
     return de;
-}
-
-uintptr_t Process::NewAddressSpace()
-{
-    uintptr_t newAS = Paging::AllocPage();
-    if(newAS == ~0)
-        return ~0;
-    Paging::BuildAddressSpace(newAS);
-    return newAS;
 }
 
 bool Process::Finalize(pid_t pid)
@@ -276,10 +302,17 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     ID(id.GetNext()),
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
-    AddressSpace(addressSpace ? addressSpace : NewAddressSpace()),
+    AddressSpace(addressSpace),
     MemoryLock(false, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
+    if(!AddressSpace)
+    {
+        deleteAddressSpace = true;
+        AddressSpace = Paging::AllocPage();
+        Paging::BuildAddressSpace(AddressSpace);
+    }
+
     Handles.Append(Handle(nullptr));
     Handles.Append(Handle(nullptr));
     Handles.Append(Handle(nullptr));
@@ -396,6 +429,24 @@ bool Process::ApplyRelocations()
     }
     UnLock();
     return true;
+}
+
+uintptr_t Process::Brk(uintptr_t brk)
+{
+    if(!MemoryLock.Acquire(5000, false))
+        return ~0;
+    uintptr_t res = this->brk(brk);
+    MemoryLock.Release();
+    return res;
+}
+
+uintptr_t Process::SBrk(intptr_t incr)
+{
+    if(!MemoryLock.Acquire(5000, false))
+        return ~0;
+    uintptr_t res = this->brk(CurrentBrk + incr);
+    MemoryLock.Release();
+    return res;
 }
 
 int Process::Open(const char *filename, int flags)
@@ -552,6 +603,8 @@ Process::~Process()
     bool lockAcquired = listLock.Acquire(0, true);
     for(ELF *elf : Images)
         if(elf) delete elf;
+    Paging::UnmapRange(AddressSpace, 0, KERNEL_BASE);
+    if(deleteAddressSpace) Paging::FreePage(AddressSpace);
     if(CurrentDirectory) FileSystem::PutDEntry(CurrentDirectory);
     processList.Remove(this, nullptr, false);
     if(lockAcquired) listLock.Release();

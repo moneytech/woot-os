@@ -269,7 +269,7 @@ class ELF
 public:
     char *Name;
     int (*EntryPoint)();
-    static ELF *Load(const char *filename, bool user, bool onlyHeaders);
+    static ELF *Load(const char *filename, bool user, bool onlyHeaders, bool applyRelocs);
 
     Elf32_Sym *FindSymbol(const char *Name);
     bool ApplyRelocations();

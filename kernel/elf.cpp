@@ -21,7 +21,7 @@ Elf32_Shdr *ELF::getShdr(int i)
     return (Elf32_Shdr *)(shdrData + i * ehdr->e_shentsize);
 }
 
-ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders)
+ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders, bool applyRelocs)
 {
     File *f = File::Open(filename, O_RDONLY);
     if(!f)
@@ -265,14 +265,14 @@ ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders)
                     Elf32_Dyn *dyn = (Elf32_Dyn *)(dyntab + coffs);
                     if(dyn->d_tag != DT_NEEDED)
                         continue;
-                    char *soname = _strtab + dyn->d_un.d_val;                    
+                    char *soname = _strtab + dyn->d_un.d_val;
                     StringBuilder sb(MAX_PATH_LENGTH);
                     sb.WriteFmt("%s/%s", libDir, soname);
                     soname = sb.String();
                     if(proc->GetELF(soname))
                         continue;
                     //DEBUG("[elf] loading DT_NEEDED %s for %s\n", soname, elf->Name);
-                    ELF *soELF = Load(soname, user, false);
+                    ELF *soELF = Load(soname, user, false, applyRelocs);
                 }
             }
         }
@@ -284,7 +284,7 @@ ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders)
     elf->ehdr = (Elf32_Ehdr *)elf->base;
     elf->phdrData = (uint8_t *)(elf->base + elf->ehdr->e_phoff);
 
-    if(!elf->ApplyRelocations())
+    if(applyRelocs && !elf->ApplyRelocations())
     {
         delete elf;
         return nullptr;

@@ -5,6 +5,7 @@
 #include <file.hpp>
 #include <paging.hpp>
 #include <process.hpp>
+#include <pthread.h>
 #include <syscalls.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
@@ -39,7 +40,7 @@ asm(
 ".att_syntax\n"
 );
 
-#define MAX_SYSCALLS 16
+#define MAX_SYSCALLS 32
 
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
@@ -57,17 +58,20 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_OPEN] = sys_open,
     [SYS_CLOSE] = sys_close,
     [SYS_READ] = sys_read,
-    [SYS_WRITE] = sys_write
+    [SYS_WRITE] = sys_write,
+    [SYS_MMAP] = sys_mmap,
+    [SYS_MMAP2] = sys_mmap2,
+    [SYS_MPROTECT] = sys_mprotect
 };
 
 long SysCalls::handler(uintptr_t *args)
 {
     uint req = args[0];
-    DEBUG("[syscalls] sysenter %d\n", req);
+    //DEBUG("[syscalls] sysenter %d\n", req);
     if(req && req < MAX_SYSCALLS && handlers[req])
     {
         long res = handlers[req](args);
-        DEBUG("[syscalls] sysexit %d\n", req);
+        //DEBUG("[syscalls] sysexit %d\n", req);
         return res;
     }
     DEBUG("[syscalls] Unknown syscall %u (%p) at %p\n", req & ~0x80000000, req, args[-1]);
@@ -105,6 +109,7 @@ long SysCalls::sys_get_pthread(uintptr_t *args)
     if(!self) return -EINVAL;
     Thread *ct = Thread::GetCurrent();
     *self = ct->PThread;
+    pthread dbg;
     return ESUCCESS;
 }
 
@@ -184,8 +189,10 @@ long SysCalls::sys_brk(uintptr_t *args)
     uintptr_t brk = args[1];
     Process *cp = Process::GetCurrent();
     if(!cp) return ~0;
-    if(!cp->MemoryLock.Acquire(10 * 1000, false))
+    if(!cp->MemoryLock.Acquire(5000, false))
         return ~0;
+
+    brk = align(brk, PAGE_SIZE);
 
     if(brk < cp->MinBrk || brk > cp->MaxBrk)
     {
@@ -274,6 +281,68 @@ long SysCalls::sys_write(uintptr_t *args)
     File *f = Process::GetCurrent()->GetFile(handle);
     if(!f) return -errno;
     return f->Write(buffer, count);
+}
+
+long SysCalls::sys_mmap(uintptr_t *args)
+{
+    args[6] >>= PAGE_SHIFT;
+    return sys_mmap2(args);
+}
+
+long SysCalls::sys_mmap2(uintptr_t *args)
+{
+    uintptr_t addr = args[1];
+    size_t length = (size_t)args[2];
+    int prot = (int)args[3];
+    int flags = (int)args[4];
+    int fd = (int)args[5];
+    uintptr_t pgoffset = args[6];
+
+    //DEBUG("sys_mmap(%p, %p, %p, %p, %d, %p)\n", addr, length, prot, flags, fd, pgoffset);
+
+    if(addr >= KERNEL_BASE)
+        return -1;
+
+    if(!addr)
+    {   // emulate with sbrk
+        addr = Process::GetCurrent()->SBrk(0);
+        Process::GetCurrent()->SBrk(length);
+    }
+    else
+    {
+        for(uintptr_t va = addr; va < (addr + length); va += PAGE_SIZE)
+        {
+            uintptr_t pa = Paging::GetPhysicalAddress(~0, va);
+            if(pa == ~0)
+            {
+                pa = Paging::AllocPage();
+                if(pa == ~0) return -1;
+                if(!Paging::MapPage(~0, va, pa, true, true))
+                    return -1;
+            }
+            Memory::Zero((void *)va, PAGE_SIZE);    // zero mmapped memory to avoid
+                                                    // information leak from kernel to userspace
+        }
+    }
+
+    if(fd < 0)
+        return addr;
+
+    Process *cp = Process::GetCurrent();
+    File *f = cp->GetFile(fd);
+    if(f)
+    {
+        f->Seek((pgoffset + 0ULL) * PAGE_SIZE, SEEK_SET);
+        f->Read((void *)addr, length);
+    }
+
+    return addr;
+}
+
+long SysCalls::sys_mprotect(uintptr_t *args)
+{
+    DEBUG("[syscalls] dummy mprotect called\n");
+    return 0;
 }
 
 void SysCalls::Initialize()

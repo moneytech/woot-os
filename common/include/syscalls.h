@@ -15,5 +15,8 @@
 #define SYS_CLOSE           13
 #define SYS_READ            14
 #define SYS_WRITE           15
+#define SYS_MMAP            16
+#define SYS_MMAP2           17
+#define SYS_MPROTECT        18
 
 #define SYS_NOT_IMPL	    0x80000000

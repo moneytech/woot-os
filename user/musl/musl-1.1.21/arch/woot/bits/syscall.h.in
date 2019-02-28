@@ -41,7 +41,6 @@
 #define SYS_setgroups               (SYS_NOT_IMPL + 81)
 #define SYS_swapon                  (SYS_NOT_IMPL + 87)
 #define SYS_reboot                  (SYS_NOT_IMPL + 88)
-#define SYS_mmap                    (SYS_NOT_IMPL + 90)
 #define SYS_munmap                  (SYS_NOT_IMPL + 91)
 #define SYS_truncate                (SYS_NOT_IMPL + 92)
 #define SYS_ftruncate               (SYS_NOT_IMPL + 93)
@@ -66,7 +65,6 @@
 #define SYS_setdomainname           (SYS_NOT_IMPL + 121)
 #define SYS_uname                   (SYS_NOT_IMPL + 122)
 #define SYS_adjtimex                (SYS_NOT_IMPL + 124)
-#define SYS_mprotect                (SYS_NOT_IMPL + 125)
 #define SYS_init_module             (SYS_NOT_IMPL + 128)
 #define SYS_delete_module           (SYS_NOT_IMPL + 129)
 #define SYS_quotactl                (SYS_NOT_IMPL + 131)
@@ -110,7 +108,6 @@
 #define SYS_capset                  (SYS_NOT_IMPL + 185)
 #define SYS_sigaltstack             (SYS_NOT_IMPL + 186)
 #define SYS_sendfile                (SYS_NOT_IMPL + 187)
-#define SYS_mmap2                   (SYS_NOT_IMPL + 192)
 #define SYS_mincore                 (SYS_NOT_IMPL + 218)
 #define SYS_madvise                 (SYS_NOT_IMPL + 219)
 #define SYS_readahead               (SYS_NOT_IMPL + 225)
@@ -221,3 +218,6 @@
 #define SYS_close                   SYS_CLOSE
 #define SYS_read                    SYS_READ
 #define SYS_write                   SYS_WRITE
+#define SYS_mmap                    SYS_MMAP
+#define SYS_mmap2                   SYS_MMAP2
+#define SYS_mprotect                SYS_MPROTECT
