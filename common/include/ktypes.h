@@ -7,4 +7,14 @@ typedef int time_t;
 typedef int uid_t;
 typedef int gid_t;
 typedef int mode_t;
-typedef int ino_t;
+typedef long long ino_t;
+typedef long long off_t;
+
+struct dirent
+{
+	ino_t d_ino;
+	off_t d_off;
+	unsigned short d_reclen;
+	unsigned char d_type;
+	char d_name[];
+};

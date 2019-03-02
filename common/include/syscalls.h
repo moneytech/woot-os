@@ -18,5 +18,6 @@
 #define SYS_MMAP            16
 #define SYS_MMAP2           17
 #define SYS_MPROTECT        18
+#define SYS_GETDENTS        19
 
 #define SYS_NOT_IMPL	    0x80000000

@@ -21,5 +21,3 @@ typedef __UINTPTR_TYPE__ uintptr_t;
 
 typedef __SIZE_TYPE__ size_t;
 typedef intptr_t ssize_t;
-
-typedef intptr_t off_t;

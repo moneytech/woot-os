@@ -110,7 +110,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         ObjectTree::Objects->UnLock();
     } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
 #endif // LOAD_MODULES
-    for(int i = 0; i < 2; ++i)
+    for(int i = 0; i < 1; ++i)
     {
         Semaphore finished(0);
         Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);

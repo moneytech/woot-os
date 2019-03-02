@@ -247,7 +247,7 @@ DirectoryEntry *File::ReadDir()
     int64_t newPos = Position;
     DirectoryEntry *res = DEntry->INode ? DEntry->INode->ReadDir(Position, &newPos) : nullptr;
     if(res) Position = newPos;
-    FileSystem::Lock();
+    FileSystem::UnLock();
     return res;
 }
 

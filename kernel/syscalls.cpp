@@ -1,11 +1,15 @@
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <dentry.hpp>
+#include <directoryentry.hpp>
 #include <errno.h>
 #include <file.hpp>
+#include <kdefs.h>
+#include <ktypes.h>
 #include <paging.hpp>
 #include <process.hpp>
 #include <pthread.h>
+#include <string.hpp>
 #include <syscalls.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
@@ -61,7 +65,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_WRITE] = sys_write,
     [SYS_MMAP] = sys_mmap,
     [SYS_MMAP2] = sys_mmap2,
-    [SYS_MPROTECT] = sys_mprotect
+    [SYS_MPROTECT] = sys_mprotect,
+    [SYS_GETDENTS] = sys_getdents
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -253,6 +258,7 @@ long SysCalls::sys_getcwd(uintptr_t *args)
 
 long SysCalls::sys_open(uintptr_t *args)
 {
+    //DEBUG("sys_open(\"%s\", %p)\n", args[1], args[2]);
     return Process::GetCurrent()->Open((const char *)args[1], args[2]);
 }
 
@@ -343,6 +349,39 @@ long SysCalls::sys_mprotect(uintptr_t *args)
 {
     DEBUG("[syscalls] dummy mprotect called\n");
     return 0;
+}
+
+long SysCalls::sys_getdents(uintptr_t *args)
+{
+    int handle = args[1];
+    uint8_t *buf = (uint8_t *)args[2];
+    unsigned int count = args[3];
+
+    if(handle < 3) return -EBADF;
+
+    File *f = Process::GetCurrent()->GetFile(handle);
+    if(!f) return -errno;
+
+    bool hasSomething = false;
+    unsigned int br = 0;
+    DirectoryEntry *de = nullptr;
+    while(br < count && (de = f->ReadDir()))
+    {
+        hasSomething = true;
+        struct dirent *d = (struct dirent *)(buf + br);
+        size_t nameLen = String::Length(de->Name);
+        size_t recLen = sizeof(struct dirent) + nameLen + 1;
+        if((br + recLen) >= count)
+            break;
+        d->d_ino = de->INode;
+        d->d_off = 0;
+        d->d_reclen = recLen;
+        d->d_type = 0;
+        String::Copy(d->d_name, de->Name);
+        br += recLen;
+    }
+
+    return !br && hasSomething ? -EINVAL : br;
 }
 
 void SysCalls::Initialize()

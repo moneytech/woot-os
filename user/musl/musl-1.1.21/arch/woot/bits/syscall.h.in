@@ -72,7 +72,6 @@
 #define SYS_fchdir                  (SYS_NOT_IMPL + 133)
 #define SYS_setfsuid                (SYS_NOT_IMPL + 138)
 #define SYS_setfsgid                (SYS_NOT_IMPL + 139)
-#define SYS_getdents                (SYS_NOT_IMPL + 141)
 #define SYS_flock                   (SYS_NOT_IMPL + 143)
 #define SYS_msync                   (SYS_NOT_IMPL + 144)
 #define SYS_getsid                  (SYS_NOT_IMPL + 147)
@@ -221,3 +220,4 @@
 #define SYS_mmap                    SYS_MMAP
 #define SYS_mmap2                   SYS_MMAP2
 #define SYS_mprotect                SYS_MPROTECT
+#define SYS_getdents                SYS_GETDENTS

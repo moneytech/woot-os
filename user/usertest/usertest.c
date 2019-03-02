@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/syscall.h>
@@ -8,6 +9,8 @@ extern char **environ;
 
 int main(int argc, char *argv[])
 {
+    setbuf(stdout, NULL);
+
     printf("Hello from userland!\n");
     printf("pid: %d\n", getpid());
     printf("tid: %d\n", (int)syscall(SYS_gettid));
@@ -34,6 +37,15 @@ int main(int argc, char *argv[])
         }
         fclose(f);
     } else printf("couldn't open %s\n", getenv("TEST_FILE"));
+    printf("directory listing:\n");
+    DIR *pdir = opendir("WOOT_OS:/system");
+    if(pdir)
+    {
+        struct dirent *ent;
+        while((ent = readdir(pdir)))
+            printf("%s\n", ent->d_name);
+        closedir(pdir);
+    } else printf("couldn't open directory\n");
     printf("Bye from userland!\n");
     return 0;
 }
