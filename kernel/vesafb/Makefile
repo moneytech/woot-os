@@ -1,0 +1,28 @@
+OUTFILE = vesafb
+MODULE_FILE = $(TOP_DIR)/root/system/$(OUTFILE)
+
+OBJS = module.o vesafb.o
+
+TOP_DIR ?= $(shell realpath ../..)
+CUR_DIR = $(shell realpath .)
+
+CC ?= clang
+CXX ?= clang++
+
+CFLAGS += -I$(CUR_DIR)
+CXXFLAGS += -I$(CUR_DIR)
+LDFLAGS += -T$(TOP_DIR)/kernel/module.ld -Ttext=0xC8011000
+
+all: $(OBJS)
+	$(LD) $(LDFLAGS) $(OBJS) -o $(OUTFILE)
+
+clean:
+	rm -rf $(OBJS) $(OUTFILE)
+
+install: $(MODULE_FILE)
+
+$(MODULE_FILE): $(OUTFILE)
+	cp $? $@
+
+.PHONY: clean install
+

@@ -8,6 +8,7 @@ file.cpp
 filestream.cpp
 filesystem.cpp
 filesystemtype.cpp
+framebuffer.cpp
 include/bufferedvolume.hpp
 include/dentry.hpp
 include/directoryentry.hpp
@@ -15,6 +16,7 @@ include/file.hpp
 include/filestream.hpp
 include/filesystem.hpp
 include/filesystemtype.hpp
+include/framebuffer.hpp
 include/inode.hpp
 include/inputdevice.hpp
 include/module.hpp
@@ -40,6 +42,10 @@ ps2input/ps2kbd.hpp
 ps2input/ps2mouse.cpp
 ps2input/ps2mouse.hpp
 syscalls.cpp
+vesafb/Makefile
+vesafb/module.cpp
+vesafb/vesafb.cpp
+vesafb/vesafb.hpp
 volumetype.cpp
 include/volume.hpp
 volume.cpp

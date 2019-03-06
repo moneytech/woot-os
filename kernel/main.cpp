@@ -120,8 +120,8 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         delete proc;
     }
 
-    //DEBUG("Object tree dump:\n");
-    //ObjectTree::Objects->DebugDump();
+    DEBUG("Object tree dump:\n");
+    ObjectTree::Objects->DebugDump();
     DEBUG("[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
     DEBUG("[main] Stopping system...\n");
 

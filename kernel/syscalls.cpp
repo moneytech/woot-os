@@ -357,8 +357,6 @@ long SysCalls::sys_getdents(uintptr_t *args)
     uint8_t *buf = (uint8_t *)args[2];
     unsigned int count = args[3];
 
-    if(handle < 3) return -EBADF;
-
     File *f = Process::GetCurrent()->GetFile(handle);
     if(!f) return -errno;
 

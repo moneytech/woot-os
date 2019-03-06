@@ -20,6 +20,7 @@ OBJS = boot/boot.o \
     filestream.o \
 	filesystem.o \
 	filesystemtype.o \
+	framebuffer.o \
 	gdt.o \
 	heap.o \
 	ide/idedrive.o \
@@ -60,7 +61,7 @@ OBJS = boot/boot.o \
 
 DEPS = link.ld
 
-MODULES = ps2input
+MODULES = ps2input vesafb
 
 TOP_DIR ?= $(shell realpath ..)
 KERNEL_FILE = $(TOP_DIR)/root/system/kernel
