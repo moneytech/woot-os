@@ -230,3 +230,8 @@ bool V86::Int(uint8_t intNo, Regs *regs)
     Memory::Move((void *)((codeSegment << 4) + 0x8000), regs, sizeof(Regs));
     return Enter(stackSegment, 0x0000, codeSegment, &__Int86 - &__V86CodeStart, intNo);
 }
+
+uintptr_t V86::RealModeFarPointer::ToLinear()
+{
+    return ((Segment + 0u) << 4) + Offset;
+}

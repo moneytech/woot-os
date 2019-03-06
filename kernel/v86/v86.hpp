@@ -22,6 +22,14 @@ class V86
     static void pushw(Ints::State *state, uint16_t val);
     static uint16_t popw(Ints::State *state);
 public:
+    struct RealModeFarPointer
+    {
+        uint16_t Offset;
+        uint16_t Segment;
+
+        uintptr_t ToLinear();
+    };
+
     typedef struct Regs
     {
         union
