@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
                 printf("%d. %dx%d %d bpp @ %dHz\n", i, mi.Width, mi.Height, mi.BitsPerPixel, mi.RefreshRate);
             }
         } else printf("no available video modes\n");
-        //vidSetMode(fb, 11);
+        vidSetMode2(fb, 1024, 768, 32, -1, -1);
         vidCloseDisplay(fb);
     } else printf("Couldn't open display\n");
 
