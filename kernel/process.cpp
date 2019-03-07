@@ -14,6 +14,7 @@
 #include <sysdefs.h>
 #include <thread.hpp>
 #include <tokenizer.hpp>
+#include <v86/v86.hpp>
 
 Sequencer<pid_t> Process::id(1);
 List<Process *> Process::processList;
@@ -131,6 +132,7 @@ int Process::processEntryPoint(const char *cmdline)
         "TEST=value"
     };
     esp = buildUserStack(esp, cmdline, sizeof(envVars) / sizeof(const char *), envVars, elf, 0, 0);
+    V86::Initialize();
     proc->lock.Release();
     cpuEnterUserMode(esp, (uintptr_t)elf->EntryPoint);
     return 0;
@@ -151,7 +153,7 @@ int Process::allocHandleSlot(Handle handle)
     size_t handlesSize = Handles.Size();
     for(int i = 0; i < handlesSize; ++i)
     {
-        if(Handles.Get(i).Type == Handle::Type::Free)
+        if(Handles.Get(i).Type == Handle::HandleType::Free)
         {
             Handles.Set(i, handle);
             return i;
@@ -461,11 +463,28 @@ int Process::Open(const char *filename, int flags)
     return res;
 }
 
+int Process::OpenObject(const char *name)
+{
+    if(!name) return -EINVAL;
+    if(!Lock()) return -errno;
+    ObjectTree::Item *obj = ObjectTree::Objects->Get(name);
+    if(!obj) return -ENOENT;
+    int res = allocHandleSlot(Handle(obj));
+    UnLock();
+    return res;
+}
+
 int Process::Close(int handle)
 {
     if(!Lock()) return -errno;
     Handle h = Handles.Get(handle);
-    if(h.Type != Handle::Type::File)
+    if(h.Type == Handle::HandleType::Object)
+    {
+        freeHandleSlot(handle);
+        UnLock();
+        return 0;
+    }
+    if(h.Type != Handle::HandleType::File)
     {
         UnLock();
         return -EBADF;
@@ -476,18 +495,18 @@ int Process::Close(int handle)
     return 0;
 }
 
-File *Process::GetFile(int handle)
+void *Process::GetHandleData(int handle, Process::Handle::HandleType type)
 {
     if(!Lock()) return nullptr;
     Handle h = Handles.Get(handle);
-    if(h.Type != Handle::Type::File)
+    if(h.Type != type)
     {
         errno = EBADF;
         UnLock();
         return nullptr;
     }
     UnLock();
-    return h.File;
+    return h.Unknown;
 }
 
 int Process::NewMutex()
@@ -612,18 +631,25 @@ Process::~Process()
 }
 
 Process::Handle::Handle() :
-    Type(Type::Free),
+    Type(HandleType::Free),
     Unknown(nullptr)
 {
 }
 
 Process::Handle::Handle(nullptr_t) :
-    Type(Type::Unknown),
+    Type(HandleType::Unknown),
     Unknown(nullptr)
 {
 }
 
 Process::Handle::Handle(::File *file) :
-    Type(Type::File), File(file)
+    Type(HandleType::File),
+    File(file)
+{
+}
+
+Process::Handle::Handle(ObjectTree::Item *obj) :
+    Type(HandleType::Object),
+    Object(obj)
 {
 }

@@ -22,5 +22,11 @@
 #define SYS_FSTAT           20
 
 #define SYS_GET_FB_COUNT    64
+#define SYS_OPEN_FB         65
+#define SYS_OPEN_DEFAULT_FB 66
+#define SYS_CLOSE_FB        67
+#define SYS_GET_MODE_COUNT  68
+#define SYS_GET_MODE_INFO   69
+#define SYS_SET_MODE        70
 
 #define SYS_NOT_IMPL	    0x80000000

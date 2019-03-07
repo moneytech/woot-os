@@ -281,6 +281,14 @@ bool ObjectTree::Item::RemoveChild(const char *name)
     return res;
 }
 
+int ObjectTree::Item::GetChildCount()
+{
+    if(!tree->Lock()) return -EBUSY;
+    int res = children.Count();
+    tree->UnLock();
+    return res;
+}
+
 ObjectTree::Item *ObjectTree::Item::GetParent()
 {
     return parent;

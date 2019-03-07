@@ -4,6 +4,7 @@
 #include <directoryentry.hpp>
 #include <errno.h>
 #include <file.hpp>
+#include <framebuffer.hpp>
 #include <inode.hpp>
 #include <kdefs.h>
 #include <ktypes.h>
@@ -11,6 +12,7 @@
 #include <process.hpp>
 #include <pthread.h>
 #include <string.hpp>
+#include <stringbuilder.hpp>
 #include <syscalls.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
@@ -45,7 +47,7 @@ asm(
 ".att_syntax\n"
 );
 
-#define MAX_SYSCALLS 32
+#define MAX_SYSCALLS 1024
 
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
@@ -68,7 +70,15 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_MMAP2] = sys_mmap2,
     [SYS_MPROTECT] = sys_mprotect,
     [SYS_GETDENTS] = sys_getdents,
-    [SYS_FSTAT] = sys_fstat
+    [SYS_FSTAT] = sys_fstat,
+
+    [SYS_GET_FB_COUNT] = sys_get_fb_count,
+    [SYS_OPEN_FB] = sys_open_fb,
+    [SYS_OPEN_DEFAULT_FB] = sys_open_default_fb,
+    [SYS_CLOSE_FB] = sys_close_fb,
+    [SYS_GET_MODE_COUNT] = sys_get_mode_count,
+    [SYS_GET_MODE_INFO] = sys_get_mode_info,
+    [SYS_SET_MODE] = sys_set_mode
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -138,7 +148,7 @@ long SysCalls::sys_readv(uintptr_t *args)
     }
     else
     {
-        File *f = Process::GetCurrent()->GetFile(handle);
+        File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
         if(!f) return -errno;
         for(int i = 0; i < iovcnt; ++i)
         {
@@ -168,7 +178,7 @@ long SysCalls::sys_writev(uintptr_t *args)
     }
     else
     {
-        File *f = Process::GetCurrent()->GetFile(handle);
+        File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
         if(!f) return -errno;
         for(int i = 0; i < iovcnt; ++i)
         {
@@ -275,7 +285,7 @@ long SysCalls::sys_read(uintptr_t *args)
     void *buffer = (void *)args[2];
     size_t count = (size_t)args[3];
     if(handle < 3) return DebugStream->Read(buffer, count); // temporary hack
-    File *f = Process::GetCurrent()->GetFile(handle);
+    File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
     if(!f) return -errno;
     return f->Read(buffer, count);
 }
@@ -286,7 +296,7 @@ long SysCalls::sys_write(uintptr_t *args)
     const void *buffer = (const void *)args[2];
     size_t count = (size_t)args[3];
     if(handle < 3) return DebugStream->Write(buffer, count); // temporary hack
-    File *f = Process::GetCurrent()->GetFile(handle);
+    File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
     if(!f) return -errno;
     return f->Write(buffer, count);
 }
@@ -303,7 +313,7 @@ long SysCalls::sys_mmap2(uintptr_t *args)
     size_t length = (size_t)args[2];
     int prot = (int)args[3];
     int flags = (int)args[4];
-    int fd = (int)args[5];
+    int handle = (int)args[5];
     uintptr_t pgoffset = args[6];
 
     //DEBUG("sys_mmap(%p, %p, %p, %p, %d, %p)\n", addr, length, prot, flags, fd, pgoffset);
@@ -333,11 +343,11 @@ long SysCalls::sys_mmap2(uintptr_t *args)
         }
     }
 
-    if(fd < 0)
+    if(handle < 0)
         return addr;
 
     Process *cp = Process::GetCurrent();
-    File *f = cp->GetFile(fd);
+    File *f = (File *)cp->GetHandleData(handle, Process::Handle::HandleType::File);
     if(f)
     {
         f->Seek((pgoffset + 0ULL) * PAGE_SIZE, SEEK_SET);
@@ -359,7 +369,7 @@ long SysCalls::sys_getdents(uintptr_t *args)
     uint8_t *buf = (uint8_t *)args[2];
     unsigned int count = args[3];
 
-    File *f = Process::GetCurrent()->GetFile(handle);
+    File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
     if(!f) return -errno;
 
     bool hasSomething = false;
@@ -389,7 +399,7 @@ long SysCalls::sys_fstat(uintptr_t *args)
     int handle = args[1];
     struct stat *st = (struct stat *)args[2];
     Memory::Zero(st, sizeof(struct stat));
-    File *f = Process::GetCurrent()->GetFile(handle);
+    File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
     if(!f) return -errno;
     INode *inode = f->DEntry->INode;
     st->st_ino = inode->Number;
@@ -404,6 +414,73 @@ long SysCalls::sys_fstat(uintptr_t *args)
     st->st_mtim.tv_sec = inode->GetModifyTime();
     st->st_ctim.tv_sec = inode->GetCreateTime();
     return 0;
+}
+
+long SysCalls::sys_get_fb_count(uintptr_t *args)
+{
+    ObjectTree::Item *fbDir = ObjectTree::Objects->Get(FB_DIR);
+    return fbDir ? fbDir->GetChildCount() : 0;
+}
+
+long SysCalls::sys_open_fb(uintptr_t *args)
+{
+    const char *name = (const char *)args[1];
+    StringBuilder sb(OBJTREE_MAX_PATH_LEN + 1);
+    sb.WriteFmt("%s/%s", FB_DIR, name);
+    return Process::GetCurrent()->OpenObject(sb.String());
+}
+
+long SysCalls::sys_open_default_fb(uintptr_t *args)
+{
+    return Process::GetCurrent()->OpenObject(FB_DIR "/0");
+}
+
+long SysCalls::sys_close_fb(uintptr_t *args)
+{
+    return Process::GetCurrent()->Close(args[1]);
+}
+
+long SysCalls::sys_get_mode_count(uintptr_t *args)
+{
+    FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!fb) return -EINVAL;
+    return fb->GetModeCount();
+}
+
+long SysCalls::sys_get_mode_info(uintptr_t *args)
+{
+    FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!fb) return -EINVAL;
+    vidModeInfo *umi = (vidModeInfo *)args[3];
+    if(!umi) return -EINVAL;
+
+    FrameBuffer::ModeInfo mi;
+    int res = fb->GetModeInfo(args[2], &mi);
+    if(res < 0) return res;
+
+    umi->Width = mi.Width;
+    umi->Height = mi.Height;
+    umi->BitsPerPixel = mi.BitsPerPixel;
+    umi->RefreshRate = mi.RefreshRate;
+    umi->Pitch = mi.Pitch;
+    umi->Flags = mi.Flags;
+    umi->AlphaBits = mi.AlphaBits;
+    umi->RedBits = mi.RedBits;
+    umi->GreenBits = mi.GreenBits;
+    umi->BlueBits = mi.BlueBits;
+    umi->AlphaShift = mi.AlphaShift;
+    umi->RedShift = mi.RedShift;
+    umi->GreenShift = mi.GreenShift;
+    umi->BlueShift = mi.BlueShift;
+
+    return ESUCCESS;
+}
+
+long SysCalls::sys_set_mode(uintptr_t *args)
+{
+    FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!fb) return -EINVAL;
+    return fb->SetMode(args[2]);
 }
 
 void SysCalls::Initialize()

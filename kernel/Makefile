@@ -75,7 +75,7 @@ ASM ?= yasm
 ASMFLAGS ?= -f elf32 -g dwarf2 -w
 
 COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
-    -fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb \
+    -fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb  -I.\
 	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include
 
 CFLAGS += $(COMPILE_FLAGS)

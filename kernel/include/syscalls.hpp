@@ -27,6 +27,14 @@ class SysCalls
     static long sys_mprotect(uintptr_t *args);
     static long sys_getdents(uintptr_t *args);
     static long sys_fstat(uintptr_t *args);
+
+    static long sys_get_fb_count(uintptr_t *args);
+    static long sys_open_fb(uintptr_t *args);
+    static long sys_open_default_fb(uintptr_t *args);
+    static long sys_close_fb(uintptr_t *args);
+    static long sys_get_mode_count(uintptr_t *args);
+    static long sys_get_mode_info(uintptr_t *args);
+    static long sys_set_mode(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();

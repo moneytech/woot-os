@@ -13,6 +13,25 @@ int main(int argc, char *argv[])
 {
     setbuf(stdout, NULL);
     printf("vidGetDisplayCount() returned %d\n", vidGetDisplayCount());
+
+    int fb = vidOpenDefaultDisplay();
+    if(fb >= 0)
+    {
+        int modeCount = vidGetModeCount(fb);
+        printf("Available video modes:\n");
+        if(modeCount > 0)
+        {
+            for(int i = 0; i < modeCount; ++i)
+            {
+                vidModeInfo_t mi;
+                vidGetModeInfo(fb, i, &mi);
+                printf("%d. %dx%d %d bpp @ %dHz\n", i, mi.Width, mi.Height, mi.BitsPerPixel, mi.RefreshRate);
+            }
+        } else printf("no available video modes\n");
+        //vidSetMode(fb, 11);
+        vidCloseDisplay(fb);
+    } else printf("Couldn't open display\n");
+
     /*printf("Hello from userland!\n");
     printf("pid: %d\n", getpid());
     printf("tid: %d\n", (int)syscall(SYS_gettid));

@@ -23,26 +23,27 @@ class Process : public ObjectTree::Item
 public:
     struct Handle
     {
-        enum class Type
+        enum class HandleType
         {
             Free = 0,
             Unknown,
             File,
+            Object,
             Mutex,
-            Semaphore,
-            NamedMutex
+            Semaphore
         } Type;
         union
         {
             void *Unknown;
             ::File *File;
+            ObjectTree::Item *Object;
             ::Mutex *Mutex;
             ::Semaphore *Semaphore;
-            ::NamedMutex *NamedMutex;
         };
         Handle();
         Handle(nullptr_t);
         Handle(::File *file);
+        Handle(ObjectTree::Item *obj);
     };
 private:
     static Sequencer<pid_t> id;
@@ -104,8 +105,9 @@ public:
     uintptr_t Brk(uintptr_t brk);
     uintptr_t SBrk(intptr_t incr);
     int Open(const char *filename, int flags);
+    int OpenObject(const char *name);
     int Close(int handle);
-    File *GetFile(int handle);
+    void *GetHandleData(int handle, Handle::HandleType type);
     int NewMutex();
     Mutex *GetMutex(int idx);
     int DeleteMutex(int idx);

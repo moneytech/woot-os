@@ -121,27 +121,8 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         delete proc;
     }
 
-    if(FrameBuffer *fb = (FrameBuffer *)ObjectTree::Objects->Get(FB_DIR "/0"))
-    {
-        int modeCount = fb->GetModeCount();
-        DEBUG("Available video modes:\n");
-        if(modeCount > 0)
-        {
-            FrameBuffer::ModeInfo mi;
-            for(int i = 0; i < modeCount; ++i)
-            {
-                if(fb->GetModeInfo(i, &mi) < 0)
-                    continue;
-                DEBUG("%dx%d %d bpp @ %d Hz (%s)\n",
-                      mi.Width, mi.Height, mi.BitsPerPixel, mi.RefreshRate,
-                      mi.Flags & FBMI_FLAG_INDEX_COLOR ? "indexed" : "direct");
-            }
-        } else DEBUG("no available video modes\n");
-        //fb->SetMode(fb->FindMode(800, 600, 32, -1, false));
-    } else DEBUG("[main] Couldn't find frame buffer device\n");
-
-    DEBUG("Object tree dump:\n");
-    ObjectTree::Objects->DebugDump();
+    //DEBUG("Object tree dump:\n");
+    //ObjectTree::Objects->DebugDump();
     DEBUG("[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);
     DEBUG("[main] Stopping system...\n");
 

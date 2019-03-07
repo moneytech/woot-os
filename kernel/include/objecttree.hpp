@@ -32,6 +32,7 @@ public:
         bool ContainsChild(const char *name);
         Item *GetChild(const char *name);
         bool RemoveChild(const char *name);
+        int GetChildCount();
 
         // these 2 functions should be only used when tree is locked
         Item *GetParent();
