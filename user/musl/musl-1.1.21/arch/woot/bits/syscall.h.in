@@ -54,7 +54,6 @@
 #define SYS_syslog                  (SYS_NOT_IMPL + 103)
 #define SYS_setitimer               (SYS_NOT_IMPL + 104)
 #define SYS_getitimer               (SYS_NOT_IMPL + 105)
-#define SYS_fstat                   (SYS_NOT_IMPL + 108)
 #define SYS_vhangup                 (SYS_NOT_IMPL + 111)
 #define SYS_wait4                   (SYS_NOT_IMPL + 114)
 #define SYS_swapoff                 (SYS_NOT_IMPL + 115)
@@ -221,3 +220,4 @@
 #define SYS_mmap2                   SYS_MMAP2
 #define SYS_mprotect                SYS_MPROTECT
 #define SYS_getdents                SYS_GETDENTS
+#define SYS_fstat                   SYS_FSTAT

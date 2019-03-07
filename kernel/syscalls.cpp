@@ -4,6 +4,7 @@
 #include <directoryentry.hpp>
 #include <errno.h>
 #include <file.hpp>
+#include <inode.hpp>
 #include <kdefs.h>
 #include <ktypes.h>
 #include <paging.hpp>
@@ -66,7 +67,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_MMAP] = sys_mmap,
     [SYS_MMAP2] = sys_mmap2,
     [SYS_MPROTECT] = sys_mprotect,
-    [SYS_GETDENTS] = sys_getdents
+    [SYS_GETDENTS] = sys_getdents,
+    [SYS_FSTAT] = sys_fstat
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -258,7 +260,7 @@ long SysCalls::sys_getcwd(uintptr_t *args)
 
 long SysCalls::sys_open(uintptr_t *args)
 {
-    //DEBUG("sys_open(\"%s\", %p)\n", args[1], args[2]);
+    DEBUG("sys_open(\"%s\", %p)\n", args[1], args[2]);
     return Process::GetCurrent()->Open((const char *)args[1], args[2]);
 }
 
@@ -380,6 +382,28 @@ long SysCalls::sys_getdents(uintptr_t *args)
     }
 
     return !br && hasSomething ? -EINVAL : br;
+}
+
+long SysCalls::sys_fstat(uintptr_t *args)
+{
+    int handle = args[1];
+    struct stat *st = (struct stat *)args[2];
+    Memory::Zero(st, sizeof(struct stat));
+    File *f = Process::GetCurrent()->GetFile(handle);
+    if(!f) return -errno;
+    INode *inode = f->DEntry->INode;
+    st->st_ino = inode->Number;
+    st->st_mode = inode->GetMode();
+    st->st_nlink = inode->GetLinkCount();
+    st->st_uid = inode->GetUID();
+    st->st_gid = inode->GetGID();
+    st->st_size = inode->GetSize();
+    st->st_blksize = 512;
+    st->st_blocks = align(st->st_size, st->st_blksize);
+    st->st_atim.tv_sec = inode->GetAccessTime();
+    st->st_mtim.tv_sec = inode->GetModifyTime();
+    st->st_ctim.tv_sec = inode->GetCreateTime();
+    return 0;
 }
 
 void SysCalls::Initialize()

@@ -100,7 +100,7 @@ void Ints::CommonHandler(Ints::State *state)
         }
         DumpState(state);
 
-        DEBUG("Stack trace:\n");
+        /*DEBUG("Stack trace:\n");
         uintptr_t *ebp = (uintptr_t *)state->EBP;
         for(int i = 0; i < 5; ++i)
         {
@@ -108,9 +108,9 @@ void Ints::CommonHandler(Ints::State *state)
             if(!eip) break;
             ebp = (uintptr_t *)(*ebp);
             DEBUG("%p\n", eip);
-        }
+        }*/
 
-        if(ct && ct->ID != 1 && ct->ID != 2)
+        if(ct && ct->ID != 1)
             Thread::Finalize(ct, 127);
         else cpuSystemHalt(state->InterruptNumber);
     }

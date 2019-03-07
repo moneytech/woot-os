@@ -2,16 +2,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/syscall.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <woot/video.h>
 
 extern char **environ;
 
 int main(int argc, char *argv[])
 {
     setbuf(stdout, NULL);
-
-    printf("Hello from userland!\n");
+    printf("vidGetDisplayCount() returned %d\n", vidGetDisplayCount());
+    /*printf("Hello from userland!\n");
     printf("pid: %d\n", getpid());
     printf("tid: %d\n", (int)syscall(SYS_gettid));
     printf("cwd: %s\n", getcwd(NULL, 0));
@@ -46,6 +48,6 @@ int main(int argc, char *argv[])
             printf("%s\n", ent->d_name);
         closedir(pdir);
     } else printf("couldn't open directory\n");
-    printf("Bye from userland!\n");
+    printf("Bye from userland!\n");*/
     return 0;
 }

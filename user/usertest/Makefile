@@ -18,7 +18,7 @@ LDFLAGS += -m32 -nostartfiles -nostdlib -L$(TOP_DIR)/user/lib
 all: $(OUTFILE)
 
 $(OUTFILE): $(OBJS) $(START_FILE) $(LIBC_FILE)
-	$(CC) $(LDFLAGS) $(START_FILE) $(OBJS) -o $(OUTFILE) -lc -lgcc
+	$(CC) $(LDFLAGS) $(START_FILE) $(OBJS) -o $(OUTFILE) -lc -lwoot -lgcc
 
 install: $(BIN_FILE)
 

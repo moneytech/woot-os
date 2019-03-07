@@ -26,6 +26,7 @@ class SysCalls
     static long sys_mmap2(uintptr_t *args);
     static long sys_mprotect(uintptr_t *args);
     static long sys_getdents(uintptr_t *args);
+    static long sys_fstat(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();

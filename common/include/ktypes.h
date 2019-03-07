@@ -10,6 +10,17 @@ typedef int mode_t;
 typedef long long ino_t;
 typedef long long off_t;
 
+typedef unsigned long long dev_t;
+typedef unsigned int nlink_t;
+typedef unsigned int blksize_t;
+typedef unsigned long long blkcnt_t;
+
+struct timespec
+{
+    time_t tv_sec;
+    long tv_nsec;
+};
+
 struct dirent
 {
 	ino_t d_ino;
@@ -17,4 +28,24 @@ struct dirent
 	unsigned short d_reclen;
 	unsigned char d_type;
 	char d_name[];
+};
+
+struct stat
+{
+    dev_t st_dev;
+    int __st_dev_padding;
+    long __st_ino_truncated;
+    mode_t st_mode;
+    nlink_t st_nlink;
+    uid_t st_uid;
+    gid_t st_gid;
+    dev_t st_rdev;
+    int __st_rdev_padding;
+    off_t st_size;
+    blksize_t st_blksize;
+    blkcnt_t st_blocks;
+    struct timespec st_atim;
+    struct timespec st_mtim;
+    struct timespec st_ctim;
+    ino_t st_ino;
 };
