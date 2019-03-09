@@ -203,10 +203,7 @@ void V86::Initialize()
     Paging::MapPages(~0, PAGE_SIZE, PAGE_SIZE, true, true, 255);
 
     // install int86 trampoline code in conventional memory
-    size_t codeSize = &__V86CodeEnd - &__V86CodeStart;
-    uint8_t *dst = (uint8_t *)(codeSegment << 4);
-    uint8_t *src = &__V86CodeStart;
-    while(codeSize--) *dst++ = *src++;
+    Memory::Move((uint8_t *)((codeSegment + 0u) << 4), &__V86CodeStart, &__V86CodeEnd - &__V86CodeStart);
 }
 
 void V86::Cleanup()
@@ -218,6 +215,10 @@ bool V86::Enter(uint16_t ss, uint16_t sp, uint16_t cs, uint16_t ip, uint32_t arg
 {
     if(!mutex.Acquire(5000))
         return false;
+
+    if(Paging::GetPhysicalAddress(~0, 0x1000) == ~0)
+        V86::Initialize();
+
     Paging::MapPage(~0, 0, 0, true, true); // map page 0 only when needed
     v86EnterInt(0, ss, sp, cs, ip, arg);
     Paging::UnMapPage(~0, 0); // unmap page 0 when not needed anymore
@@ -227,6 +228,8 @@ bool V86::Enter(uint16_t ss, uint16_t sp, uint16_t cs, uint16_t ip, uint32_t arg
 
 bool V86::Int(uint8_t intNo, Regs *regs)
 {
+    if(Paging::GetPhysicalAddress(~0, 0x1000) == ~0)
+        V86::Initialize();
     Memory::Move((void *)((codeSegment << 4) + 0x8000), regs, sizeof(Regs));
     return Enter(stackSegment, 0x0000, codeSegment, &__Int86 - &__V86CodeStart, intNo);
 }

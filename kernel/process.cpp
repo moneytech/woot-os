@@ -14,7 +14,6 @@
 #include <sysdefs.h>
 #include <thread.hpp>
 #include <tokenizer.hpp>
-#include <v86/v86.hpp>
 
 Sequencer<pid_t> Process::id(1);
 List<Process *> Process::processList;
@@ -132,7 +131,6 @@ int Process::processEntryPoint(const char *cmdline)
         "TEST=value"
     };
     esp = buildUserStack(esp, cmdline, sizeof(envVars) / sizeof(const char *), envVars, elf, 0, 0);
-    V86::Initialize();
     proc->lock.Release();
     cpuEnterUserMode(esp, (uintptr_t)elf->EntryPoint);
     return 0;
