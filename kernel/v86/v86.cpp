@@ -197,9 +197,7 @@ uint16_t V86::popw(Ints::State *state)
 
 void V86::InitializeProcess()
 {
-    DEBUG("[v86] InitializeProcess()\n");
     // we need to map first meg (apart from first page so nullptr still works)
-    //Paging::MapPages(~0, PAGE_SIZE, PAGE_SIZE, true, true, 255);
     for(uintptr_t va = 0; va < (1 << 20); va += PAGE_SIZE)
     {
         uintptr_t pa = Paging::AllocPage();
