@@ -1,6 +1,7 @@
 #include <../ahci/ahcidrive.hpp>
 #include <../ext2/ext2.hpp>
 #include <../ide/idedrive.hpp>
+#include <../v86/v86.hpp>
 #include <cpu.hpp>
 #include <debug.hpp>
 #include <filestream.hpp>
@@ -38,6 +39,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
           KERNEL_VERSION_DESCRIPTION);
 
     SysCalls::Initialize();
+    V86::Initialize();
     PCI::Initialize();
     AHCIDrive::Initialize();
     IDEDrive::Initialize();
@@ -141,6 +143,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     IDEDrive::Cleanup();
     AHCIDrive::Cleanup();
     PCI::Cleanup();
+    V86::Cleanup();
     SysCalls::Cleanup();
 
     DEBUG("[main] System stopped.");

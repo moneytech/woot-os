@@ -5,6 +5,7 @@
 #include <ints.hpp>
 #include <memory.hpp>
 #include <paging.hpp>
+#include <process.hpp>
 #include <sysdefs.h>
 
 extern "C" {
@@ -194,21 +195,36 @@ uint16_t V86::popw(Ints::State *state)
     return res;
 }
 
-void V86::Initialize()
+void V86::InitializeProcess()
 {
-    Ints::RegisterHandler(13, &exceptionHandler);
-    Ints::RegisterHandler(0xFD, &enterHandler);
-
+    DEBUG("[v86] InitializeProcess()\n");
     // we need to map first meg (apart from first page so nullptr still works)
-    Paging::MapPages(~0, PAGE_SIZE, PAGE_SIZE, true, true, 255);
+    //Paging::MapPages(~0, PAGE_SIZE, PAGE_SIZE, true, true, 255);
+    for(uintptr_t va = 0; va < (1 << 20); va += PAGE_SIZE)
+    {
+        uintptr_t pa = Paging::AllocPage();
+        if(!va) Process::GetCurrent()->V86PageZeroPhAddr = pa;
+        Paging::MapPage(~0, va, pa, true, true);
+    }
+    Memory::Move((void *)0, (void *)KERNEL_BASE, 1 << 20);
+    Paging::UnMapPage(~0, 0);
 
     // install int86 trampoline code in conventional memory
     Memory::Move((uint8_t *)((codeSegment + 0u) << 4), &__V86CodeStart, &__V86CodeEnd - &__V86CodeStart);
 }
 
+void V86::Initialize()
+{
+    Ints::RegisterHandler(13, &exceptionHandler);
+    Ints::RegisterHandler(0xFD, &enterHandler);
+}
+
 void V86::Cleanup()
 {
-    // nothing to do
+    mutex.Acquire(5000);
+    Ints::UnRegisterHandler(13, &exceptionHandler);
+    Ints::UnRegisterHandler(0xFD, &enterHandler);
+    mutex.Release();
 }
 
 bool V86::Enter(uint16_t ss, uint16_t sp, uint16_t cs, uint16_t ip, uint32_t arg)
@@ -216,20 +232,25 @@ bool V86::Enter(uint16_t ss, uint16_t sp, uint16_t cs, uint16_t ip, uint32_t arg
     if(!mutex.Acquire(5000))
         return false;
 
-    if(Paging::GetPhysicalAddress(~0, 0x1000) == ~0)
-        V86::Initialize();
+    if(!Process::GetCurrent()->V86PageZeroPhAddr)
+        V86::InitializeProcess();
 
-    Paging::MapPage(~0, 0, 0, true, true); // map page 0 only when needed
+    // map page 0 only when needed
+    Paging::MapPage(~0, 0, Process::GetCurrent()->V86PageZeroPhAddr, true, true);
+
     v86EnterInt(0, ss, sp, cs, ip, arg);
-    Paging::UnMapPage(~0, 0); // unmap page 0 when not needed anymore
+
+    // unmap page 0 when not needed anymore
+    Paging::UnMapPage(~0, 0);
+
     mutex.Release();
     return true;
 }
 
 bool V86::Int(uint8_t intNo, Regs *regs)
 {
-    if(Paging::GetPhysicalAddress(~0, 0x1000) == ~0)
-        V86::Initialize();
+    if(!Process::GetCurrent()->V86PageZeroPhAddr)
+        V86::InitializeProcess();
     Memory::Move((void *)((codeSegment << 4) + 0x8000), regs, sizeof(Regs));
     return Enter(stackSegment, 0x0000, codeSegment, &__Int86 - &__V86CodeStart, intNo);
 }

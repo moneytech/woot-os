@@ -93,6 +93,7 @@ public:
         uint32_t GS;
     } Regs;
 
+    static void InitializeProcess();
     static void Initialize();
     static void Cleanup();
     static bool Enter(uint16_t ss, uint16_t sp, uint16_t cs, uint16_t ip, uint32_t arg);

@@ -17,13 +17,13 @@ VESAFB::VESAFB(bool autoRegister) :
     regs.ES = realPtr.Segment;
     regs.DI = realPtr.Offset;
     V86::Int(0x10, &regs);
-    SVGAInfo *si = (SVGAInfo *)(KERNEL_BASE + realPtr.ToLinear());
+    SVGAInfo *si = (SVGAInfo *)realPtr.ToLinear();
     const char *oemName = (const char *)(KERNEL_BASE + si->OEMNamePtr.ToLinear());
     String::Copy(OEMName, oemName, sizeof(OEMName));
     OEMName[sizeof(OEMName) - 1] = 0;
-    uint16_t *modes = (uint16_t *)(KERNEL_BASE + si->ModePtr.ToLinear());
+    uint16_t *modes = (uint16_t *)si->ModePtr.ToLinear();
     realPtr.Offset = 0x0200;
-    VESAModeInfo *mi = (VESAModeInfo *)(KERNEL_BASE + realPtr.ToLinear());
+    VESAModeInfo *mi = (VESAModeInfo *)realPtr.ToLinear();
     for(int i = 0; i < 1024; ++i)
     {
         if(modes[i] == 0xFFFF)

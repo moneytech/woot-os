@@ -74,6 +74,7 @@ public:
     DEntry *CurrentDirectory;
     uintptr_t UserStackPtr;
     Vector<Handle> Handles;
+    uintptr_t V86PageZeroPhAddr;
 
     // used for brk() syscall
     Mutex MemoryLock;
