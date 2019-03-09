@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <string.hpp>
 #include <stringbuilder.hpp>
-#include <sysdefs.h>
 #include <vesafb.hpp>
 
 VESAFB::VESAFB(bool autoRegister) :
@@ -18,7 +17,7 @@ VESAFB::VESAFB(bool autoRegister) :
     regs.DI = realPtr.Offset;
     V86::Int(0x10, &regs);
     SVGAInfo *si = (SVGAInfo *)realPtr.ToLinear();
-    const char *oemName = (const char *)(KERNEL_BASE + si->OEMNamePtr.ToLinear());
+    const char *oemName = (const char *)si->OEMNamePtr.ToLinear();
     String::Copy(OEMName, oemName, sizeof(OEMName));
     OEMName[sizeof(OEMName) - 1] = 0;
     uint16_t *modes = (uint16_t *)si->ModePtr.ToLinear();
