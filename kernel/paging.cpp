@@ -8,7 +8,10 @@
 #include <paging.hpp>
 #include <sysdefs.h>
 
-extern void *_end;
+extern "C" void *_end;
+
+extern "C" void *_utext_start;
+extern "C" void *_utext_end;
 
 uintptr_t Paging::memoryTop = (uintptr_t)&_end;
 uint32_t *Paging::kernelPageDir;
@@ -75,6 +78,15 @@ void Paging::free4k(void *ptr)
     kernel4kPT[slot] = 0;
 }
 
+void Paging::mapUser(uintptr_t as, void *start, void *end, bool write)
+{
+    uintptr_t ustart = (uintptr_t)start;
+    uintptr_t uend = (uintptr_t)end;
+    size_t usize = uend - ustart;
+    size_t upages = usize / PAGE_SIZE;
+    MapPages(as, ustart, ustart - KERNEL_BASE, true, write, upages);
+}
+
 void Paging::Initialize(multiboot_info_t *mboot)
 {
     GDT::Initialize();
@@ -136,6 +148,9 @@ void Paging::Initialize(multiboot_info_t *mboot)
 
     MapPage(kernelAddressSpace, 0xFFFFF000, 0, false, true);
     UnMapPage(kernelAddressSpace, 0xFFFFF000);
+
+    // properly map user code section
+    mapUser(kernelAddressSpace, &_utext_start, &_utext_end, false);
 
     cpuSetCR3(kernelAddressSpace);
 }

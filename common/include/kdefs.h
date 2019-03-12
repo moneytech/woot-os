@@ -58,4 +58,3 @@
 #define S_ISREG(mode)	(((mode) & S_IFTYPE) == S_IFREG)
 #define S_ISCHAR(mode)	(((mode) & S_IFTYPE) == S_IFCHR)
 #define S_ISFIFO(mode)	(((mode) & S_IFTYPE) == S_IFIFO)
-

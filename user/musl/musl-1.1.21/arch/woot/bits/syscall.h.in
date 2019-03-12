@@ -41,7 +41,6 @@
 #define SYS_setgroups               (SYS_NOT_IMPL + 81)
 #define SYS_swapon                  (SYS_NOT_IMPL + 87)
 #define SYS_reboot                  (SYS_NOT_IMPL + 88)
-#define SYS_munmap                  (SYS_NOT_IMPL + 91)
 #define SYS_truncate                (SYS_NOT_IMPL + 92)
 #define SYS_ftruncate               (SYS_NOT_IMPL + 93)
 #define SYS_fchmod                  (SYS_NOT_IMPL + 94)
@@ -95,7 +94,6 @@
 #define SYS_getresgid               (SYS_NOT_IMPL + 171)
 #define SYS_prctl                   (SYS_NOT_IMPL + 172)
 #define SYS_rt_sigaction            (SYS_NOT_IMPL + 174)
-#define SYS_rt_sigprocmask          (SYS_NOT_IMPL + 175)
 #define SYS_rt_sigpending           (SYS_NOT_IMPL + 176)
 #define SYS_rt_sigtimedwait         (SYS_NOT_IMPL + 177)
 #define SYS_rt_sigqueueinfo         (SYS_NOT_IMPL + 178)
@@ -221,3 +219,5 @@
 #define SYS_mprotect                SYS_MPROTECT
 #define SYS_getdents                SYS_GETDENTS
 #define SYS_fstat                   SYS_FSTAT
+#define SYS_munmap                  SYS_MUNMAP
+#define SYS_rt_sigprocmask          SYS_RT_SIGPROCMASK

@@ -1,3 +1,7 @@
 Makefile
+input.c
+thread.c
 video.c
+woot/input.h
+woot/thread.h
 woot/video.h

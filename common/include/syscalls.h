@@ -20,6 +20,8 @@
 #define SYS_MPROTECT        18
 #define SYS_GETDENTS        19
 #define SYS_FSTAT           20
+#define SYS_MUNMAP          21
+#define SYS_RT_SIGPROCMASK  22
 
 #define SYS_GET_FB_COUNT    64
 #define SYS_OPEN_FB         65
@@ -28,5 +30,20 @@
 #define SYS_GET_MODE_COUNT  68
 #define SYS_GET_MODE_INFO   69
 #define SYS_SET_MODE        70
+
+#define SYS_INDEV_GET_COUNT 80
+#define SYS_INDEV_LIST      81
+#define SYS_INDEV_OPEN      82
+#define SYS_INDEV_CLOSE     83
+#define SYS_INDEV_GET_TYPE  84
+#define SYS_INDEV_GET_EVENT 85
+
+#define SYS_THREAD_CREATE   96
+#define SYS_THREAD_DELETE   97
+#define SYS_THREAD_RESUME   98
+#define SYS_THREAD_SUSPEND  99
+#define SYS_THREAD_SLEEP    100
+#define SYS_THREAD_WAIT     101
+#define SYS_THREAD_ABORT    102
 
 #define SYS_NOT_IMPL	    0x80000000

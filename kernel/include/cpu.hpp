@@ -81,6 +81,7 @@ void cpuWriteMSR(uint32_t msr, uint64_t value);
 
 // misc
 void cpuEnterUserMode(uint32_t esp, uint32_t eip);
+uint64_t cpuReadTSC();
 
 } // extern "C"
 

@@ -35,6 +35,7 @@ class Paging
     static void *map4k(uint slot, uintptr_t pa);
     static void *alloc4k(uintptr_t pa);
     static void free4k(void *ptr);
+    static void mapUser(uintptr_t as, void *start, void *end, bool write);
 public:
     static void Initialize(multiboot_info_t *mboot);
     static void BuildAddressSpace(AddressSpace as);

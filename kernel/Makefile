@@ -27,6 +27,7 @@ OBJS = boot/boot.o \
     inode.o \
     inputdevice.o \
 	ints.o \
+	ipc.o \
 	irqs.o \
 	isrs.o \
 	main.o \
@@ -76,7 +77,8 @@ ASMFLAGS ?= -f elf32 -g dwarf2 -w
 
 COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
     -fshort-wchar -Ulinux -Uunix -D__WOOT__=1 -ggdb  -I.\
-	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include
+	-I$(TOP_DIR)/kernel/include -I$(TOP_DIR)/common/include\
+	-fno-function-sections
 
 CFLAGS += $(COMPILE_FLAGS)
 CXXFLAGS += $(COMPILE_FLAGS) -fno-exceptions -fno-rtti

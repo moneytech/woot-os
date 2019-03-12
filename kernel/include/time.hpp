@@ -39,4 +39,5 @@ public:
     static uint Sleep(uint millis, bool interruptible);
     static time_t GetTime();
     static time_t GetTimeOfDay();
+    static uint64_t GetTimeStamp();
 };

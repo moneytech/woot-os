@@ -207,11 +207,7 @@ Thread::Thread(const char *name, class Process *process, void *entryPoint, uintp
     WaitingSemaphore(nullptr),
     WakeCount(0)
 {
-    if(!process)
-    {
-        Thread *ct = GetCurrent();
-        if(ct) Process = ct->Process;
-    }
+    if(!Process) Process = Process::GetCurrent();
     else process->AddThread(this);
 
     cpuFXSave(FXSaveData);  // FIXME: should be initialized to known good state

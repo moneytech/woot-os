@@ -7,7 +7,8 @@ PHDRS
 }
 SECTIONS
 {
-	. = SIZEOF_HEADERS;
+	. = 0x00100000;
+	. += SIZEOF_HEADERS;
     .text : { *(.text*) } : text
     . = ALIGN(4096);
     .rodata : { *(.rodata*) } : text

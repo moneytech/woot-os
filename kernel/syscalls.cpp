@@ -6,17 +6,19 @@
 #include <file.hpp>
 #include <framebuffer.hpp>
 #include <inode.hpp>
+#include <inputdevice.hpp>
 #include <kdefs.h>
 #include <ktypes.h>
 #include <paging.hpp>
 #include <process.hpp>
-#include <pthread.h>
+#include <pthreaddef.h>
 #include <string.hpp>
 #include <stringbuilder.hpp>
 #include <syscalls.h>
 #include <syscalls.hpp>
 #include <sysdefs.h>
 #include <thread.hpp>
+#include <time.hpp>
 
 struct iovec
 {
@@ -71,6 +73,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_MPROTECT] = sys_mprotect,
     [SYS_GETDENTS] = sys_getdents,
     [SYS_FSTAT] = sys_fstat,
+    [SYS_MUNMAP] = sys_munmap,
+    [SYS_RT_SIGPROCMASK] = sys_rt_sigprocmask,
 
     [SYS_GET_FB_COUNT] = sys_get_fb_count,
     [SYS_OPEN_FB] = sys_open_fb,
@@ -78,7 +82,18 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_CLOSE_FB] = sys_close_fb,
     [SYS_GET_MODE_COUNT] = sys_get_mode_count,
     [SYS_GET_MODE_INFO] = sys_get_mode_info,
-    [SYS_SET_MODE] = sys_set_mode
+    [SYS_SET_MODE] = sys_set_mode,
+
+    [SYS_INDEV_GET_COUNT] = sys_indev_get_count,
+    [SYS_INDEV_LIST] = sys_indev_list,
+
+    [SYS_THREAD_CREATE] = sys_thread_create,
+    [SYS_THREAD_DELETE] = sys_thread_delete,
+    [SYS_THREAD_RESUME] = sys_thread_resume,
+    [SYS_THREAD_SUSPEND] = sys_thread_suspend,
+    [SYS_THREAD_SLEEP] = sys_thread_sleep,
+    [SYS_THREAD_WAIT] = sys_thread_wait,
+    [SYS_THREAD_ABORT] = sys_thread_abort
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -416,6 +431,20 @@ long SysCalls::sys_fstat(uintptr_t *args)
     return 0;
 }
 
+long SysCalls::sys_munmap(uintptr_t *args)
+{
+    uintptr_t addr = args[1] & PAGE_MASK;
+    size_t length = args[2] & PAGE_MASK;
+    Paging::UnmapRange(~0, addr, length);
+    return 0;
+}
+
+long SysCalls::sys_rt_sigprocmask(uintptr_t *args)
+{
+    DEBUG("[syscalls] dummy %s called\n", __FUNCTION__);
+    return 0;
+}
+
 long SysCalls::sys_get_fb_count(uintptr_t *args)
 {
     ObjectTree::Item *fbDir = ObjectTree::Objects->Get(FB_DIR);
@@ -481,6 +510,74 @@ long SysCalls::sys_set_mode(uintptr_t *args)
     FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!fb) return -EINVAL;
     return fb->SetMode(args[2]);
+}
+
+long SysCalls::sys_indev_get_count(uintptr_t *args)
+{
+    ObjectTree::Item *inpDir = ObjectTree::Objects->Get(INPUT_DIR);
+    return inpDir ? inpDir->GetChildCount() : 0;
+}
+
+long SysCalls::sys_indev_list(uintptr_t *args)
+{
+    char *buf = (char *)args[1];
+    size_t bufSize = args[2];
+    StringBuilder sb(buf, bufSize);
+    char nameBuf[OBJTREE_MAX_NAME_LEN];
+
+    if(!ObjectTree::Objects->Lock())
+        return -EBUSY;
+    ObjectTree::Item *inpDir = ObjectTree::Objects->Get(INPUT_DIR);
+    for(ObjectTree::Item *it : inpDir->GetChildren())
+    {
+        it->GetKey(nameBuf, sizeof(nameBuf));
+        sb.WriteStr(nameBuf);
+        sb.WriteByte(0);
+    }
+    ObjectTree::Objects->UnLock();
+
+    return sb.Length();
+}
+
+long SysCalls::sys_thread_create(uintptr_t *args)
+{
+    return Process::GetCurrent()->NewThread((void *)args[1], args[2], (int *)args[3]);
+}
+
+long SysCalls::sys_thread_delete(uintptr_t *args)
+{
+    return Process::GetCurrent()->DeleteThread(args[1]);
+}
+
+long SysCalls::sys_thread_resume(uintptr_t *args)
+{
+    return Process::GetCurrent()->ResumeThread(args[1]);
+}
+
+long SysCalls::sys_thread_suspend(uintptr_t *args)
+{
+    return Process::GetCurrent()->SuspendThread(args[1]);
+}
+
+long SysCalls::sys_thread_sleep(uintptr_t *args)
+{
+    int handle = args[1];
+    int ms = args[2];
+    if(handle < 0) return Time::Sleep(ms, false);
+    return Process::GetCurrent()->SleepThread(handle, ms);
+}
+
+long SysCalls::sys_thread_wait(uintptr_t *args)
+{
+    return Process::GetCurrent()->WaitThread(args[1], args[2]);
+}
+
+long SysCalls::sys_thread_abort(uintptr_t *args)
+{
+    int handle = args[1];
+    int retVal = args[2];
+    if(handle < 0) Thread::Finalize(Thread::GetCurrent(), retVal);
+    return Process::GetCurrent()->AbortThread(handle, retVal);
 }
 
 void SysCalls::Initialize()

@@ -90,6 +90,6 @@ public:
 
     int GetEvent(InputDevice::Event *event, uint timeout);
 
-    virtual bool KeyCheck(const char *name);
+    virtual void GetKey(char *buf, size_t bufSize);
     virtual void GetDisplayName(char *buf, size_t bufSize);
 };

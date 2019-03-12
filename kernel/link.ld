@@ -1,7 +1,7 @@
 ENTRY(_start)
 PHDRS
 {
-    all PT_LOAD FILEHDR PHDRS;
+    text PT_LOAD FILEHDR PHDRS;
 }
 SECTIONS
 {
@@ -10,8 +10,15 @@ SECTIONS
     . = KERNEL_BASE + 0x00101000;
     . = ALIGN(4096);
 
+    .text.boot : AT(ADDR(.text.boot) - KERNEL_BASE) { *(.text.boot*) }
+
+    . = ALIGN(4096);
+    _utext_start = .;
+    .text.user : AT(ADDR(.text.user) - KERNEL_BASE) { *(.text.user*) }
+    _utext_end = ALIGN(4096);
+
     _text_start = .;
-    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) } : all
+    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) } : text
     _text_end = .;
 
     . = ALIGN(4096);
@@ -38,21 +45,6 @@ SECTIONS
     __fini_array_start = .;
     .fini_array : AT(ADDR(.fini_array) - KERNEL_BASE) { *(.fini_array*) }
     __fini_array_end = .;
-
-    . = ALIGN(4096);
-    _utext_start = .;
-    .utext : AT(ADDR(.utext) - KERNEL_BASE) { *(.utext*) }
-    _utext_end = ALIGN(4096);
-
-    . = ALIGN(4096);
-    _udata_start = .;
-    .udata : AT(ADDR(.udata) - KERNEL_BASE) { *(.udata*) }
-    _udata_end = ALIGN(4096);
-
-    . = ALIGN(4096);
-    _ubss_start = .;
-    .ubss : AT(ADDR(.ubss) - KERNEL_BASE) { *(.ubss*) }
-    _ubss_end = ALIGN(4096);
 
     . = ALIGN(4096);
     _bss_start = .;

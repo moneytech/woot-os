@@ -87,7 +87,11 @@ void Ints::CommonHandler(Ints::State *state)
                   state->InterruptNumber < IRQS_BASE ? excNames[state->InterruptNumber] : "hardware interrupt");
 
             if(cp) DEBUG("Process: %d (%s)\n", cp->ID, cp->Name);
-            if(ct) DEBUG("Thread: %d (%s)\n", ct->ID, ct->Name);
+            if(ct)
+            {
+                ++ct->ExcCount;
+                DEBUG("Thread: %d (%s)\n", ct->ID, ct->Name);
+            }
         }
 
 
@@ -100,7 +104,13 @@ void Ints::CommonHandler(Ints::State *state)
         }
         DumpState(state);
 
-        /*DEBUG("Stack trace:\n");
+        if(ct && ct->ExcCount > 1)
+        {
+            DEBUG("Something went wrong when building stack trace. Killing thread.\n");
+            Thread::Finalize(ct, 127);
+        }
+
+        DEBUG("Stack trace:\n");
         uintptr_t *ebp = (uintptr_t *)state->EBP;
         for(int i = 0; i < 5; ++i)
         {
@@ -108,7 +118,7 @@ void Ints::CommonHandler(Ints::State *state)
             if(!eip) break;
             ebp = (uintptr_t *)(*ebp);
             DEBUG("%p\n", eip);
-        }*/
+        }
 
         if(ct && ct->ID != 1)
             Thread::Finalize(ct, 127);

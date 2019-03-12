@@ -25,7 +25,7 @@
 %define VIDEO_HEIGHT    25
 %define VIDEO_BPP       0
 
-segment .text
+segment .text.boot
 align 4
 _multiboot_header:
     dd MULTIBOOT_MAGIC

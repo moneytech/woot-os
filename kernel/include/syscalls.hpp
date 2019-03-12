@@ -27,6 +27,8 @@ class SysCalls
     static long sys_mprotect(uintptr_t *args);
     static long sys_getdents(uintptr_t *args);
     static long sys_fstat(uintptr_t *args);
+    static long sys_munmap(uintptr_t *args);
+    static long sys_rt_sigprocmask(uintptr_t *args);
 
     static long sys_get_fb_count(uintptr_t *args);
     static long sys_open_fb(uintptr_t *args);
@@ -35,6 +37,17 @@ class SysCalls
     static long sys_get_mode_count(uintptr_t *args);
     static long sys_get_mode_info(uintptr_t *args);
     static long sys_set_mode(uintptr_t *args);
+
+    static long sys_indev_get_count(uintptr_t *args);
+    static long sys_indev_list(uintptr_t *args);
+
+    static long sys_thread_create(uintptr_t *args);
+    static long sys_thread_delete(uintptr_t *args);
+    static long sys_thread_resume(uintptr_t *args);
+    static long sys_thread_suspend(uintptr_t *args);
+    static long sys_thread_sleep(uintptr_t *args);
+    static long sys_thread_wait(uintptr_t *args);
+    static long sys_thread_abort(uintptr_t *args);
 public:
     static void Initialize();
     static void Cleanup();

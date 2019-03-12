@@ -111,14 +111,25 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
         ObjectTree::Objects->UnLock();
     } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
 #endif // LOAD_MODULES
+
+    Semaphore inputFinished(0);
+    Process *inputProc = Process::Create("/bin/inputhandler", &inputFinished, false);
+    if(inputProc) inputProc->Start();
+
     for(int i = 0; i < 1; ++i)
     {
         Semaphore finished(0);
-        Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);
-        //Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished, false);
+        //Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);
+        Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished, false);
         proc->Start();
         finished.Wait(0, false, false);
         delete proc;
+    }
+
+    if(inputProc)
+    {
+        inputFinished.Wait(0, false, false);
+        delete inputProc;
     }
 
     //DEBUG("Object tree dump:\n");

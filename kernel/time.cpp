@@ -191,3 +191,8 @@ time_t Time::GetTimeOfDay()
     dt.Day = 0;
     return Time::DateTimeToUnix(&dt);
 }
+
+uint64_t Time::GetTimeStamp()
+{
+    return cpuReadTSC();
+}

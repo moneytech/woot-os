@@ -6,7 +6,7 @@ THREADS = 8
 CC ?= clang
 CFLAGS = -m32 -O0 -D__WOOT__ -ggdb -I$(TOP_DIR)/common/include
 ASFLAGS = --32
-LDFLAGS = -Wl,-Ttext=0x00100000
+LDFLAGS = 
 AR = ar
 RANLIB = ranlib
 

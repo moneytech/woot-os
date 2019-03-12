@@ -19,6 +19,8 @@ include/filesystemtype.hpp
 include/framebuffer.hpp
 include/inode.hpp
 include/inputdevice.hpp
+include/ipc.hpp
+include/messagequeue.hpp
 include/module.hpp
 include/namedmutex.hpp
 include/partvolume.hpp
@@ -28,6 +30,7 @@ include/virtualkey.hpp
 include/volumetype.hpp
 inode.cpp
 inputdevice.cpp
+ipc.cpp
 module.cpp
 module.ld
 modulelist

@@ -12,8 +12,31 @@
 #include <string.hpp>
 #include <stringbuilder.hpp>
 #include <sysdefs.h>
+#include <syscalls.h>
 #include <thread.hpp>
 #include <tokenizer.hpp>
+
+extern "C" void userThreadReturn();
+extern "C" __attribute__((section(".text.user"))) long utrSyscall(int no, ...)
+{
+    asm("sysenter");
+    return 0;
+}
+
+#define MAKE_STR(s) #s
+#define STRINGIFY(s) MAKE_STR(s)
+
+asm(
+".intel_syntax noprefix\n"
+".section .text.user\n"
+".globl userThreadReturn\n"
+"userThreadReturn:\n"
+"push eax\n"
+"push 0xFFFFFFFF\n"
+"push " STRINGIFY(SYS_THREAD_ABORT) "\n"
+"call utrSyscall\n"
+".section .text\n"
+".att_syntax\n");
 
 Sequencer<pid_t> Process::id(1);
 List<Process *> Process::processList;
@@ -136,14 +159,15 @@ int Process::processEntryPoint(const char *cmdline)
     return 0;
 }
 
-Process *Process::getByID(pid_t pid)
+int Process::userThreadEntryPoint(void *arg)
 {
-    for(Process *proc : processList)
-    {
-        if(pid == proc->ID)
-            return proc;
-    }
-    return nullptr;
+    Thread *ct = Thread::GetCurrent();
+    uintptr_t *stack = (uintptr_t *)ct->AllocUserStack();
+    *(--stack) = 0; // dummy ebp
+    *(--stack) = ct->UserArgument;
+    *(--stack) = (uintptr_t)userThreadReturn;
+    cpuEnterUserMode((uintptr_t)stack, (uint32_t)ct->UserEntryPoint);
+    return 0;
 }
 
 int Process::allocHandleSlot(Handle handle)
@@ -214,6 +238,16 @@ void Process::Initialize()
     kernelProc->Threads.Append(Thread::GetIdleThread());
 }
 
+Process *Process::GetByID(pid_t pid)
+{
+    for(Process *proc : processList)
+    {
+        if(pid == proc->ID)
+            return proc;
+    }
+    return nullptr;
+}
+
 Process *Process::Create(const char *filename, Semaphore *finished, bool noAutoRelocs)
 {
     if(!filename) return nullptr;
@@ -251,7 +285,7 @@ bool Process::Finalize(pid_t pid)
     if(!listLock.Acquire(0, false))
         return false;
     bool res = false;
-    Process *proc = getByID(pid);
+    Process *proc = GetByID(pid);
     Thread *currentThread = Thread::GetCurrent();
     bool finalizeCurrentThread = false;
     if(proc)
@@ -296,10 +330,11 @@ void Process::Dump()
 }
 
 Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool selfDestruct) :
-    lock(false, "processLock"),
+    lock(true, "processLock"),
     UserStackPtr(KERNEL_BASE),
     Handles(8, 8, MAX_HANDLES),
     ID(id.GetNext()),
+    Messages(64),
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
     AddressSpace(addressSpace),
@@ -476,21 +511,30 @@ int Process::Close(int handle)
 {
     if(!Lock()) return -errno;
     Handle h = Handles.Get(handle);
+    freeHandleSlot(handle);
     if(h.Type == Handle::HandleType::Object)
     {
-        freeHandleSlot(handle);
         UnLock();
-        return 0;
+        return ESUCCESS;
     }
-    if(h.Type != Handle::HandleType::File)
+    else if(h.Type == Handle::HandleType::File)
     {
+        if(h.File) delete h.File;
         UnLock();
-        return -EBADF;
+        return ESUCCESS;
     }
-    if(h.File) delete h.File;
-    freeHandleSlot(handle);
+    else if(h.Type == Handle::HandleType::Thread)
+    {
+        if(h.Thread)
+        {
+            Thread::Finalize(h.Thread, 0);
+            delete h.Thread;
+        }
+        UnLock();
+        return ESUCCESS;
+    }
     UnLock();
-    return 0;
+    return -EBADF;
 }
 
 void *Process::GetHandleData(int handle, Process::Handle::HandleType type)
@@ -505,6 +549,70 @@ void *Process::GetHandleData(int handle, Process::Handle::HandleType type)
     }
     UnLock();
     return h.Unknown;
+}
+
+int Process::NewThread(void *entry, uintptr_t arg, int *retVal)
+{
+    if(!Lock()) return -errno;
+    Thread *t = new Thread("thread", this, (void *)userThreadEntryPoint, 0, DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, retVal, nullptr, false);
+    t->UserEntryPoint = entry;
+    t->UserArgument = arg;
+    int res = allocHandleSlot(Handle(t));
+    if(res < 0)
+    {
+        delete t;
+        return res;
+    }
+    t->Enable();
+    UnLock();
+    return res;
+}
+
+int Process::DeleteThread(int handle)
+{
+    return Close(handle);
+}
+
+Thread *Process::GetThread(int handle)
+{
+    return (Thread *)GetHandleData(handle, Handle::HandleType::Thread);
+}
+
+int Process::ResumeThread(int handle)
+{
+    Thread *t = GetThread(handle);
+    if(!t) return -EINVAL;
+    return t->Resume(false) ? 0 : -EINVAL;
+}
+
+int Process::SuspendThread(int handle)
+{
+    Thread *t = GetThread(handle);
+    if(!t) return -EINVAL;
+    t->Suspend();
+    return ESUCCESS;
+}
+
+int Process::SleepThread(int handle, int ms)
+{
+    Thread *t = GetThread(handle);
+    if(!t) return -EINVAL;
+    return t->Sleep(ms, false);
+}
+
+int Process::WaitThread(int handle, int timeout)
+{
+    Thread *t = GetThread(handle);
+    if(!t) return -EINVAL;
+    return t->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false) ? ESUCCESS : EBUSY;
+}
+
+int Process::AbortThread(int handle, int retVal)
+{
+    Thread *t = GetThread(handle);
+    if(!t) return -EINVAL;
+    t->Finalize(t, retVal);
+    return ESUCCESS;
 }
 
 int Process::NewMutex()
@@ -617,6 +725,11 @@ void Process::GetDisplayName(char *buf, size_t bufSize)
 Process::~Process()
 {
     lock.Acquire(0, false);
+
+    int i = 0;
+    for(Handle h : Handles)
+        Close(i);
+
     bool lockAcquired = listLock.Acquire(0, true);
     for(ELF *elf : Images)
         if(elf) delete elf;
@@ -649,5 +762,11 @@ Process::Handle::Handle(::File *file) :
 Process::Handle::Handle(ObjectTree::Item *obj) :
     Type(HandleType::Object),
     Object(obj)
+{
+}
+
+Process::Handle::Handle(::Thread *thread) :
+    Type(HandleType::Thread),
+    Thread(thread)
 {
 }

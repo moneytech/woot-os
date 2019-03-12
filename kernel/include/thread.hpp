@@ -3,7 +3,7 @@
 #include <ints.hpp>
 #include <ktypes.h>
 #include <objectqueue.hpp>
-#include <pthread.h>
+#include <pthreaddef.h>
 #include <queue.hpp>
 #include <sequencer.hpp>
 #include <types.hpp>
@@ -47,10 +47,13 @@ public:
     ::Process *Process;
     void *EntryPoint;
     uintptr_t Argument;
+    void *UserEntryPoint;
+    uintptr_t UserArgument;
 
     // state
     State State;
     int ErrNo;
+    int ExcCount;
 
     // stacks
     size_t KernelStackSize;

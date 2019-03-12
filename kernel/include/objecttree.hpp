@@ -39,6 +39,7 @@ public:
         List<Item *> &GetChildren();
 
         virtual bool KeyCheck(const char *name);
+        virtual void GetKey(char *buf, size_t bufSize);
         virtual void GetDisplayName(char *buf, size_t bufSize);
         virtual ~Item();
     };
@@ -48,7 +49,7 @@ public:
         char *name;
     public:
         Directory(const char *name);
-        virtual bool KeyCheck(const char *name);
+        virtual void GetKey(char *buf, size_t bufSize);
         virtual void GetDisplayName(char *buf, size_t bufSize);
         virtual ~Directory();
     };

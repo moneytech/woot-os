@@ -302,8 +302,13 @@ List<ObjectTree::Item *> &ObjectTree::Item::GetChildren()
 bool ObjectTree::Item::KeyCheck(const char *name)
 {
     char buf[64];
-    GetDisplayName(buf, sizeof(buf));
+    GetKey(buf, sizeof(buf));
     return !String::Compare(buf, name);
+}
+
+void ObjectTree::Item::GetKey(char *buf, size_t bufSize)
+{
+    return GetDisplayName(buf, bufSize);
 }
 
 void ObjectTree::Item::GetDisplayName(char *buf, size_t bufSize)
@@ -324,9 +329,10 @@ ObjectTree::Directory::Directory(const char *name) :
 {
 }
 
-bool ObjectTree::Directory::KeyCheck(const char *name)
+void ObjectTree::Directory::GetKey(char *buf, size_t bufSize)
 {
-    return !String::Compare(this->name, name);
+    StringBuilder sb(buf, bufSize);
+    sb.WriteStr(name);
 }
 
 void ObjectTree::Directory::GetDisplayName(char *buf, size_t bufSize)

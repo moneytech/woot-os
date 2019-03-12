@@ -3,6 +3,7 @@
 #include <elf.hpp>
 #include <ktypes.h>
 #include <list.hpp>
+#include <messagequeue.hpp>
 #include <mutex.hpp>
 #include <objecttree.hpp>
 #include <sequencer.hpp>
@@ -29,6 +30,7 @@ public:
             Unknown,
             File,
             Object,
+            Thread,
             Mutex,
             Semaphore
         } Type;
@@ -37,6 +39,7 @@ public:
             void *Unknown;
             ::File *File;
             ObjectTree::Item *Object;
+            ::Thread *Thread;
             ::Mutex *Mutex;
             ::Semaphore *Semaphore;
         };
@@ -44,6 +47,7 @@ public:
         Handle(nullptr_t);
         Handle(::File *file);
         Handle(ObjectTree::Item *obj);
+        Handle(::Thread *thread);
     };
 private:
     static Sequencer<pid_t> id;
@@ -57,7 +61,7 @@ private:
 
     static uintptr_t buildUserStack(uintptr_t stackPtr, const char *cmdLine, int envCount, const char *envVars[], ELF *elf, uintptr_t retAddr, uintptr_t basePointer);
     static int processEntryPoint(const char *cmdline);
-    static Process *getByID(pid_t pid);
+    static int userThreadEntryPoint(void *arg);
 
     int allocHandleSlot(Handle handle);
     void freeHandleSlot(int handle);
@@ -75,6 +79,7 @@ public:
     uintptr_t UserStackPtr;
     Vector<Handle> Handles;
     uintptr_t V86PageZeroPhAddr;
+    MessageQueue<ipcMessage> Messages;
 
     // used for brk() syscall
     Mutex MemoryLock;
@@ -87,6 +92,7 @@ public:
     bool SelfDestruct;
 
     static void Initialize();
+    static Process *GetByID(pid_t pid);
     static Process *Create(const char *filename, Semaphore *finished, bool noAutoRelocs);
     static Process *GetCurrent();
     static DEntry *GetCurrentDir();
@@ -105,13 +111,26 @@ public:
     bool ApplyRelocations();
     uintptr_t Brk(uintptr_t brk);
     uintptr_t SBrk(intptr_t incr);
+
     int Open(const char *filename, int flags);
     int OpenObject(const char *name);
     int Close(int handle);
     void *GetHandleData(int handle, Handle::HandleType type);
+
+    // thread syscall support routines
+    int NewThread(void *entry, uintptr_t arg, int *retVal);
+    int DeleteThread(int handle);
+    Thread *GetThread(int handle);
+    int ResumeThread(int handle);
+    int SuspendThread(int handle);
+    int SleepThread(int handle, int ms);
+    int WaitThread(int handle, int timeout);
+    int AbortThread(int handle, int retVal);
+
     int NewMutex();
     Mutex *GetMutex(int idx);
     int DeleteMutex(int idx);
+
     int NewSemaphore(int initVal);
     Semaphore *GetSemaphore(int idx);
     int DeleteSemaphore(int idx);

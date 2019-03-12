@@ -63,12 +63,10 @@ int InputDevice::GetEvent(Event *event, uint timeout)
     return ok ? 1 : 0;
 }
 
-bool InputDevice::KeyCheck(const char *name)
+void InputDevice::GetKey(char *buf, size_t bufSize)
 {
-    char buf[OBJTREE_MAX_NAME_LEN + 1];
-    StringBuilder sb(buf, sizeof(buf));
+    StringBuilder sb(buf, bufSize);
     sb.WriteFmt("%d", id);
-    return !String::Compare(name, sb.String());
 }
 
 void InputDevice::GetDisplayName(char *buf, size_t bufSize)

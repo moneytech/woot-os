@@ -1441,3 +1441,8 @@ cpuEnterUserMode:
     mov esp, ebp
     pop ebp
     ret
+
+global cpuReadTSC
+cpuReadTSC:
+    rdtsc
+    ret
