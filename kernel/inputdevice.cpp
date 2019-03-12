@@ -46,6 +46,11 @@ InputDevice *InputDevice::GetDefault(Type type)
     return res;
 }
 
+InputDevice::Type InputDevice::GetType() const
+{
+    return type;
+}
+
 int InputDevice::GetEvent(Event *event, uint timeout)
 {
     if(!mutex.Acquire(timeout >= 0 ? timeout : 0, false))
@@ -53,14 +58,14 @@ int InputDevice::GetEvent(Event *event, uint timeout)
     if(!eventSem.Wait(timeout, false, true))
     {
         mutex.Release();
-        return 0;
+        return ETIMEOUT;
     }
     bool ok = false;
     if(event) *event = events.Read(&ok);
     else events.Read(&ok);
     cpuEnableInterrupts();
     mutex.Release();
-    return ok ? 1 : 0;
+    return ok ? ESUCCESS : -EIO;
 }
 
 void InputDevice::GetKey(char *buf, size_t bufSize)

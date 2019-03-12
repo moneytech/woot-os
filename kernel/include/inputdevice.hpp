@@ -2,11 +2,7 @@
 
 #define INPUT_DIR   "/dev/input"
 
-#define INP_MAX_RAW_BYTES           64
-#define INP_MAX_MOUSE_AXES          13
-#define INP_MAX_TABLET_COORDS       7
-#define INP_MAX_TABLET_AXES         6
-#define INP_MAX_CONTROLLER_COORDS   13
+#include <inputdevtypes.h>
 
 #include <mutex.hpp>
 #include <objecttree.hpp>
@@ -88,6 +84,7 @@ protected:
 public:
     static InputDevice *GetDefault(InputDevice::Type type);
 
+    InputDevice::Type GetType() const;
     int GetEvent(InputDevice::Event *event, uint timeout);
 
     virtual void GetKey(char *buf, size_t bufSize);

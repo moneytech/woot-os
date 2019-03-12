@@ -11,3 +11,23 @@ int inpDeviceList(char *buf, size_t bufSize)
 {
     return syscall(SYS_INDEV_LIST, buf, bufSize);
 }
+
+int inpOpenDevice(const char *name)
+{
+    return syscall(SYS_INDEV_OPEN, name);
+}
+
+int inpCloseDevice(int handle)
+{
+    return syscall(SYS_INDEV_CLOSE, handle);
+}
+
+int inpGetDeviceType(int handle)
+{
+    return syscall(SYS_INDEV_GET_TYPE, handle);
+}
+
+int inpGetEvent(int handle, int timeout, void *buf)
+{
+    return syscall(SYS_INDEV_GET_EVENT, handle, timeout, buf);
+}

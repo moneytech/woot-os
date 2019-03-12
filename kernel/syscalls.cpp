@@ -7,6 +7,7 @@
 #include <framebuffer.hpp>
 #include <inode.hpp>
 #include <inputdevice.hpp>
+#include <inputdevtypes.h>
 #include <kdefs.h>
 #include <ktypes.h>
 #include <paging.hpp>
@@ -76,16 +77,20 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_MUNMAP] = sys_munmap,
     [SYS_RT_SIGPROCMASK] = sys_rt_sigprocmask,
 
-    [SYS_GET_FB_COUNT] = sys_get_fb_count,
-    [SYS_OPEN_FB] = sys_open_fb,
-    [SYS_OPEN_DEFAULT_FB] = sys_open_default_fb,
-    [SYS_CLOSE_FB] = sys_close_fb,
-    [SYS_GET_MODE_COUNT] = sys_get_mode_count,
-    [SYS_GET_MODE_INFO] = sys_get_mode_info,
-    [SYS_SET_MODE] = sys_set_mode,
+    [SYS_FB_GET_COUNT] = sys_fb_get_count,
+    [SYS_FB_OPEN] = sys_fb_open,
+    [SYS_FB_OPEN_DEFAULT] = sys_fb_open_default,
+    [SYS_FB_CLOSE] = sys_fb_close,
+    [SYS_FB_GET_MODE_COUNT] = sys_fb_get_mode_count,
+    [SYS_FB_GET_MODE_INFO] = sys_fb_get_mode_info,
+    [SYS_FB_SET_MODE] = sys_fb_set_mode,
 
     [SYS_INDEV_GET_COUNT] = sys_indev_get_count,
     [SYS_INDEV_LIST] = sys_indev_list,
+    [SYS_INDEV_OPEN] = sys_indev_open,
+    [SYS_INDEV_CLOSE] = sys_indev_close,
+    [SYS_INDEV_GET_TYPE] = sys_indev_get_type,
+    [SYS_INDEV_GET_EVENT] = sys_indev_get_event,
 
     [SYS_THREAD_CREATE] = sys_thread_create,
     [SYS_THREAD_DELETE] = sys_thread_delete,
@@ -445,13 +450,13 @@ long SysCalls::sys_rt_sigprocmask(uintptr_t *args)
     return 0;
 }
 
-long SysCalls::sys_get_fb_count(uintptr_t *args)
+long SysCalls::sys_fb_get_count(uintptr_t *args)
 {
     ObjectTree::Item *fbDir = ObjectTree::Objects->Get(FB_DIR);
     return fbDir ? fbDir->GetChildCount() : 0;
 }
 
-long SysCalls::sys_open_fb(uintptr_t *args)
+long SysCalls::sys_fb_open(uintptr_t *args)
 {
     const char *name = (const char *)args[1];
     StringBuilder sb(OBJTREE_MAX_PATH_LEN + 1);
@@ -459,24 +464,24 @@ long SysCalls::sys_open_fb(uintptr_t *args)
     return Process::GetCurrent()->OpenObject(sb.String());
 }
 
-long SysCalls::sys_open_default_fb(uintptr_t *args)
+long SysCalls::sys_fb_open_default(uintptr_t *args)
 {
     return Process::GetCurrent()->OpenObject(FB_DIR "/0");
 }
 
-long SysCalls::sys_close_fb(uintptr_t *args)
+long SysCalls::sys_fb_close(uintptr_t *args)
 {
     return Process::GetCurrent()->Close(args[1]);
 }
 
-long SysCalls::sys_get_mode_count(uintptr_t *args)
+long SysCalls::sys_fb_get_mode_count(uintptr_t *args)
 {
     FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!fb) return -EINVAL;
     return fb->GetModeCount();
 }
 
-long SysCalls::sys_get_mode_info(uintptr_t *args)
+long SysCalls::sys_fb_get_mode_info(uintptr_t *args)
 {
     FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!fb) return -EINVAL;
@@ -505,7 +510,7 @@ long SysCalls::sys_get_mode_info(uintptr_t *args)
     return ESUCCESS;
 }
 
-long SysCalls::sys_set_mode(uintptr_t *args)
+long SysCalls::sys_fb_set_mode(uintptr_t *args)
 {
     FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!fb) return -EINVAL;
@@ -537,6 +542,103 @@ long SysCalls::sys_indev_list(uintptr_t *args)
     ObjectTree::Objects->UnLock();
 
     return sb.Length();
+}
+
+long SysCalls::sys_indev_open(uintptr_t *args)
+{
+    const char *name = (const char *)args[1];
+    StringBuilder sb(OBJTREE_MAX_PATH_LEN + 1);
+    sb.WriteFmt("%s/%s", INPUT_DIR, name);
+    return Process::GetCurrent()->OpenObject(sb.String());
+}
+
+long SysCalls::sys_indev_close(uintptr_t *args)
+{
+    return Process::GetCurrent()->Close(args[1]);
+}
+
+long SysCalls::sys_indev_get_type(uintptr_t *args)
+{
+    InputDevice *indev = (InputDevice *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!indev) return -EINVAL;
+    InputDevice::Type type = indev->GetType();
+    switch(type)
+    {
+    default:
+    case InputDevice::Type::Unknown:
+        break;
+    case InputDevice::Type::Other:
+        return INP_DEV_TYPE_OTHER;
+    case InputDevice::Type::Keyboard:
+        return INP_DEV_TYPE_KEYBOARD;
+    case InputDevice::Type::Mouse:
+        return INP_DEV_TYPE_MOUSE;
+    case InputDevice::Type::Tablet:
+        return INP_DEV_TYPE_TABLET;
+    case InputDevice::Type::Controller:
+        return INP_DEV_TYPE_CONTROLLER;
+    }
+    return INP_DEV_TYPE_UNKNOWN;
+}
+
+long SysCalls::sys_indev_get_event(uintptr_t *args)
+{
+    InputDevice *indev = (InputDevice *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!indev) return -EINVAL;
+    InputDevice::Event event;
+    int res = indev->GetEvent(&event, args[2]);
+    if(res) return res;
+    union
+    {
+        uint8_t *raw;
+        inpKeyboardEvent *kbd;
+        inpMouseEvent *mouse;
+        inpTabletEvent *tab;
+        inpControllerEvent *ctrl;
+    } buf;
+
+    buf.raw = (uint8_t *)args[3];
+
+    // Translate kernel events to usermode events
+    InputDevice::Type type = indev->GetType();
+    switch(type)
+    {
+    default:
+    case InputDevice::Type::Unknown:
+    case InputDevice::Type::Other:
+        Memory::Move(buf.raw, event.RawData, INP_MAX_RAW_BYTES);
+        break;
+    case InputDevice::Type::Keyboard:
+        buf.kbd->Key = (unsigned int)event.Keyboard.Key;
+        buf.kbd->Flags = 0;
+        buf.kbd->Flags |= event.Keyboard.Release ? INP_KBD_EVENT_FLAG_RELEASE : 0;
+        break;
+    case InputDevice::Type::Mouse:
+        buf.mouse->ButtonsPressed = event.Mouse.ButtonsPressed;
+        buf.mouse->ButtonsHeld = event.Mouse.ButtonsHeld;
+        buf.mouse->ButtonsReleased = event.Mouse.ButtonsReleased;
+        for(int i = 0; i < INP_MAX_MOUSE_AXES; ++i)
+            buf.mouse->Delta[i] = event.Mouse.Delta[i];
+        break;
+    case InputDevice::Type::Tablet:
+        buf.tab->ButtonsPressed = event.Tablet.ButtonsPressed;
+        buf.tab->ButtonsHeld = event.Tablet.ButtonsHeld;
+        buf.tab->ButtonsReleased = event.Tablet.ButtonsReleased;
+        for(int i = 0; i < INP_MAX_TABLET_COORDS; ++i)
+            buf.tab->Coords[i] = event.Tablet.Coords[i];
+        for(int i = 0; i < INP_MAX_TABLET_AXES; ++i)
+            buf.tab->Delta[i] = event.Tablet.Delta[i];
+        break;
+    case InputDevice::Type::Controller:
+        buf.ctrl->ButtonsPressed = event.Controller.ButtonsPressed;
+        buf.ctrl->ButtonsHeld = event.Controller.ButtonsHeld;
+        buf.ctrl->ButtonsReleased = event.Controller.ButtonsReleased;
+        for(int i = 0; i < INP_MAX_CONTROLLER_COORDS; ++i)
+            buf.ctrl->Coords[i] = event.Controller.Coords[i];
+        break;
+    }
+
+    return ESUCCESS;
 }
 
 long SysCalls::sys_thread_create(uintptr_t *args)

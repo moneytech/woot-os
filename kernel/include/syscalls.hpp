@@ -30,16 +30,20 @@ class SysCalls
     static long sys_munmap(uintptr_t *args);
     static long sys_rt_sigprocmask(uintptr_t *args);
 
-    static long sys_get_fb_count(uintptr_t *args);
-    static long sys_open_fb(uintptr_t *args);
-    static long sys_open_default_fb(uintptr_t *args);
-    static long sys_close_fb(uintptr_t *args);
-    static long sys_get_mode_count(uintptr_t *args);
-    static long sys_get_mode_info(uintptr_t *args);
-    static long sys_set_mode(uintptr_t *args);
+    static long sys_fb_get_count(uintptr_t *args);
+    static long sys_fb_open(uintptr_t *args);
+    static long sys_fb_open_default(uintptr_t *args);
+    static long sys_fb_close(uintptr_t *args);
+    static long sys_fb_get_mode_count(uintptr_t *args);
+    static long sys_fb_get_mode_info(uintptr_t *args);
+    static long sys_fb_set_mode(uintptr_t *args);
 
     static long sys_indev_get_count(uintptr_t *args);
     static long sys_indev_list(uintptr_t *args);
+    static long sys_indev_open(uintptr_t *args);
+    static long sys_indev_close(uintptr_t *args);
+    static long sys_indev_get_type(uintptr_t *args);
+    static long sys_indev_get_event(uintptr_t *args);
 
     static long sys_thread_create(uintptr_t *args);
     static long sys_thread_delete(uintptr_t *args);
