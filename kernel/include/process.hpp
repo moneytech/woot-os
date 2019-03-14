@@ -4,6 +4,7 @@
 #include <ktypes.h>
 #include <list.hpp>
 #include <messagequeue.hpp>
+#include <msgnums.h>
 #include <mutex.hpp>
 #include <objecttree.hpp>
 #include <sequencer.hpp>
@@ -98,6 +99,7 @@ public:
     static DEntry *GetCurrentDir();
     static bool Finalize(pid_t pid);
     static void Dump();
+    static int ForEach(bool (*handler)(Process *proc, void *arg), void *arg);
 
     Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool SelfDestruct);
     bool Lock();

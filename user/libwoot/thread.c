@@ -36,3 +36,8 @@ int threadAbort(int handle, int retVal)
 {
     return syscall(SYS_THREAD_ABORT, handle, retVal);
 }
+
+int threadDaemonize()
+{
+    return syscall(SYS_THREAD_DAEMONIZE);
+}

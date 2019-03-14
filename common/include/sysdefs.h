@@ -24,7 +24,7 @@
 #define PDE_PER_TABLE               1024
 #define PTE_PER_TABLE               1024
 #define DEFAULT_STACK_SIZE          (64 << 10)
-#define DEFAULT_USER_STACK_SIZE     (256 << 10)
+#define DEFAULT_USER_STACK_SIZE     (128 << 10)
 #define DEFAULT_SIGNAL_STACK_SIZE   (16 << 10)
 
 // filesystems

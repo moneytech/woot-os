@@ -17,6 +17,7 @@ int inpDeviceList(char *buf, size_t bufSize);
 int inpOpenDevice(const char *name);
 int inpCloseDevice(int handle);
 int inpGetDeviceType(int handle);
+int inpGetDeviceName(int handle, char *buf, size_t bufSize);
 int inpGetEvent(int handle, int timeout, void *buf);
 
 #ifdef __cplusplus

@@ -115,6 +115,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     Semaphore inputFinished(0);
     Process *inputProc = Process::Create("/bin/inputhandler", &inputFinished, false);
     if(inputProc) inputProc->Start();
+    inputFinished.Wait(0, false, false); // wait for input process to daemonize
 
     for(int i = 0; i < 1; ++i)
     {

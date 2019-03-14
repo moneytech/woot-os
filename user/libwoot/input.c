@@ -27,6 +27,11 @@ int inpGetDeviceType(int handle)
     return syscall(SYS_INDEV_GET_TYPE, handle);
 }
 
+int inpGetDeviceName(int handle, char *buf, size_t bufSize)
+{
+    return syscall(SYS_INDEV_GET_NAME, handle, buf, bufSize);
+}
+
 int inpGetEvent(int handle, int timeout, void *buf)
 {
     return syscall(SYS_INDEV_GET_EVENT, handle, timeout, buf);

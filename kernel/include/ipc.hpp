@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ktypes.h>
+#include <msgnums.h>
 #include <sequencer.hpp>
 #include <types.hpp>
 

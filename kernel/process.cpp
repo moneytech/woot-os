@@ -329,6 +329,19 @@ void Process::Dump()
     }
 }
 
+int Process::ForEach(bool (*handler)(Process *proc, void *arg), void *arg)
+{
+    if(!listLock.Acquire(0, false))
+        return -EBUSY;
+    for(Process *proc : processList)
+    {
+        if(!handler(proc, arg))
+            break;
+    }
+    listLock.Release();
+    return ESUCCESS;
+}
+
 Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, bool selfDestruct) :
     lock(true, "processLock"),
     UserStackPtr(KERNEL_BASE),

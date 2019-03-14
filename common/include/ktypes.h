@@ -60,11 +60,3 @@ struct vidModeInfo
     int AlphaBits, RedBits, GreenBits, BlueBits;
     int AlphaShift, RedShift, GreenShift, BlueShift;
 };
-
-#include <msgnums.h>
-
-struct ipcMessage
-{
-    int Number, Flags, ID, Source;
-    unsigned char Data[MSG_PAYLOAD_SIZE];
-};

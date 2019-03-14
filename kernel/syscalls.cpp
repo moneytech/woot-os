@@ -8,6 +8,7 @@
 #include <inode.hpp>
 #include <inputdevice.hpp>
 #include <inputdevtypes.h>
+#include <ipc.hpp>
 #include <kdefs.h>
 #include <ktypes.h>
 #include <paging.hpp>
@@ -90,6 +91,7 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_INDEV_OPEN] = sys_indev_open,
     [SYS_INDEV_CLOSE] = sys_indev_close,
     [SYS_INDEV_GET_TYPE] = sys_indev_get_type,
+    [SYS_INDEV_GET_NAME] = sys_indev_get_name,
     [SYS_INDEV_GET_EVENT] = sys_indev_get_event,
 
     [SYS_THREAD_CREATE] = sys_thread_create,
@@ -98,7 +100,11 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_THREAD_SUSPEND] = sys_thread_suspend,
     [SYS_THREAD_SLEEP] = sys_thread_sleep,
     [SYS_THREAD_WAIT] = sys_thread_wait,
-    [SYS_THREAD_ABORT] = sys_thread_abort
+    [SYS_THREAD_ABORT] = sys_thread_abort,
+    [SYS_THREAD_DAEMONIZE] = sys_thread_daemonize,
+
+    [SYS_IPC_SEND_MESSAGE] = sys_ipc_send_message,
+    [SYS_IPC_GET_MESSAGE] = sys_ipc_get_message
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -581,6 +587,14 @@ long SysCalls::sys_indev_get_type(uintptr_t *args)
     return INP_DEV_TYPE_UNKNOWN;
 }
 
+long SysCalls::sys_indev_get_name(uintptr_t *args)
+{
+    InputDevice *indev = (InputDevice *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!indev) return -EINVAL;
+    indev->GetDisplayName((char *)args[2], args[3]);
+    return ESUCCESS;
+}
+
 long SysCalls::sys_indev_get_event(uintptr_t *args)
 {
     InputDevice *indev = (InputDevice *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
@@ -674,12 +688,28 @@ long SysCalls::sys_thread_wait(uintptr_t *args)
     return Process::GetCurrent()->WaitThread(args[1], args[2]);
 }
 
+long SysCalls::sys_thread_daemonize(uintptr_t *args)
+{
+    Thread::GetCurrent()->Finished->Signal(nullptr);
+    return ESUCCESS;
+}
+
 long SysCalls::sys_thread_abort(uintptr_t *args)
 {
     int handle = args[1];
     int retVal = args[2];
     if(handle < 0) Thread::Finalize(Thread::GetCurrent(), retVal);
     return Process::GetCurrent()->AbortThread(handle, retVal);
+}
+
+long SysCalls::sys_ipc_send_message(uintptr_t *args)
+{
+    return IPC::SendMessage(args[1], args[2], args[3], (void *)args[4], args[5]);
+}
+
+long SysCalls::sys_ipc_get_message(uintptr_t *args)
+{
+    return IPC::GetMessage((ipcMessage *)args[1], (int)args[2]);
 }
 
 void SysCalls::Initialize()

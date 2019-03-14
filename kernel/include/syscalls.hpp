@@ -43,6 +43,7 @@ class SysCalls
     static long sys_indev_open(uintptr_t *args);
     static long sys_indev_close(uintptr_t *args);
     static long sys_indev_get_type(uintptr_t *args);
+    static long sys_indev_get_name(uintptr_t *args);
     static long sys_indev_get_event(uintptr_t *args);
 
     static long sys_thread_create(uintptr_t *args);
@@ -52,6 +53,11 @@ class SysCalls
     static long sys_thread_sleep(uintptr_t *args);
     static long sys_thread_wait(uintptr_t *args);
     static long sys_thread_abort(uintptr_t *args);
+    static long sys_thread_daemonize(uintptr_t *args);
+
+    static long sys_ipc_send_message(uintptr_t *args);
+    static long sys_ipc_get_message(uintptr_t *args);
+
 public:
     static void Initialize();
     static void Cleanup();

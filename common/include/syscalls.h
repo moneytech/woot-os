@@ -23,6 +23,7 @@
 #define SYS_MUNMAP              21
 #define SYS_RT_SIGPROCMASK      22
 
+// display
 #define SYS_FB_GET_COUNT        64
 #define SYS_FB_OPEN             65
 #define SYS_FB_OPEN_DEFAULT     66
@@ -31,13 +32,16 @@
 #define SYS_FB_GET_MODE_INFO    69
 #define SYS_FB_SET_MODE         70
 
+// input
 #define SYS_INDEV_GET_COUNT     80
 #define SYS_INDEV_LIST          81
 #define SYS_INDEV_OPEN          82
 #define SYS_INDEV_CLOSE         83
 #define SYS_INDEV_GET_TYPE      84
-#define SYS_INDEV_GET_EVENT     85
+#define SYS_INDEV_GET_NAME      85
+#define SYS_INDEV_GET_EVENT     86
 
+// thread control
 #define SYS_THREAD_CREATE       96
 #define SYS_THREAD_DELETE       97
 #define SYS_THREAD_RESUME       98
@@ -45,5 +49,10 @@
 #define SYS_THREAD_SLEEP        100
 #define SYS_THREAD_WAIT         101
 #define SYS_THREAD_ABORT        102
+#define SYS_THREAD_DAEMONIZE    103
+
+// IPC
+#define SYS_IPC_SEND_MESSAGE    112
+#define SYS_IPC_GET_MESSAGE     113
 
 #define SYS_NOT_IMPL            0x80000000

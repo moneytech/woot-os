@@ -3,22 +3,34 @@
 #include <stdlib.h>
 #include <string.h>
 #include <woot/input.h>
+#include <woot/ipc.h>
 #include <woot/thread.h>
 
 static volatile int done = 0;
+static int keyboardOwner = -1;
+static int mouseOwner = -1;
 
 static int kbdThread(int arg)
 {
     int handle = arg;
+    char devName[64];
     inpKeyboardEvent_t event;
+    inpGetDeviceName(handle, devName, sizeof(devName));
     for(int i = 0; !done; ++i)
     {
-        inpGetEvent(handle, -1, &event);
-        printf("key: %d %s\n", event.Key, event.Flags & INP_KBD_EVENT_FLAG_RELEASE ? "released" : "pressed");
+        if(inpGetEvent(handle, 1000, &event)) continue;
+        //printf("key: %d %s\n", event.Key, event.Flags & INP_KBD_EVENT_FLAG_RELEASE ? "released" : "pressed");
+
+        if(keyboardOwner >= 0)
+            ipcSendMessage(keyboardOwner, MSG_KEYBOARD_EVENT, MSG_FLAG_NONE, &event, sizeof(event));
 
         if(event.Key == 27 && event.Flags & INP_KBD_EVENT_FLAG_RELEASE)
+        {
+            ipcSendMessage(0, MSG_QUIT, MSG_FLAG_NONE, NULL, 0);
             done = 1;
+        }
     }
+    printf("[inputhandler] Closing device '%s'\n", devName);
     inpCloseDevice(handle);
     return 0;
 }
@@ -26,14 +38,21 @@ static int kbdThread(int arg)
 static int mouseThread(int arg)
 {
     int handle = arg;
+    char devName[64];
     inpMouseEvent_t event;
+    inpGetDeviceName(handle, devName, sizeof(devName));
     for(int i = 0; !done; ++i)
     {
-        inpGetEvent(handle, -1, &event);
-        printf("mouse delta: %d %d, buttons: pressed: %d held: %d released: %d\n",
-               event.Delta[0], event.Delta[1],
-               event.ButtonsPressed, event.ButtonsHeld, event.ButtonsReleased);
+        if(inpGetEvent(handle, 1000, &event)) continue;
+        //printf("mouse delta: %d %d, buttons: pressed: %d held: %d released: %d\n",
+        //       event.Delta[0], event.Delta[1],
+        //       event.ButtonsPressed, event.ButtonsHeld, event.ButtonsReleased);
+
+        if(mouseOwner >= 0)
+            ipcSendMessage(mouseOwner, MSG_MOUSE_EVENT, MSG_FLAG_NONE, &event, sizeof(event));
+
     }
+    printf("[inputhandler] Closing device '%s'\n", devName);
     inpCloseDevice(handle);
     return 0;
 }
@@ -87,6 +106,38 @@ int main()
         if(threads[i] < 0)
             continue;
         threadResume(threads[i]);
+    }
+
+    threadDaemonize();
+
+    ipcMessage_t msg;
+    for(;;)
+    {
+        if(ipcGetMessage(&msg, -1))
+            break;
+        ipcProcessMessage(&msg);
+        if(msg.Number == MSG_QUIT)
+            break;
+        else if(msg.Number == MSG_ACQUIRE_KEYBOARD)
+        {
+            if(keyboardOwner < 0)
+            {
+                keyboardOwner = msg.Source;
+                printf("[inputhandler] keyboard acquired by process %d\n", keyboardOwner);
+            }
+        }
+        else if(msg.Number == MSG_ACQUIRE_MOUSE)
+        {
+            if(mouseOwner < 0)
+            {
+                mouseOwner = msg.Source;
+                printf("[inputhandler] mouse acquired by process %d\n", mouseOwner);
+            }
+        }
+        else if(msg.Number == MSG_RELEASE_KEYBOARD)
+            keyboardOwner = -1;
+        else if(msg.Number == MSG_RELEASE_MOUSE)
+            mouseOwner = -1;
     }
 
     for(int i = 0; i < devCount; ++i)

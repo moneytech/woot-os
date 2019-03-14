@@ -20,7 +20,7 @@ public:
     T Read(int timeout)
     {
         T val;
-        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout >= 0, false))
+        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
             return val;
         val = data[t];
         t = (t + 1) % cap;
@@ -31,7 +31,7 @@ public:
     int Read(T *buf, int timeout)
     {
         if(!buf) return -EINVAL;
-        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout >= 0, false))
+        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
             return ETIMEOUT;
         *buf = data[t];
         t = (t + 1) % cap;
@@ -41,7 +41,7 @@ public:
 
     int Write(T val, int timeout)
     {
-        if(!s.Wait(timeout < 0 ? 0 : timeout, timeout >= 0, false))
+        if(!s.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
             return ETIMEOUT;
         data[h] = val;
         h = (h + 1) % cap;

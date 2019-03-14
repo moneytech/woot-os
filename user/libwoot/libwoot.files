@@ -1,7 +1,10 @@
+woot/vkeys.h
 Makefile
 input.c
+ipc.c
 thread.c
 video.c
 woot/input.h
+woot/ipc.h
 woot/thread.h
 woot/video.h
