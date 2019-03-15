@@ -92,11 +92,11 @@ int main()
             break;
         case INP_DEV_TYPE_KEYBOARD:
             printf("[inputhandler] Creating handler for keyboard '%s'\n", thisName);
-            threads[j] = threadCreate(kbdThread, devHandle, NULL);
+            threads[j] = threadCreate("keyboard thread", kbdThread, devHandle, NULL);
             break;
         case INP_DEV_TYPE_MOUSE:
             printf("[inputhandler] Creating handler for mouse '%s'\n", thisName);
-            threads[j] = threadCreate(mouseThread, devHandle, NULL);
+            threads[j] = threadCreate("mouse thread", mouseThread, devHandle, NULL);
             break;
         }
 

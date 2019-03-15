@@ -6,7 +6,7 @@ extern "C" {
 
 #include <stdint.h>
 
-int threadCreate(void *entry, uintptr_t arg, int *retVal);
+int threadCreate(const char *name, void *entry, uintptr_t arg, int *retVal);
 int threadDelete(int handle);
 int threadResume(int handle);
 int threadSuspend(int handle);

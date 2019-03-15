@@ -76,7 +76,7 @@ int VESAFB::SetMode(int mode)
     regs.AX = 0x4F02;
     regs.BX = mi.ModeNumber;
     V86::Int(0x10, &regs);
-    return regs.AH ? -EFAULT : 0;
+    return ESUCCESS;
 }
 
 void VESAFB::GetDisplayName(char *buf, size_t bufSize)

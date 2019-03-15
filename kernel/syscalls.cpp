@@ -154,10 +154,8 @@ long SysCalls::sys_set_thread_area(uintptr_t *args)
 long SysCalls::sys_get_pthread(uintptr_t *args)
 {
     struct pthread **self = (struct pthread **)args[1];
-    if(!self) return -EINVAL;
     Thread *ct = Thread::GetCurrent();
     *self = ct->PThread;
-    pthread dbg;
     return ESUCCESS;
 }
 
@@ -662,7 +660,7 @@ long SysCalls::sys_indev_get_event(uintptr_t *args)
 
 long SysCalls::sys_thread_create(uintptr_t *args)
 {
-    return Process::GetCurrent()->NewThread((void *)args[1], args[2], (int *)args[3]);
+    return Process::GetCurrent()->NewThread((const char *)args[1], (void *)args[2], args[3], (int *)args[4]);
 }
 
 long SysCalls::sys_thread_delete(uintptr_t *args)

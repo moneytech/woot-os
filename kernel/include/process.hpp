@@ -126,7 +126,7 @@ public:
     void *GetHandleData(int handle, Handle::HandleType type);
 
     // thread syscall support routines
-    int NewThread(void *entry, uintptr_t arg, int *retVal);
+    int NewThread(const char *name, void *entry, uintptr_t arg, int *retVal);
     int DeleteThread(int handle);
     Thread *GetThread(int handle);
     int ResumeThread(int handle);

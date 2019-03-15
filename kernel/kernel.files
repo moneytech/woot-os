@@ -12,6 +12,7 @@ framebuffer.cpp
 include/bufferedvolume.hpp
 include/dentry.hpp
 include/directoryentry.hpp
+include/errno.h
 include/file.hpp
 include/filestream.hpp
 include/filesystem.hpp

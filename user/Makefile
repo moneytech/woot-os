@@ -1,4 +1,4 @@
-SUBDIRS = init inputhandler usertest
+SUBDIRS = init inputhandler usertest windowmanager
 THREADS ?= 8
 
 TOP_DIR ?= $(shell realpath ..)

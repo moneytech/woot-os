@@ -577,10 +577,10 @@ void *Process::GetHandleData(int handle, Process::Handle::HandleType type)
     return h.Unknown;
 }
 
-int Process::NewThread(void *entry, uintptr_t arg, int *retVal)
+int Process::NewThread(const char *name, void *entry, uintptr_t arg, int *retVal)
 {
     if(!Lock()) return -errno;
-    Thread *t = new Thread("thread", this, (void *)userThreadEntryPoint, 0, DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, retVal, nullptr);
+    Thread *t = new Thread(name, this, (void *)userThreadEntryPoint, 0, DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, retVal, nullptr);
     t->UserEntryPoint = entry;
     t->UserArgument = arg;
     int res = allocHandleSlot(Handle(t));
@@ -589,6 +589,7 @@ int Process::NewThread(void *entry, uintptr_t arg, int *retVal)
         delete t;
         return res;
     }
+    t->PThread = (struct pthread *)SBrk(PAGE_SIZE);
     t->Enable();
     UnLock();
     return res;

@@ -2,9 +2,9 @@
 #include <unistd.h>
 #include <woot/thread.h>
 
-int threadCreate(void *entry, uintptr_t arg, int *retVal)
+int threadCreate(const char *name, void *entry, uintptr_t arg, int *retVal)
 {
-    return syscall(SYS_THREAD_CREATE, entry, arg, retVal);
+    return syscall(SYS_THREAD_CREATE, name, entry, arg, retVal);
 }
 
 int threadDelete(int handle)
