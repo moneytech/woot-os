@@ -35,8 +35,11 @@ public:
     static bool Lock();
     static void UnLock();
     static int DetectAll();
+    static void AddDEntry(DEntry *dentry);
+    static void RemoveDEntry(DEntry *dentry);
+
     static void PutINode(INode *inode);
-    static DEntry *GetDEntry(DEntry *parent, const char *name);
+    static DEntry *LookupDEntry(DEntry *parent, const char *name);
     static DEntry *GetDEntry(DEntry *dentry);
     static void PutDEntry(DEntry *dentry);
 

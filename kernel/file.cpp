@@ -37,14 +37,10 @@ File *File::open(::DEntry *parent, const char *name, int flags)
             }
             continue;
         }
-        ::DEntry *nextDe = FileSystem::GetDEntry(dentry, t.String);
+        ::DEntry *nextDe = FileSystem::LookupDEntry(dentry, t.String);
+        FileSystem::PutDEntry(dentry);
         if(!nextDe)
-        {
-            if(dentry != parent)
-                FileSystem::PutDEntry(parent);
-            FileSystem::PutDEntry(dentry);
             return nullptr;
-        }
         dentry = nextDe;
     }
     if((flags & O_ACCMODE) != O_RDONLY && flags & O_TRUNC)

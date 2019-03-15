@@ -39,7 +39,7 @@ void FileSystem::Cleanup()
         }
     }
     for(DEntry *dentry : dentryCache)
-        DEBUG("[filesystem] WARNING: DEntry still in cache! (ref count: %d)\n", dentry->ReferenceCount);
+        DEBUG("[filesystem] WARNING: DEntry '%s' still in cache! (ref count: %d)\n", dentry->Name, dentry->ReferenceCount);
     for(INode *inode : inodeCache)
         DEBUG("[filesystem] WARNING: INode still in cache! (ref count: %d)\n", inode->ReferenceCount);
     ObjectTree::Objects->UnLock();
@@ -91,10 +91,26 @@ int FileSystem::DetectAll()
     return found;
 }
 
+void FileSystem::AddDEntry(DEntry *dentry)
+{
+    Lock();
+    dentryCache.Prepend(dentry);
+    UnLock();
+}
+
+void FileSystem::RemoveDEntry(DEntry *dentry)
+{
+    Lock();
+    dentryCache.Remove(dentry, nullptr, false);
+    UnLock();
+}
+
 void FileSystem::PutINode(INode *inode)
 {
-    if(!Lock()) return;
-    if(!--inode->ReferenceCount)
+    if(!inode || !Lock()) return;
+    if(inode->ReferenceCount > 0)
+        --inode->ReferenceCount;
+    if(inode->ReferenceCount <= 0)
     {
         inodeCache.Remove(inode, nullptr, false);
         if(inode->Dirty)
@@ -105,19 +121,20 @@ void FileSystem::PutINode(INode *inode)
     UnLock();
 }
 
-DEntry *FileSystem::GetDEntry(DEntry *parent, const char *name)
+DEntry *FileSystem::LookupDEntry(DEntry *parent, const char *name)
 {
     if(!Lock() || !parent || !parent->INode || !parent->INode->FS || !name)
         return nullptr;
     for(DEntry *dentry : dentryCache)
     {
         if(parent == dentry->Parent && !String::Compare(name, dentry->Name))
-        {
+        {   // if dentry already in cache
             ++dentry->ReferenceCount;
             UnLock();
             return dentry;
         }
     }
+
     ino_t ino = parent->INode->Lookup(name);
     if(ino <= 0)
     {
@@ -125,9 +142,6 @@ DEntry *FileSystem::GetDEntry(DEntry *parent, const char *name)
         return nullptr;
     }
     DEntry *dentry = new DEntry(name, parent, parent->INode->FS->GetINode(ino));
-    dentryCache.Prepend(dentry);
-    ++dentry->ReferenceCount;
-    GetDEntry(parent);
     UnLock();
     return dentry;
 }
@@ -141,23 +155,16 @@ DEntry *FileSystem::GetDEntry(DEntry *dentry)
         UnLock();
         return nullptr;
     }
-    if(res) ++res->ReferenceCount;
-    if(dentry->Parent) GetDEntry(dentry->Parent);
+    ++res->ReferenceCount;
     UnLock();
     return res;
 }
 
 void FileSystem::PutDEntry(DEntry *dentry)
 {
-    if(!dentry) return;
-    if(!Lock()) return;
-    if(!--dentry->ReferenceCount)
-    {
-        dentryCache.Remove(dentry, nullptr, false);
-        if(dentry->Parent)
-            PutDEntry(dentry->Parent);
-        delete dentry;
-    }
+    if(!dentry || !Lock()) return;
+    //DEBUG("putdentry: %s\n", dentry->Name);
+    if(!(dentry->ReferenceCount--)) delete dentry;
     UnLock();
 }
 
@@ -193,9 +200,6 @@ int FileSystem::GetID()
 void FileSystem::SetRoot(DEntry *dentry)
 {
     if(!Lock()) return;
-    if(!dentryCache.Contains(dentry, nullptr))
-        dentryCache.Prepend(dentry);
-    ++dentry->ReferenceCount;
     root = dentry;
     UnLock();
 }
@@ -262,4 +266,5 @@ void FileSystem::GetDisplayName(char *buf, size_t bufSize)
 
 FileSystem::~FileSystem()
 {
+    if(root) PutDEntry(root);
 }

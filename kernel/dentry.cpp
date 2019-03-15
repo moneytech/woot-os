@@ -43,13 +43,12 @@ void DEntry::getFSLabelAndID(char *buf, size_t bufSize, int *id)
 }
 
 DEntry::DEntry(const char *name, DEntry *parent, class INode *inode) :
-    Parent(parent),
+    Parent(parent ? FileSystem::GetDEntry(parent) : nullptr),
     Name(String::Duplicate(name)),
     INode(inode),
     ReferenceCount(0)
 {
-    if(!INode)
-        DEBUG("[dentry] DEntry->INode == nullptr !\n");
+    FileSystem::AddDEntry(this);
 }
 
 size_t DEntry::GetFullPath(char *buffer, size_t bufferSize)
@@ -61,6 +60,7 @@ size_t DEntry::GetFullPath(char *buffer, size_t bufferSize)
 
 DEntry::~DEntry()
 {
+    FileSystem::RemoveDEntry(this);
     if(Name) delete[] Name;
     if(INode) FileSystem::PutINode(INode);
     if(Parent) FileSystem::PutDEntry(Parent);
