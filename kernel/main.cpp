@@ -55,11 +55,17 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     Process *kernelProc = Process::GetCurrent();
 
     // initialize current directory for kernel process
-    if(File *rootDir = File::Open("WOOT_OS:/", O_RDONLY))
+    File *rootDir = File::Open("WOOT_OS:/", O_RDONLY);
+    if(rootDir)
     {
         kernelProc->CurrentDirectory = FileSystem::GetDEntry(rootDir->DEntry);
+        rootDir->Create("bootlog", S_IFREG | 0666);
         delete rootDir;
     }
+
+    File *bootLog = File::Open("/bootlog", O_WRONLY | O_TRUNC);
+    FileStream *log = bootLog ? new FileStream(bootLog) : nullptr;
+    if(log) log->WriteFmt("Boot log started\n");
 
 #if LOAD_MODULES
     // load main kernel module
@@ -143,6 +149,13 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     ObjectTree::Item *dir = ObjectTree::Objects->Get(MODULES_DIR);
     if(dir) delete dir;
     ObjectTree::Objects->UnLock();
+
+    if(log)
+    {
+        log->WriteFmt("Closing boot log\n");
+        delete log;
+    }
+    if(bootLog) delete bootLog;
 
     // 'close' current kernel directory
     if(kernelProc->CurrentDirectory)

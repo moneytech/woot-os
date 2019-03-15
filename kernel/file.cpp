@@ -219,7 +219,7 @@ int64_t File::Write(const void *buffer, int64_t n)
         return -EBUSY;
     int64_t res = DEntry->INode ? DEntry->INode->Write(buffer, Position, n) : -EINVAL;
     if(res > 0) Position += res;
-    FileSystem::Lock();
+    FileSystem::UnLock();
     return res;
 }
 

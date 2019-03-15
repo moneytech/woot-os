@@ -914,7 +914,7 @@ bool EXT2::FSINode::Create(const char *name, mode_t mode)
     }
 
     // check if file/directory with that name already exists
-    if(Lookup(name))
+    if(Lookup(name) != -1)
         return false;
 
     // get fs revision, new inode, upd, gid and block size
