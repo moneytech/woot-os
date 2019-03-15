@@ -55,4 +55,10 @@
 #define SYS_IPC_SEND_MESSAGE    112
 #define SYS_IPC_GET_MESSAGE     113
 
+// process control
+#define SYS_PROCESS_CREATE      128
+#define SYS_PROCESS_DELETE      129
+#define SYS_PROCESS_WAIT        130
+#define SYS_PROCESS_ABORT       131
+
 #define SYS_NOT_IMPL            0x80000000

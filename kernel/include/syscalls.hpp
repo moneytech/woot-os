@@ -58,6 +58,11 @@ class SysCalls
     static long sys_ipc_send_message(uintptr_t *args);
     static long sys_ipc_get_message(uintptr_t *args);
 
+    static long sys_process_create(uintptr_t *args);
+    static long sys_process_delete(uintptr_t *args);
+    static long sys_process_wait(uintptr_t *args);
+    static long sys_process_abort(uintptr_t *args);
+
 public:
     static void Initialize();
     static void Cleanup();

@@ -59,11 +59,11 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     if(rootDir)
     {
         kernelProc->CurrentDirectory = FileSystem::GetDEntry(rootDir->DEntry);
-        rootDir->Create("bootlog", S_IFREG | 0666);
+        //rootDir->Create("bootlog", S_IFREG | 0666);
         delete rootDir;
     }
 
-    File *bootLog = File::Open("/bootlog", O_WRONLY | O_TRUNC);
+    File *bootLog = nullptr; //File::Open("/bootlog", O_WRONLY | O_TRUNC);
     FileStream *log = bootLog ? new FileStream(bootLog) : nullptr;
     if(log) log->WriteFmt("Boot log started\n");
 
@@ -118,26 +118,12 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     } else DEBUG("[main] Couldn't lock object tree when probing modules\n");
 #endif // LOAD_MODULES
 
-    Semaphore inputFinished(0);
-    Process *inputProc = Process::Create("/bin/inputhandler", &inputFinished, false);
-    if(inputProc) inputProc->Start();
-    inputFinished.Wait(0, false, false); // wait for input process to daemonize
-
-    for(int i = 0; i < 1; ++i)
-    {
-        Semaphore finished(0);
-        //Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);
-        Process *proc = Process::Create("/bin/usertest abca meheha \"4 teh lulz\"", &finished, false);
-        proc->Start();
-        finished.Wait(0, false, false);
-        delete proc;
-    }
-
-    if(inputProc)
-    {
-        inputFinished.Wait(0, false, false);
-        delete inputProc;
-    }
+    Semaphore initFinished(0);
+    //Process *proc = Process::Create("/lib/libc.so -- /bin/usertest with libc.so", &finished, true);
+    Process *initProc = Process::Create("/bin/init", &initFinished, false);
+    initProc->Start();
+    initFinished.Wait(0, false, false);
+    delete initProc;
 
     //DEBUG("Object tree dump:\n");
     //ObjectTree::Objects->DebugDump();

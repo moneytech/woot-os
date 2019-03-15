@@ -104,7 +104,12 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_THREAD_DAEMONIZE] = sys_thread_daemonize,
 
     [SYS_IPC_SEND_MESSAGE] = sys_ipc_send_message,
-    [SYS_IPC_GET_MESSAGE] = sys_ipc_get_message
+    [SYS_IPC_GET_MESSAGE] = sys_ipc_get_message,
+
+    [SYS_PROCESS_CREATE] = sys_process_create,
+    [SYS_PROCESS_DELETE] = sys_process_delete,
+    [SYS_PROCESS_WAIT] = sys_process_wait,
+    [SYS_PROCESS_ABORT] = sys_process_abort
 };
 
 long SysCalls::handler(uintptr_t *args)
@@ -710,6 +715,27 @@ long SysCalls::sys_ipc_send_message(uintptr_t *args)
 long SysCalls::sys_ipc_get_message(uintptr_t *args)
 {
     return IPC::GetMessage((ipcMessage *)args[1], (int)args[2]);
+}
+
+long SysCalls::sys_process_create(uintptr_t *args)
+{
+    const char *cmdline = (const char *)args[1];
+    return Process::GetCurrent()->NewProcess(cmdline);
+}
+
+long SysCalls::sys_process_delete(uintptr_t *args)
+{
+    return Process::GetCurrent()->DeleteProcess(args[1]);
+}
+
+long SysCalls::sys_process_wait(uintptr_t *args)
+{
+    return Process::GetCurrent()->WaitProcess(args[1], (int)args[2]);
+}
+
+long SysCalls::sys_process_abort(uintptr_t *args)
+{
+    return Process::GetCurrent()->AbortProcess(args[1]);
 }
 
 void SysCalls::Initialize()

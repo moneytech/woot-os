@@ -1,3 +1,5 @@
+process.c
+woot/process.h
 woot/vkeys.h
 Makefile
 input.c

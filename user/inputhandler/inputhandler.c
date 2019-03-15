@@ -12,6 +12,7 @@ static int mouseOwner = -1;
 
 static int kbdThread(int arg)
 {
+    threadDaemonize();
     int handle = arg;
     char devName[64];
     inpKeyboardEvent_t event;
@@ -37,6 +38,7 @@ static int kbdThread(int arg)
 
 static int mouseThread(int arg)
 {
+    threadDaemonize();
     int handle = arg;
     char devName[64];
     inpMouseEvent_t event;
@@ -106,6 +108,7 @@ int main()
         if(threads[i] < 0)
             continue;
         threadResume(threads[i]);
+        threadWait(threads[i], -1);
     }
 
     threadDaemonize();

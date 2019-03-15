@@ -32,6 +32,7 @@ public:
             File,
             Object,
             Thread,
+            Process,
             Mutex,
             Semaphore
         } Type;
@@ -41,6 +42,7 @@ public:
             ::File *File;
             ObjectTree::Item *Object;
             ::Thread *Thread;
+            ::Process *Process;
             ::Mutex *Mutex;
             ::Semaphore *Semaphore;
         };
@@ -49,6 +51,7 @@ public:
         Handle(::File *file);
         Handle(ObjectTree::Item *obj);
         Handle(::Thread *thread);
+        Handle(::Process *process);
     };
 private:
     static Sequencer<pid_t> id;
@@ -91,6 +94,9 @@ public:
 
     List<Thread *> Threads;
     bool SelfDestruct;
+    Semaphore *Finished;
+    bool DeleteFinished;
+    char *CommandLine;
 
     static void Initialize();
     static Process *GetByID(pid_t pid);
@@ -128,6 +134,13 @@ public:
     int SleepThread(int handle, int ms);
     int WaitThread(int handle, int timeout);
     int AbortThread(int handle, int retVal);
+
+    // process syscall support routines
+    int NewProcess(const char *cmdline);
+    int DeleteProcess(int handle);
+    Process *GetProcess(int handle);
+    int WaitProcess(int handle, int timeout);
+    int AbortProcess(int handle);
 
     int NewMutex();
     Mutex *GetMutex(int idx);

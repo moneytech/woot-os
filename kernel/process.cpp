@@ -251,11 +251,20 @@ Process *Process::GetByID(pid_t pid)
 Process *Process::Create(const char *filename, Semaphore *finished, bool noAutoRelocs)
 {
     if(!filename) return nullptr;
-    Thread *thread = new Thread("main", nullptr, (void *)processEntryPoint, (uintptr_t)filename,
-                                DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE,
-                                nullptr, finished, !finished);
+    bool deleteFinished = false;
+    if(!finished)
+    {
+        finished = new Semaphore(0);
+        deleteFinished = true;
+    }
+    char *cmdLine = String::Duplicate(filename);
+    Thread *thread = new Thread("main", nullptr, (void *)processEntryPoint, (uintptr_t)cmdLine,
+                                DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, nullptr, finished);
     Process *proc = new Process(filename, thread, 0, finished);
     proc->noAutoRelocs = noAutoRelocs;
+    proc->Finished = finished;
+    proc->DeleteFinished = deleteFinished;
+    proc->CommandLine = cmdLine;
     return proc;
 }
 
@@ -291,8 +300,7 @@ bool Process::Finalize(pid_t pid)
     if(proc)
     {
         res = true;
-        Thread *thread = nullptr;
-        while((thread = proc->Threads[0]))
+        for(Thread *thread : proc->Threads)
         {
             if(thread != currentThread)
                 Thread::Finalize(thread, -127);
@@ -546,6 +554,11 @@ int Process::Close(int handle)
         UnLock();
         return ESUCCESS;
     }
+    else if(h.Type == Handle::HandleType::Process)
+    {
+        UnLock();
+        return ESUCCESS;
+    }
     UnLock();
     return -EBADF;
 }
@@ -567,7 +580,7 @@ void *Process::GetHandleData(int handle, Process::Handle::HandleType type)
 int Process::NewThread(void *entry, uintptr_t arg, int *retVal)
 {
     if(!Lock()) return -errno;
-    Thread *t = new Thread("thread", this, (void *)userThreadEntryPoint, 0, DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, retVal, nullptr, false);
+    Thread *t = new Thread("thread", this, (void *)userThreadEntryPoint, 0, DEFAULT_STACK_SIZE, DEFAULT_USER_STACK_SIZE, retVal, nullptr);
     t->UserEntryPoint = entry;
     t->UserArgument = arg;
     int res = allocHandleSlot(Handle(t));
@@ -625,6 +638,53 @@ int Process::AbortThread(int handle, int retVal)
     Thread *t = GetThread(handle);
     if(!t) return -EINVAL;
     t->Finalize(t, retVal);
+    return ESUCCESS;
+}
+
+int Process::NewProcess(const char *cmdline)
+{
+    if(!Lock()) return -errno;
+    Process *p = Process::Create(cmdline, nullptr, false);
+    int res = allocHandleSlot(Handle(p));
+    if(res < 0)
+    {
+        Process::Finalize(p->ID);
+        delete p;
+        return res;
+    }
+    p->Start();
+    UnLock();
+    return res;
+}
+
+int Process::DeleteProcess(int handle)
+{
+    Process *p = Process::GetProcess(handle);
+    if(!p) return -EINVAL;
+    int res = Close(handle);
+    if(res) return res;
+    Process::Finalize(p->ID);
+    delete p;
+    return ESUCCESS;
+}
+
+Process *Process::GetProcess(int handle)
+{
+    return (Process *)GetHandleData(handle, Handle::HandleType::Process);
+}
+
+int Process::WaitProcess(int handle, int timeout)
+{
+    Process *p = Process::GetProcess(handle);
+    if(!p || !p->Finished) return -EINVAL;
+    return p->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false) ? ESUCCESS : EBUSY;
+}
+
+int Process::AbortProcess(int handle)
+{
+    Process *p = Process::GetProcess(handle);
+    if(!p) return -EINVAL;
+    Process::Finalize(p->ID);
     return ESUCCESS;
 }
 
@@ -751,7 +811,9 @@ Process::~Process()
     if(CurrentDirectory) FileSystem::PutDEntry(CurrentDirectory);
     processList.Remove(this, nullptr, false);
     if(lockAcquired) listLock.Release();
-    if(Name) delete[] Name;
+    if(Name && Name) delete[] Name;
+    if(DeleteFinished && Finished) delete Finished;
+    if(CommandLine) delete[] CommandLine;
 }
 
 Process::Handle::Handle() :
@@ -781,5 +843,11 @@ Process::Handle::Handle(ObjectTree::Item *obj) :
 Process::Handle::Handle(::Thread *thread) :
     Type(HandleType::Thread),
     Thread(thread)
+{
+}
+
+Process::Handle::Handle(::Process *process) :
+    Type(HandleType::Process),
+    Process(process)
 {
 }

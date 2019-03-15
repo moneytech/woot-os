@@ -1,4 +1,4 @@
-SUBDIRS = inputhandler usertest
+SUBDIRS = init inputhandler usertest
 THREADS ?= 8
 
 TOP_DIR ?= $(shell realpath ..)

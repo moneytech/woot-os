@@ -82,7 +82,7 @@ public:
     int *ReturnCodePtr;
     Semaphore *Finished;
     bool DeleteFinished;
-    bool SelfDestruct;
+    //bool SelfDestruct;
 
     // locking
     Mutex *WaitingMutex;
@@ -96,7 +96,7 @@ public:
     static Thread *GetIdleThread();
     static void Finalize(Thread *thread, int returnValue);
 
-    Thread(const char *name, class Process *process, void *entryPoint, uintptr_t argument, size_t kernelStackSize, size_t userStackSize, int *returnCodePtr, Semaphore *finished, bool selfDestruct);
+    Thread(const char *name, class Process *process, void *entryPoint, uintptr_t argument, size_t kernelStackSize, size_t userStackSize, int *returnCodePtr, Semaphore *finished);
     static Thread *GetByID(pid_t id);
     static bool Exists(Thread *thread);
     static Thread *GetNext(bool doTick);

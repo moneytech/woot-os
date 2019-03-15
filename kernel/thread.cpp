@@ -120,12 +120,12 @@ void Thread::Initialize()
 {
     bool ints = cpuDisableInterrupts();
 
-    Thread *mainThread = new Thread("main kernel thread", nullptr, kmain, 0, ~0, 0, nullptr, nullptr, false);
+    Thread *mainThread = new Thread("main kernel thread", nullptr, kmain, 0, ~0, 0, nullptr, nullptr);
     mainThread->KernelStack = mainKernelThreadStack;
     mainThread->KernelStackSize = (uintptr_t)mainKernelThreadStackEnd - (uintptr_t)mainKernelThreadStack;
     currentThread = mainThread;
 
-    idleThread = new Thread("idle thread", nullptr, (void *)idleThreadProc, 0, 0, 0, nullptr, nullptr, false);
+    idleThread = new Thread("idle thread", nullptr, (void *)idleThreadProc, 0, 0, 0, nullptr, nullptr);
     idleThread->State = State::Ready;
 
     lastVectorStateThread = currentThread;
@@ -159,14 +159,6 @@ void Thread::Finalize(Thread *thread, int returnValue)
         lastVectorStateThread = nullptr;
     bool self = currentThread == thread;
 
-    if(thread->SelfDestruct)
-    {
-        class Process *proc = thread->Process;
-        if(proc) proc->RemoveThread(thread);
-        if(!proc->Threads.Count())
-            delete proc;
-        delete thread;
-    }
     // BUGBUG: we might be using deallocated stack right now
     //         maybe using asm here would be a better idea
 
@@ -178,7 +170,7 @@ void Thread::Finalize(Thread *thread, int returnValue)
     cpuRestoreInterrupts(is);
 }
 
-Thread::Thread(const char *name, class Process *process, void *entryPoint, uintptr_t argument, size_t kernelStackSize, size_t userStackSize, int *returnCodePtr, Semaphore *finished, bool selfDestruct) :
+Thread::Thread(const char *name, class Process *process, void *entryPoint, uintptr_t argument, size_t kernelStackSize, size_t userStackSize, int *returnCodePtr, Semaphore *finished) :
     ID(id.GetNext()),
     Name(String::Duplicate(name)),
     Process(process),
@@ -202,7 +194,6 @@ Thread::Thread(const char *name, class Process *process, void *entryPoint, uintp
     ReturnCodePtr(returnCodePtr),
     Finished(finished ? finished : new Semaphore(0)),
     DeleteFinished(!finished),
-    SelfDestruct(selfDestruct),
     WaitingMutex(nullptr),
     WaitingSemaphore(nullptr),
     WakeCount(0)
