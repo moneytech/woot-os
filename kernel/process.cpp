@@ -149,9 +149,6 @@ int Process::processEntryPoint(const char *cmdline)
 
     Thread *ct = Thread::GetCurrent();
 
-    // allocate signal stack
-    ct->AllocStack(&ct->SignalStack, ct->SignalStackSize);
-
     // allocate and initialize user stack
     uintptr_t esp = ct->AllocStack(&ct->UserStack, ct->UserStackSize);
     const char *envVars[] =
@@ -169,9 +166,6 @@ int Process::processEntryPoint(const char *cmdline)
 int Process::userThreadEntryPoint(void *arg)
 {
     Thread *ct = Thread::GetCurrent();
-
-    // allocate signal stack
-    ct->AllocStack(&ct->SignalStack, ct->SignalStackSize);
 
     // allocate and initialize user stack
     uintptr_t *stack = (uintptr_t *)ct->AllocStack(&ct->UserStack, ct->UserStackSize);

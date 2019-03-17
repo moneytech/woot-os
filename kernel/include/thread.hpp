@@ -61,8 +61,6 @@ public:
     uint8_t *KernelStack;
     size_t UserStackSize;
     uint8_t *UserStack;
-    size_t SignalStackSize;
-    uint8_t *SignalStack;
     uintptr_t StackPointer;
 
     // sleeping

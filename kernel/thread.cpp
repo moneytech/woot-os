@@ -181,8 +181,6 @@ Thread::Thread(const char *name, class Process *process, void *entryPoint, uintp
     KernelStack(kernelStackSize == ~0 ? nullptr : new uint8_t[KernelStackSize]),
     UserStackSize(userStackSize ? userStackSize : DEFAULT_USER_STACK_SIZE),
     UserStack(nullptr),
-    SignalStackSize(DEFAULT_SIGNAL_STACK_SIZE),
-    SignalStack(nullptr),
     StackPointer(KernelStackSize + (uintptr_t)KernelStack),
     SleepTicks(0),
     InterruptibleSleep(false),
@@ -535,11 +533,6 @@ Thread::~Thread()
     {   // we have user stack
         freeStack((uintptr_t)UserStack, UserStackSize);
         UserStack = nullptr;
-    }
-    if(SignalStack)
-    {   // we have signal stack
-        freeStack((uintptr_t)SignalStack, SignalStackSize);
-        SignalStack = nullptr;
     }
     if(FXSaveData) delete[] FXSaveData;
     if(DeleteFinished && Finished) delete Finished;
