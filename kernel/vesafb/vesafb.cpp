@@ -76,7 +76,22 @@ int VESAFB::SetMode(int mode)
     regs.AX = 0x4F02;
     regs.BX = mi.ModeNumber;
     V86::Int(0x10, &regs);
+    currentMode = mode;
     return ESUCCESS;
+}
+
+int VESAFB::GetCurrentMode()
+{
+    return currentMode;
+}
+
+uintptr_t VESAFB::GetBuffer()
+{
+    int mode = currentMode;
+    if(mode < 0 || mode >= driverModeInfos.Size())
+        return ~0;
+    DriverModeInfo mi = driverModeInfos.Get(mode);
+    return mi.ModeInfo.LFBAddress;
 }
 
 void VESAFB::GetDisplayName(char *buf, size_t bufSize)

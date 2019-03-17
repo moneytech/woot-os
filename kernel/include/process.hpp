@@ -70,7 +70,7 @@ private:
     int allocHandleSlot(Handle handle);
     void freeHandleSlot(int handle);
 
-    uintptr_t brk(uintptr_t brk);
+    uintptr_t brk(uintptr_t brk, bool allocPages);
 public:
     pid_t ID;
     Process *Parent;
@@ -103,7 +103,7 @@ public:
     static Process *Create(const char *filename, Semaphore *finished, bool noAutoRelocs);
     static Process *GetCurrent();
     static DEntry *GetCurrentDir();
-    static bool Finalize(pid_t pid);
+    static bool Finalize(pid_t pid, int retVal);
     static void Dump();
     static int ForEach(bool (*handler)(Process *proc, void *arg), void *arg);
 
@@ -117,8 +117,8 @@ public:
     ELF *GetELF(const char *name);
     Elf32_Sym *FindSymbol(const char *name, ELF *skip, ELF **elf);
     bool ApplyRelocations();
-    uintptr_t Brk(uintptr_t brk);
-    uintptr_t SBrk(intptr_t incr);
+    uintptr_t Brk(uintptr_t brk, bool allocPages);
+    uintptr_t SBrk(intptr_t incr, bool allocPages);
 
     int Open(const char *filename, int flags);
     int OpenObject(const char *name);
@@ -140,7 +140,7 @@ public:
     int DeleteProcess(int handle);
     Process *GetProcess(int handle);
     int WaitProcess(int handle, int timeout);
-    int AbortProcess(int handle);
+    int AbortProcess(int handle, int result);
 
     int NewMutex();
     Mutex *GetMutex(int idx);

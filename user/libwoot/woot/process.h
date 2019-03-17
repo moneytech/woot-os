@@ -7,7 +7,7 @@ extern "C" {
 int processCreate(const char *cmdline);
 int processDelete(int handle);
 int processWait(int handle, int timeout);
-int processAbort(int handle);
+int processAbort(int handle, int result);
 
 #ifdef __cplusplus
 }

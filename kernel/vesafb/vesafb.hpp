@@ -63,12 +63,15 @@ class VESAFB : public FrameBuffer
 
     Vector<DriverModeInfo> driverModeInfos;
     char OEMName[64];
+    int currentMode;
 public:
     VESAFB(bool autoRegister);
 
     virtual int GetModeCount();
     virtual int GetModeInfo(int mode, ModeInfo *info);
     virtual int SetMode(int mode);
+    virtual int GetCurrentMode();
+    virtual uintptr_t GetBuffer();
 
     virtual void GetDisplayName(char *buf, size_t bufSize);
 };

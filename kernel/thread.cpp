@@ -101,14 +101,14 @@ void Thread::kernelPush(uintptr_t value)
     *(uintptr_t *)(StackPointer -= 4) = value;
 }
 
-void Thread::freeUserStack()
+void Thread::freeStack(uintptr_t stack, size_t size)
 {
     if(!Process) return;
     uintptr_t as = Process->AddressSpace;
-    size_t pageCount = UserStackSize / PAGE_SIZE;
+    size_t pageCount = size >> PAGE_SHIFT;
     for(uint i = 0; i < pageCount; ++i)
     {
-        uintptr_t va = i * PAGE_SIZE + (uintptr_t)UserStack;
+        uintptr_t va = (i << PAGE_SHIFT) + stack;
         uintptr_t pa = Paging::GetPhysicalAddress(as, va);
         if(pa == ~0) continue;
         Paging::UnMapPage(as, va);
@@ -188,8 +188,8 @@ Thread::Thread(const char *name, class Process *process, void *entryPoint, uintp
     InterruptibleSleep(false),
     CanChangeState(false),
     FXSaveData(new(16) uint8_t[512]),
-    SignalMask(~0),
-    SignalQueue(nullptr),
+    SignalMask(0),
+    SignalQueue(64),
     CurrentSignal(-1),
     ReturnCodePtr(returnCodePtr),
     Finished(finished ? finished : new Semaphore(0)),
@@ -501,29 +501,29 @@ uint Thread::Sleep(uint millis, bool interruptible)
     return (ticksLeft * nanosPerTick) / 1000000;
 }
 
-uintptr_t Thread::AllocUserStack()
+uintptr_t Thread::AllocStack(uint8_t **stackAddr, size_t size)
 {
-    if(!UserStackSize) return ~0;
+    if(!size) return ~0;
     uintptr_t as = Process->AddressSpace;
     uintptr_t res = Process->UserStackPtr;
-    size_t pageCount = align(UserStackSize, PAGE_SIZE) / PAGE_SIZE;
+    size_t pageCount = align(size, PAGE_SIZE) / PAGE_SIZE;
     uintptr_t startPtr = align(res, PAGE_SIZE) - pageCount * PAGE_SIZE;
-    UserStack = (uint8_t *)startPtr;
+    *stackAddr = (uint8_t *)startPtr;
     for(uint i = 0; i < pageCount; ++i)
     {
         uintptr_t pa = Paging::AllocPage();
         if(pa == ~0)
         {
-            freeUserStack();
+            freeStack((uintptr_t)*stackAddr, size);
             return ~0;
         }
         if(!Paging::MapPage(as, startPtr + i * PAGE_SIZE, pa, true, true))
         {
-            freeUserStack();
+            freeStack((uintptr_t)*stackAddr, size);
             return ~0;
         }
     }
-    Process->UserStackPtr = (uintptr_t)UserStack;
+    Process->UserStackPtr = (uintptr_t)*stackAddr;
     return res;
 }
 
@@ -533,11 +533,14 @@ Thread::~Thread()
     if(KernelStack) delete[] KernelStack;
     if(UserStack)
     {   // we have user stack
-        freeUserStack();
+        freeStack((uintptr_t)UserStack, UserStackSize);
         UserStack = nullptr;
     }
-    if(SignalStack) delete[] SignalStack;
+    if(SignalStack)
+    {   // we have signal stack
+        freeStack((uintptr_t)SignalStack, SignalStackSize);
+        SignalStack = nullptr;
+    }
     if(FXSaveData) delete[] FXSaveData;
-    if(SignalQueue) delete SignalQueue;
     if(DeleteFinished && Finished) delete Finished;
 }

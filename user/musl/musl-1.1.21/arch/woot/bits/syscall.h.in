@@ -124,7 +124,6 @@
 #define SYS_sched_setaffinity       (SYS_NOT_IMPL + 241)
 #define SYS_sched_getaffinity       (SYS_NOT_IMPL + 242)
 #define SYS_fadvise                 (SYS_NOT_IMPL + 250)
-#define SYS_exit_group              (SYS_NOT_IMPL + 252)
 #define SYS_epoll_ctl               (SYS_NOT_IMPL + 255)
 #define SYS_epoll_pwait             (SYS_NOT_IMPL + 256)
 #define SYS_remap_file_pages        (SYS_NOT_IMPL + 257)
@@ -202,6 +201,7 @@
 
 // put implemented syscalls here
 #define SYS_exit                    SYS_EXIT
+#define SYS_exit_group              SYS_EXIT_GROUP
 #define SYS_set_tid_address         SYS_SET_TID_ADDRESS
 #define SYS_set_thread_area         SYS_SET_THREAD_AREA
 #define SYS_readv                   SYS_READV

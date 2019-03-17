@@ -41,3 +41,8 @@ int threadDaemonize()
 {
     return syscall(SYS_THREAD_DAEMONIZE);
 }
+
+int threadGetId(int handle)
+{
+    return syscall(SYS_THREAD_GET_ID, handle);
+}

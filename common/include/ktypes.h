@@ -49,14 +49,3 @@ struct stat
     struct timespec st_ctim;
     ino_t st_ino;
 };
-
-struct vidModeInfo
-{
-    int Width, Height;
-    int BitsPerPixel;
-    int RefreshRate;
-    int Pitch;
-    int Flags;
-    int AlphaBits, RedBits, GreenBits, BlueBits;
-    int AlphaShift, RedShift, GreenShift, BlueShift;
-};

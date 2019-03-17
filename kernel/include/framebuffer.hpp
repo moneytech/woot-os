@@ -32,6 +32,8 @@ public:
     virtual int GetModeCount();
     virtual int GetModeInfo(int mode, ModeInfo *info);
     virtual int SetMode(int mode);
+    virtual int GetCurrentMode();
+    virtual uintptr_t GetBuffer(); // returns physical address
 
     virtual bool KeyCheck(const char *name);
     virtual void GetDisplayName(char *buf, size_t bufSize);

@@ -69,12 +69,24 @@ void Ints::CommonHandler(Ints::State *state)
     }
 
     bool handled = false;
+
+    if(ct)
+    {
+        if(state->CS & 3 && ct->CurrentSignal < 0)
+            Signal::HandleSignals(ct, state);
+        if(state->InterruptNumber == 0x80 && !state->EAX)
+        {
+            Signal::ReturnFromSignal(ct, state);
+            handled = true;
+        }
+    }
+
     Handler *handler = Handlers[state->InterruptNumber];
-    for(handled = false; !handled && handler && handler->Callback; handler = handler->Next)
+    for(; !handled && handler && handler->Callback; handler = handler->Next)
         handled = handler->Callback(state, handler->Context);
     if(!handled && isIrq)
         IRQs::HandleSpurious(irq);
-    else if(!handled)
+    else if(!handled && state->InterruptNumber != 0x80)
     {
         // print some info about what happened
         if(isIrq)
@@ -93,7 +105,6 @@ void Ints::CommonHandler(Ints::State *state)
                 DEBUG("Thread: %d (%s)\n", ct->ID, ct->Name);
             }
         }
-
 
         // print extra info for PF
         if(state->InterruptNumber == 14)

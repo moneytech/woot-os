@@ -17,11 +17,11 @@
 #include <tokenizer.hpp>
 
 extern "C" void userThreadReturn();
-extern "C" __attribute__((section(".text.user"))) long utrSyscall(int no, ...)
+/*extern "C" __attribute__((section(".text.user"))) long utrSyscall(int no, ...)
 {
     asm("sysenter");
     return 0;
-}
+}*/
 
 #define MAKE_STR(s) #s
 #define STRINGIFY(s) MAKE_STR(s)
@@ -34,7 +34,7 @@ asm(
 "push eax\n"
 "push 0xFFFFFFFF\n"
 "push " STRINGIFY(SYS_THREAD_ABORT) "\n"
-"call utrSyscall\n"
+"call __doSyscall\n"
 ".section .text\n"
 ".att_syntax\n");
 
@@ -147,13 +147,20 @@ int Process::processEntryPoint(const char *cmdline)
     proc->MaxBrk = 0x80000000;
     proc->MemoryLock.Release();
 
-    uintptr_t esp = Thread::GetCurrent()->AllocUserStack();
+    Thread *ct = Thread::GetCurrent();
+
+    // allocate signal stack
+    ct->AllocStack(&ct->SignalStack, ct->SignalStackSize);
+
+    // allocate and initialize user stack
+    uintptr_t esp = ct->AllocStack(&ct->UserStack, ct->UserStackSize);
     const char *envVars[] =
     {
         "PATH=WOOT_OS:/bin;WOOT_OS:/system",
         "TEST=value"
     };
     esp = buildUserStack(esp, cmdline, sizeof(envVars) / sizeof(const char *), envVars, elf, 0, 0);
+
     proc->lock.Release();
     cpuEnterUserMode(esp, (uintptr_t)elf->EntryPoint);
     return 0;
@@ -162,10 +169,16 @@ int Process::processEntryPoint(const char *cmdline)
 int Process::userThreadEntryPoint(void *arg)
 {
     Thread *ct = Thread::GetCurrent();
-    uintptr_t *stack = (uintptr_t *)ct->AllocUserStack();
+
+    // allocate signal stack
+    ct->AllocStack(&ct->SignalStack, ct->SignalStackSize);
+
+    // allocate and initialize user stack
+    uintptr_t *stack = (uintptr_t *)ct->AllocStack(&ct->UserStack, ct->UserStackSize);
     *(--stack) = 0; // dummy ebp
     *(--stack) = ct->UserArgument;
     *(--stack) = (uintptr_t)userThreadReturn;
+
     cpuEnterUserMode((uintptr_t)stack, (uint32_t)ct->UserEntryPoint);
     return 0;
 }
@@ -194,7 +207,7 @@ void Process::freeHandleSlot(int handle)
     Handles.Set(handle, Handle());
 }
 
-uintptr_t Process::brk(uintptr_t brk)
+uintptr_t Process::brk(uintptr_t brk, bool allocPages)
 {
     brk = align(brk, PAGE_SIZE);
 
@@ -205,13 +218,16 @@ uintptr_t Process::brk(uintptr_t brk)
 
     if(mappedNeeded > MappedBrk)
     {   // alloc and map needed memory
-        for(uintptr_t va = MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
+        if(allocPages)
         {
-            uintptr_t pa = Paging::AllocPage();
-            if(pa == ~0)
-                return CurrentBrk;
-            if(!Paging::MapPage(AddressSpace, va, pa, true, true))
-                return CurrentBrk;
+            for(uintptr_t va = MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
+            {
+                uintptr_t pa = Paging::AllocPage();
+                if(pa == ~0)
+                    return CurrentBrk;
+                if(!Paging::MapPage(AddressSpace, va, pa, true, true))
+                    return CurrentBrk;
+            }
         }
         MappedBrk = mappedNeeded;
     }
@@ -289,7 +305,7 @@ DEntry *Process::GetCurrentDir()
     return de;
 }
 
-bool Process::Finalize(pid_t pid)
+bool Process::Finalize(pid_t pid, int retVal)
 {
     if(!listLock.Acquire(0, false))
         return false;
@@ -359,7 +375,7 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
     AddressSpace(addressSpace),
-    MemoryLock(false, "processMemoryLock"),
+    MemoryLock(true, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
     if(!AddressSpace)
@@ -487,20 +503,20 @@ bool Process::ApplyRelocations()
     return true;
 }
 
-uintptr_t Process::Brk(uintptr_t brk)
+uintptr_t Process::Brk(uintptr_t brk, bool allocPages)
 {
     if(!MemoryLock.Acquire(5000, false))
         return ~0;
-    uintptr_t res = this->brk(brk);
+    uintptr_t res = this->brk(brk, allocPages);
     MemoryLock.Release();
     return res;
 }
 
-uintptr_t Process::SBrk(intptr_t incr)
+uintptr_t Process::SBrk(intptr_t incr, bool allocPages)
 {
     if(!MemoryLock.Acquire(5000, false))
         return ~0;
-    uintptr_t res = this->brk(CurrentBrk + incr);
+    uintptr_t res = this->brk(CurrentBrk + incr, allocPages);
     MemoryLock.Release();
     return res;
 }
@@ -589,7 +605,10 @@ int Process::NewThread(const char *name, void *entry, uintptr_t arg, int *retVal
         delete t;
         return res;
     }
-    t->PThread = (struct pthread *)SBrk(PAGE_SIZE);
+
+    t->PThread = (struct pthread *)CurrentBrk; SBrk(PAGE_SIZE, true);
+    t->PThread->self = t->PThread;
+
     t->Enable();
     UnLock();
     return res;
@@ -649,7 +668,7 @@ int Process::NewProcess(const char *cmdline)
     int res = allocHandleSlot(Handle(p));
     if(res < 0)
     {
-        Process::Finalize(p->ID);
+        Process::Finalize(p->ID, -127);
         delete p;
         return res;
     }
@@ -664,7 +683,7 @@ int Process::DeleteProcess(int handle)
     if(!p) return -EINVAL;
     int res = Close(handle);
     if(res) return res;
-    Process::Finalize(p->ID);
+    Process::Finalize(p->ID, -127);
     delete p;
     return ESUCCESS;
 }
@@ -681,11 +700,11 @@ int Process::WaitProcess(int handle, int timeout)
     return p->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false) ? ESUCCESS : EBUSY;
 }
 
-int Process::AbortProcess(int handle)
+int Process::AbortProcess(int handle, int result)
 {
     Process *p = Process::GetProcess(handle);
     if(!p) return -EINVAL;
-    Process::Finalize(p->ID);
+    Process::Finalize(p->ID, result);
     return ESUCCESS;
 }
 

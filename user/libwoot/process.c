@@ -17,7 +17,7 @@ int processWait(int handle, int timeout)
     return syscall(SYS_PROCESS_WAIT, handle, timeout);
 }
 
-int processAbort(int handle)
+int processAbort(int handle, int result)
 {
-    return syscall(SYS_PROCESS_ABORT, handle);
+    return syscall(SYS_PROCESS_ABORT, handle, result);
 }

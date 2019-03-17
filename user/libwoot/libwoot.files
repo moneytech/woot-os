@@ -1,5 +1,7 @@
 process.c
+signal.c
 woot/process.h
+woot/signal.h
 woot/vkeys.h
 Makefile
 input.c

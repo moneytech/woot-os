@@ -6,6 +6,7 @@
 #include <pthreaddef.h>
 #include <queue.hpp>
 #include <sequencer.hpp>
+#include <signal.hpp>
 #include <types.hpp>
 
 class Mutex;
@@ -26,7 +27,7 @@ class Thread : public ObjectQueue::Item
     static bool sleepingThreadComparer(ObjectQueue::Item *a, ObjectQueue::Item *b);
 
     void kernelPush(uintptr_t value);
-    void freeUserStack();
+    void freeStack(uintptr_t stack, size_t size);
 public:
     enum class State
     {
@@ -74,15 +75,16 @@ public:
 
     // signals
     uint64_t SignalMask;
-    Queue<int> *SignalQueue;
+    Queue<uint8_t> SignalQueue;
     Ints::State SavedMachineState;
     int CurrentSignal;
+    uintptr_t SignalRetAddr;
+    void *SignalHandlers[SIGNAL_COUNT];
 
     // finalize stuff
     int *ReturnCodePtr;
     Semaphore *Finished;
     bool DeleteFinished;
-    //bool SelfDestruct;
 
     // locking
     Mutex *WaitingMutex;
@@ -109,6 +111,6 @@ public:
     bool QuickResume(Ints::State *state);
     uint TicksSleep(uint ticks, bool interruptible);
     uint Sleep(uint millis, bool interruptible);
-    uintptr_t AllocUserStack();
+    uintptr_t AllocStack(uint8_t **stackAddr, size_t size);
     ~Thread();
 };

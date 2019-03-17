@@ -21,6 +21,7 @@
 #include <sysdefs.h>
 #include <thread.hpp>
 #include <time.hpp>
+#include <vidmodeinfo.h>
 
 struct iovec
 {
@@ -29,6 +30,11 @@ struct iovec
 };
 
 extern "C" void sysEnterHandler();
+extern "C" __attribute__((section(".text.user"))) long __doSyscall(int no, ...)
+{
+    asm("sysenter");
+    return 0;
+}
 
 asm(
 ".intel_syntax noprefix\n"
@@ -56,6 +62,7 @@ asm(
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
     [SYS_EXIT] = sys_exit,
+    [SYS_EXIT_GROUP] = sys_exit_group,
     [SYS_DEBUG_STR] = sys_debug_str,
     [SYS_SET_TID_ADDRESS] = sys_set_tid_address,
     [SYS_SET_THREAD_AREA] = sys_set_thread_area,
@@ -85,6 +92,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_FB_GET_MODE_COUNT] = sys_fb_get_mode_count,
     [SYS_FB_GET_MODE_INFO] = sys_fb_get_mode_info,
     [SYS_FB_SET_MODE] = sys_fb_set_mode,
+    [SYS_FB_MAP_PIXELS] = sys_fb_map_pixels,
+    [SYS_FB_GET_CURRENT_MODE] = sys_fb_get_current_mode,
 
     [SYS_INDEV_GET_COUNT] = sys_indev_get_count,
     [SYS_INDEV_LIST] = sys_indev_list,
@@ -102,6 +111,7 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_THREAD_WAIT] = sys_thread_wait,
     [SYS_THREAD_ABORT] = sys_thread_abort,
     [SYS_THREAD_DAEMONIZE] = sys_thread_daemonize,
+    [SYS_THREAD_GET_ID] = sys_thread_get_id,
 
     [SYS_IPC_SEND_MESSAGE] = sys_ipc_send_message,
     [SYS_IPC_GET_MESSAGE] = sys_ipc_get_message,
@@ -109,26 +119,44 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_PROCESS_CREATE] = sys_process_create,
     [SYS_PROCESS_DELETE] = sys_process_delete,
     [SYS_PROCESS_WAIT] = sys_process_wait,
-    [SYS_PROCESS_ABORT] = sys_process_abort
+    [SYS_PROCESS_ABORT] = sys_process_abort,
+
+    [SYS_SIGNAL_GET_HANDLER] = sys_signal_get_handler,
+    [SYS_SIGNAL_SET_HANDLER] = sys_signal_set_handler,
+    [SYS_SIGNAL_IS_ENABLED] = sys_signal_is_enabled,
+    [SYS_SIGNAL_ENABLE] = sys_signal_enable,
+    [SYS_SIGNAL_DISABLE] = sys_signal_disable,
+    [SYS_SIGNAL_RAISE] = sys_signal_raise,
+    [SYS_SIGNAL_RETURN] = sys_signal_return,
+    [SYS_SIGNAL_GET_CURRENT] = sys_signal_get_current
 };
 
 long SysCalls::handler(uintptr_t *args)
 {
     uint req = args[0];
+    long res = -ENOSYS;
     //DEBUG("[syscalls] sysenter %d\n", req);
     if(req && req < MAX_SYSCALLS && handlers[req])
     {
-        long res = handlers[req](args);
+        res = handlers[req](args);
         //DEBUG("[syscalls] sysexit %d\n", req);
-        return res;
     }
-    DEBUG("[syscalls] Unknown syscall %u (%p) at %p\n", req & ~0x80000000, req, args[-1]);
-    return -ENOSYS;
+    else DEBUG("[syscalls] Unknown syscall %u (%p) at %p\n", req & ~0x80000000, req, args[-1]);
+    if(Thread::GetCurrent()->CurrentSignal < 0)
+        Signal::HandleSignals(Thread::GetCurrent(), args - 1);
+    return res;
 }
 
 long SysCalls::sys_exit(uintptr_t *args)
 {
     Thread::Finalize(nullptr, args[1]);
+    return ESUCCESS;
+}
+
+long SysCalls::sys_exit_group(uintptr_t *args)
+{
+    Process::Finalize(Process::GetCurrent()->ID, args[1]);
+    asm("int $3"); // shouldn't be executed
     return ESUCCESS;
 }
 
@@ -352,8 +380,8 @@ long SysCalls::sys_mmap2(uintptr_t *args)
 
     if(!addr)
     {   // emulate with sbrk
-        addr = Process::GetCurrent()->SBrk(0);
-        Process::GetCurrent()->SBrk(length);
+        addr = Process::GetCurrent()->SBrk(0, true);
+        Process::GetCurrent()->SBrk(length, true);
     }
     else
     {
@@ -524,6 +552,42 @@ long SysCalls::sys_fb_set_mode(uintptr_t *args)
     FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!fb) return -EINVAL;
     return fb->SetMode(args[2]);
+}
+
+long SysCalls::sys_fb_map_pixels(uintptr_t *args)
+{
+    FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!fb) return -EINVAL;
+
+    uintptr_t startVA = args[2];
+
+    FrameBuffer::ModeInfo mi;
+    fb->GetModeInfo(fb->GetCurrentMode(), &mi);
+    size_t fbSize = align(mi.Pitch * mi.Height, PAGE_SIZE);
+
+    Process *cp = Process::GetCurrent();
+    cp->MemoryLock.Acquire(0, false);
+
+    if(!startVA) startVA = cp->SBrk(fbSize, false);
+    uintptr_t endVA = startVA + fbSize;
+
+    uintptr_t pa = fb->GetBuffer();
+
+    for(uintptr_t va = startVA; va < endVA; va += PAGE_SIZE, pa += PAGE_SIZE)
+    {
+        if(va >= KERNEL_BASE)
+            break;
+        Paging::MapPage(cp->AddressSpace, va, pa, true, true);
+    }
+    cp->MemoryLock.Release();
+    return startVA;
+}
+
+long SysCalls::sys_fb_get_current_mode(uintptr_t *args)
+{
+    FrameBuffer *fb = (FrameBuffer *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
+    if(!fb) return -EINVAL;
+    return fb->GetCurrentMode();
 }
 
 long SysCalls::sys_indev_get_count(uintptr_t *args)
@@ -697,6 +761,15 @@ long SysCalls::sys_thread_daemonize(uintptr_t *args)
     return ESUCCESS;
 }
 
+long SysCalls::sys_thread_get_id(uintptr_t *args)
+{
+    int handle = args[1];
+    if(handle < 0) return Thread::GetCurrent()->ID;
+    Thread *t = Process::GetCurrent()->GetThread(handle);
+    if(!t) return -EINVAL;
+    return t->ID;
+}
+
 long SysCalls::sys_thread_abort(uintptr_t *args)
 {
     int handle = args[1];
@@ -733,7 +806,73 @@ long SysCalls::sys_process_wait(uintptr_t *args)
 
 long SysCalls::sys_process_abort(uintptr_t *args)
 {
-    return Process::GetCurrent()->AbortProcess(args[1]);
+    return Process::GetCurrent()->AbortProcess(args[1], args[2]);
+}
+
+long SysCalls::sys_signal_get_handler(uintptr_t *args)
+{
+    return args[1] < SIGNAL_COUNT ? (uintptr_t)Thread::GetCurrent()->SignalHandlers[args[1]] : 0;
+}
+
+long SysCalls::sys_signal_set_handler(uintptr_t *args)
+{
+    if(args[1] >= SIGNAL_COUNT)
+        return -EINVAL;
+    Thread::GetCurrent()->SignalHandlers[args[1]] = (void *)args[2];
+    return ESUCCESS;
+}
+
+long SysCalls::sys_signal_is_enabled(uintptr_t *args)
+{
+    uint8_t signum = args[1];
+    if(signum >= SIGNAL_COUNT)
+        return -EINVAL;
+    return ((1ull << signum) & Thread::GetCurrent()->SignalMask) ? 1 : 0;
+}
+
+long SysCalls::sys_signal_enable(uintptr_t *args)
+{
+    uint8_t signum = args[1];
+    if(signum >= SIGNAL_COUNT)
+        return -EINVAL;
+    Thread::GetCurrent()->SignalMask |= 1ull << signum;
+    return ESUCCESS;
+}
+
+long SysCalls::sys_signal_disable(uintptr_t *args)
+{
+    uint8_t signum = args[1];
+    if(signum >= SIGNAL_COUNT)
+        return -EINVAL;
+    Thread::GetCurrent()->SignalMask &= ~(1ull << signum);
+    return ESUCCESS;
+}
+
+long SysCalls::sys_signal_raise(uintptr_t *args)
+{
+    pid_t tid = args[1];
+    uint8_t signum = args[2];
+
+    Thread *t = tid == -1 ? Thread::GetCurrent() : Thread::GetByID(tid);
+    if(!t) return -ESRCH;
+    if(signum >= SIGNAL_COUNT)
+        return -EINVAL;
+
+    Signal::Raise(t, signum);
+    return ESUCCESS;
+}
+
+long SysCalls::sys_signal_return(uintptr_t *args)
+{
+    Thread *ct = Thread::GetCurrent();
+    args[-1] = ct->SignalRetAddr; // modify syscall return address
+    ct->CurrentSignal = -1;
+    return ESUCCESS;
+}
+
+long SysCalls::sys_signal_get_current(uintptr_t *args)
+{
+    return Thread::GetCurrent()->CurrentSignal;
 }
 
 void SysCalls::Initialize()
@@ -744,5 +883,4 @@ void SysCalls::Initialize()
 
 void SysCalls::Cleanup()
 {
-
 }

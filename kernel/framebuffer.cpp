@@ -50,6 +50,16 @@ int FrameBuffer::SetMode(int mode)
     return -ENOSYS;
 }
 
+int FrameBuffer::GetCurrentMode()
+{
+    return -ENOSYS;
+}
+
+uintptr_t FrameBuffer::GetBuffer()
+{
+    return ~0;
+}
+
 bool FrameBuffer::KeyCheck(const char *name)
 {
     char buf[OBJTREE_MAX_NAME_LEN + 1];

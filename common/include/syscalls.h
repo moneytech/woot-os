@@ -1,27 +1,28 @@
 #pragma once
 
 #define SYS_EXIT                1
-#define SYS_DEBUG_STR           2
-#define SYS_SET_TID_ADDRESS     3
-#define SYS_SET_THREAD_AREA     4
-#define SYS_GET_PTHREAD         5
-#define SYS_READV               6
-#define SYS_WRITEV              7
-#define SYS_GETPID              8
-#define SYS_GETTID              9
-#define SYS_BRK                 10
-#define SYS_GETCWD              11
-#define SYS_OPEN                12
-#define SYS_CLOSE               13
-#define SYS_READ                14
-#define SYS_WRITE               15
-#define SYS_MMAP                16
-#define SYS_MMAP2               17
-#define SYS_MPROTECT            18
-#define SYS_GETDENTS            19
-#define SYS_FSTAT               20
-#define SYS_MUNMAP              21
-#define SYS_RT_SIGPROCMASK      22
+#define SYS_EXIT_GROUP          2
+#define SYS_DEBUG_STR           3
+#define SYS_SET_TID_ADDRESS     4
+#define SYS_SET_THREAD_AREA     5
+#define SYS_GET_PTHREAD         6
+#define SYS_READV               7
+#define SYS_WRITEV              8
+#define SYS_GETPID              9
+#define SYS_GETTID              10
+#define SYS_BRK                 11
+#define SYS_GETCWD              12
+#define SYS_OPEN                13
+#define SYS_CLOSE               14
+#define SYS_READ                15
+#define SYS_WRITE               16
+#define SYS_MMAP                17
+#define SYS_MMAP2               18
+#define SYS_MPROTECT            19
+#define SYS_GETDENTS            20
+#define SYS_FSTAT               21
+#define SYS_MUNMAP              22
+#define SYS_RT_SIGPROCMASK      23
 
 // display
 #define SYS_FB_GET_COUNT        64
@@ -31,6 +32,8 @@
 #define SYS_FB_GET_MODE_COUNT   68
 #define SYS_FB_GET_MODE_INFO    69
 #define SYS_FB_SET_MODE         70
+#define SYS_FB_MAP_PIXELS       71
+#define SYS_FB_GET_CURRENT_MODE 72
 
 // input
 #define SYS_INDEV_GET_COUNT     80
@@ -50,6 +53,7 @@
 #define SYS_THREAD_WAIT         101
 #define SYS_THREAD_ABORT        102
 #define SYS_THREAD_DAEMONIZE    103
+#define SYS_THREAD_GET_ID       104
 
 // IPC
 #define SYS_IPC_SEND_MESSAGE    112
@@ -60,5 +64,15 @@
 #define SYS_PROCESS_DELETE      129
 #define SYS_PROCESS_WAIT        130
 #define SYS_PROCESS_ABORT       131
+
+// signals
+#define SYS_SIGNAL_GET_HANDLER  144
+#define SYS_SIGNAL_SET_HANDLER  145
+#define SYS_SIGNAL_IS_ENABLED   146
+#define SYS_SIGNAL_ENABLE       147
+#define SYS_SIGNAL_DISABLE      148
+#define SYS_SIGNAL_RAISE        149
+#define SYS_SIGNAL_RETURN       150
+#define SYS_SIGNAL_GET_CURRENT  151
 
 #define SYS_NOT_IMPL            0x80000000
