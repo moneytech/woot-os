@@ -1685,7 +1685,7 @@ AC_CACHE_VAL([lt_cv_sys_max_cmd_len], [dnl
     lt_cv_sys_max_cmd_len=12288;    # 12K is about right
     ;;
 
-  gnu*)
+  gnu* | woot*)
     # Under GNU Hurd, this test is not required because there is
     # no limit to the length of command line arguments.
     # Libtool will interpret -1 as no limit whatsoever
@@ -2836,6 +2836,14 @@ linux*android*)
   _LT_TAGVAR(hardcode_libdir_flag_spec, $1)='-L$libdir'
   ;;
 
+woot*)
+  version_type=none
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='$libname$shared_ext'
+  soname_spec='$libname$shared_ext'
+  ;;
+
 # This must be glibc/ELF.
 linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
   version_type=linux # correct to gnu/linux during the next big refactor
@@ -3542,7 +3550,7 @@ irix5* | irix6* | nonstopux*)
   ;;
 
 # This must be glibc/ELF.
-linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
+linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu* | woot*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
@@ -4411,6 +4419,8 @@ m4_if([$1], [CXX], [
 	    ;;
 	esac
 	;;
+      woot*)
+    ;;
       lynxos*)
 	;;
       m88k*)
