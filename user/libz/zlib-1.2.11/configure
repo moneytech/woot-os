@@ -18,6 +18,8 @@ echo -------------------- >> configure.log
 echo $0 $* >> configure.log
 date >> configure.log
 
+SONAME=${SONAME:-libz.so.1}
+
 # get source directory
 SRCDIR=`dirname $0`
 if test $SRCDIR = "."; then
@@ -208,9 +210,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
   fi
   case "$uname" in
   Linux* | linux* | GNU | GNU/* | solaris*)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,$SONAME,--version-script,${SRCDIR}zlib.map"} ;;
   *BSD | *bsd* | DragonFly)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"}
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,$SONAME,--version-script,${SRCDIR}zlib.map"}
         LDCONFIG="ldconfig -m" ;;
   CYGWIN* | Cygwin* | cygwin* | OS/2*)
         EXE='.exe' ;;
@@ -272,14 +274,14 @@ else
          esac ;;
   IRIX*)     SFLAGS=${CFLAGS-"-ansi -O2 -rpath ."}
              CFLAGS=${CFLAGS-"-ansi -O2"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.1"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,$SONAME"} ;;
   OSF1\ V4*) SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
              LDFLAGS="${LDFLAGS} -Wl,-rpath,."
-             LDSHARED=${LDSHARED-"cc -shared  -Wl,-soname,libz.so -Wl,-msym -Wl,-rpath,$(libdir) -Wl,-set_version,${VER}:1.0"} ;;
+             LDSHARED=${LDSHARED-"cc -shared  -Wl,-soname,$SONAME -Wl,-msym -Wl,-rpath,$(libdir) -Wl,-set_version,${VER}:1.0"} ;;
   OSF1*)     SFLAGS=${CFLAGS-"-O -std1"}
              CFLAGS=${CFLAGS-"-O -std1"}
-             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,libz.so.1"} ;;
+             LDSHARED=${LDSHARED-"cc -shared -Wl,-soname,$SONAME"} ;;
   QNX*)      SFLAGS=${CFLAGS-"-4 -O"}
              CFLAGS=${CFLAGS-"-4 -O"}
              LDSHARED=${LDSHARED-"cc"}

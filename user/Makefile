@@ -1,26 +1,20 @@
+LIBDIRS = musl libwoot libz
 SUBDIRS = init inputhandler usertest windowmanager
 THREADS ?= 8
 
 TOP_DIR ?= $(shell realpath ..)
 
-all: musl libwoot subdirs
+all: libdirs subdirs
 
-subdirs: musl
+subdirs: libdirs
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -j$(THREADS) -C $$dir; \
 	done
 
-musl:
-	$(MAKE) -C musl all install
-
-libwoot:
-	$(MAKE) -C libwoot all install
-
-clean-musl:
-	$(MAKE) -C musl clean
-	
-clean-libwoot:
-	$(MAKE) -C libwoot clean
+libdirs:
+	for dir in $(LIBDIRS); do \
+		$(MAKE) -j$(THREADS) -C $$dir all install; \
+	done
 
 install:
 	mkdir -p $(TOP_DIR)/root/etc
@@ -30,10 +24,10 @@ install:
 		$(MAKE) -C $$dir install; \
 	done
 
-clean: clean-musl clean-libwoot
-	for dir in $(SUBDIRS); do \
+clean:
+	for dir in $(LIBDIRS) $(SUBDIRS); do \
 		$(MAKE) -C $$dir clean; \
 	done
 
-.PHONY: clean install subdirs musl clean-musl install-musl libwoot clean-libwoot
+.PHONY: clean install subdirs libdirs
 
