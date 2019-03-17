@@ -1,4 +1,4 @@
-LIBDIRS = musl libwoot libz
+LIBDIRS = musl libwoot libz libpng
 SUBDIRS = init inputhandler usertest windowmanager
 THREADS ?= 8
 
@@ -13,7 +13,10 @@ subdirs: libdirs
 
 libdirs:
 	for dir in $(LIBDIRS); do \
-		$(MAKE) -j$(THREADS) -C $$dir all install; \
+		$(MAKE) -j$(THREADS) -C $$dir; \
+	done
+	for dir in $(LIBDIRS); do \
+		$(MAKE) -j$(THREADS) -C $$dir install; \
 	done
 
 install:

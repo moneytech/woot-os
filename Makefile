@@ -34,7 +34,7 @@ user:
 
 install: root
 
-root: root/system root/boot/grub root/bin root/lib root/boot/grub/grub.cfg
+root: root/system root/boot/grub root/bin root/lib root/boot/grub/grub.cfg root/logo.png
 	for dir in $(SUBDIRS); do \
 		$(MAKE) -C $$dir install; \
 	done
@@ -53,6 +53,10 @@ root/lib:
 
 root/boot/grub/grub.cfg: kernel/boot/grub/grub.cfg
 	cp $? $@
+
+root/logo.png: logo.png
+	cp $? $@
+	
 	
 hdd.img: hdd-empty-ext2.img.gz
 	gunzip -c $? > $@

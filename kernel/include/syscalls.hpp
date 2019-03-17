@@ -32,6 +32,7 @@ class SysCalls
     static long sys_fstat(uintptr_t *args);
     static long sys_munmap(uintptr_t *args);
     static long sys_rt_sigprocmask(uintptr_t *args);
+    static long sys_lseek(uintptr_t *args);
 
     static long sys_fb_get_count(uintptr_t *args);
     static long sys_fb_open(uintptr_t *args);

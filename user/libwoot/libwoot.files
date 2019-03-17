@@ -1,3 +1,4 @@
+misc.c
 process.c
 signal.c
 woot/process.h

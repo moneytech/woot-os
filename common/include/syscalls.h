@@ -23,6 +23,7 @@
 #define SYS_FSTAT               21
 #define SYS_MUNMAP              22
 #define SYS_RT_SIGPROCMASK      23
+#define SYS_LSEEK               24
 
 // display
 #define SYS_FB_GET_COUNT        64

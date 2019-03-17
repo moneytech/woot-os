@@ -6,7 +6,6 @@
 #define SYS_execve                  (SYS_NOT_IMPL + 11)
 #define SYS_chdir                   (SYS_NOT_IMPL + 12)
 #define SYS_mknod                   (SYS_NOT_IMPL + 14)
-#define SYS_lseek                   (SYS_NOT_IMPL + 19)
 #define SYS_mount                   (SYS_NOT_IMPL + 21)
 #define SYS_setuid                  (SYS_NOT_IMPL + 23)
 #define SYS_getuid                  (SYS_NOT_IMPL + 24)
@@ -221,3 +220,4 @@
 #define SYS_fstat                   SYS_FSTAT
 #define SYS_munmap                  SYS_MUNMAP
 #define SYS_rt_sigprocmask          SYS_RT_SIGPROCMASK
+#define SYS_lseek                   SYS_LSEEK

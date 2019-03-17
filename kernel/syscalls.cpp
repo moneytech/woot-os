@@ -84,6 +84,7 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_FSTAT] = sys_fstat,
     [SYS_MUNMAP] = sys_munmap,
     [SYS_RT_SIGPROCMASK] = sys_rt_sigprocmask,
+    [SYS_LSEEK] = sys_lseek,
 
     [SYS_FB_GET_COUNT] = sys_fb_get_count,
     [SYS_FB_OPEN] = sys_fb_open,
@@ -327,7 +328,7 @@ long SysCalls::sys_getcwd(uintptr_t *args)
 
 long SysCalls::sys_open(uintptr_t *args)
 {
-    DEBUG("sys_open(\"%s\", %p)\n", args[1], args[2]);
+    //DEBUG("sys_open(\"%s\", %p)\n", args[1], args[2]);
     return Process::GetCurrent()->Open((const char *)args[1], args[2]);
 }
 
@@ -487,6 +488,16 @@ long SysCalls::sys_rt_sigprocmask(uintptr_t *args)
     return 0;
 }
 
+long SysCalls::sys_lseek(uintptr_t *args)
+{
+    int handle = (int)args[1];
+    off_t offset = (off_t)args[2];
+    int origin = (int)args[3];
+    File *f = (File *)Process::GetCurrent()->GetHandleData(handle, Process::Handle::HandleType::File);
+    if(!f) return -errno;
+    return f->Seek(offset, origin);
+}
+
 long SysCalls::sys_fb_get_count(uintptr_t *args)
 {
     ObjectTree::Item *fbDir = ObjectTree::Objects->Get(FB_DIR);
@@ -568,7 +579,11 @@ long SysCalls::sys_fb_map_pixels(uintptr_t *args)
     Process *cp = Process::GetCurrent();
     cp->MemoryLock.Acquire(0, false);
 
-    if(!startVA) startVA = cp->SBrk(fbSize, false);
+    if(!startVA)
+    {
+        startVA = cp->SBrk(0, false);
+        cp->SBrk(fbSize, false);
+    }
     uintptr_t endVA = startVA + fbSize;
 
     uintptr_t pa = fb->GetBuffer();
