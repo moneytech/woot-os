@@ -196,7 +196,7 @@ ELF *ELF::Load(const char *filename, bool user, bool onlyHeaders, bool applyRelo
                     return nullptr;*/
                     continue;
                 }
-                pa = Paging::AllocPage();
+                pa = Paging::AllocFrame();
                 if(pa == ~0)
                 {
                     DEBUG("[elf] Couldn't allocate memory for data in file '%s'\n", filename);
@@ -419,7 +419,7 @@ ELF::~ELF()
             uintptr_t pa = Paging::GetPhysicalAddress(as, va);
             Paging::UnMapPage(as, va);
             if(pa == ~0) continue;
-            Paging::FreePage(pa);
+            Paging::FreeFrame(pa);
         }
     }
     if(shdrData) delete[] shdrData;

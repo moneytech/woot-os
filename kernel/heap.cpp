@@ -29,13 +29,13 @@ bool Heap::pageFault(Ints::State *state, void *context)
     if(addr < heapStart || addr >= heapEnd)
         return false; // page fault not in heap
 
-    uintptr_t phAddr = Paging::AllocPage();
+    uintptr_t phAddr = Paging::AllocFrame();
     if(phAddr == ~0)
         return false; // out of memory
     uintptr_t pageAddr = addr & PAGE_MASK;
     if(!Paging::MapPage(as, pageAddr, phAddr, false, true))
     {   // couldn't map page
-        Paging::FreePage(phAddr);
+        Paging::FreeFrame(phAddr);
         return false;
     }
     return true;
@@ -130,7 +130,7 @@ void Heap::free(void *ptr)
     for(uintptr_t pagePtr = prevEndPagePtr; pagePtr < thisEndPagePtr; pagePtr += PAGE_SIZE)
     {
         uintptr_t phAddr = Paging::GetPhysicalAddress(~0, pagePtr);
-        if(phAddr != ~0) Paging::FreePages(phAddr, 1);
+        if(phAddr != ~0) Paging::FreeFrames(phAddr, 1);
         Paging::UnMapPage(~0, pagePtr);
     }
 }

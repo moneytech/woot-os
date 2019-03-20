@@ -46,6 +46,7 @@ OBJS = boot/boot.o \
 	process.o \
 	random.o \
 	semaphore.o \
+	sharedmem.o \
 	signal.o \
 	softdiv.o \
 	stream.o \

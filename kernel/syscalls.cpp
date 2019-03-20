@@ -282,7 +282,7 @@ long SysCalls::sys_brk(uintptr_t *args)
     {   // alloc and map needed memory
         for(uintptr_t va = cp->MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
         {
-            uintptr_t pa = Paging::AllocPage();
+            uintptr_t pa = Paging::AllocFrame();
             if(pa == ~0)
             {
                 cp->MemoryLock.Release();;
@@ -302,7 +302,7 @@ long SysCalls::sys_brk(uintptr_t *args)
         {
             uintptr_t pa = Paging::GetPhysicalAddress(cp->AddressSpace, va);
             if(pa != ~0)
-                Paging::FreePage(pa);
+                Paging::FreeFrame(pa);
             Paging::UnMapPage(cp->AddressSpace, va);
         }
         cp->MappedBrk = mappedNeeded;
@@ -391,7 +391,7 @@ long SysCalls::sys_mmap2(uintptr_t *args)
             uintptr_t pa = Paging::GetPhysicalAddress(~0, va);
             if(pa == ~0)
             {
-                pa = Paging::AllocPage();
+                pa = Paging::AllocFrame();
                 if(pa == ~0) return -1;
                 if(!Paging::MapPage(~0, va, pa, true, true))
                     return -1;

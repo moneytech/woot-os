@@ -25,6 +25,7 @@ include/messagequeue.hpp
 include/module.hpp
 include/namedmutex.hpp
 include/partvolume.hpp
+include/sharedmem.h
 include/signal.hpp
 include/syscalls.hpp
 include/vector.hpp
@@ -46,6 +47,7 @@ ps2input/ps2kbd.cpp
 ps2input/ps2kbd.hpp
 ps2input/ps2mouse.cpp
 ps2input/ps2mouse.hpp
+sharedmem.cpp
 signal.cpp
 syscalls.cpp
 vesafb/Makefile

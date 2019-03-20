@@ -112,7 +112,7 @@ void Thread::freeStack(uintptr_t stack, size_t size)
         uintptr_t pa = Paging::GetPhysicalAddress(as, va);
         if(pa == ~0) continue;
         Paging::UnMapPage(as, va);
-        Paging::FreePage(pa);
+        Paging::FreeFrame(pa);
     }
 }
 
@@ -509,7 +509,7 @@ uintptr_t Thread::AllocStack(uint8_t **stackAddr, size_t size)
     *stackAddr = (uint8_t *)startPtr;
     for(uint i = 0; i < pageCount; ++i)
     {
-        uintptr_t pa = Paging::AllocPage();
+        uintptr_t pa = Paging::AllocFrame();
         if(pa == ~0)
         {
             freeStack((uintptr_t)*stackAddr, size);

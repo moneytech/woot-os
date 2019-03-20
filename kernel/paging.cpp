@@ -15,7 +15,7 @@ extern "C" void *_utext_end;
 
 uintptr_t Paging::memoryTop = (uintptr_t)&_end;
 uint32_t *Paging::kernelPageDir;
-Bitmap *Paging::pageBitmap;
+Bitmap *Paging::pageFrameBitmap;
 uint32_t *Paging::kernel4kPT;
 uintptr_t Paging::kernel4kVA = KERNEL_BASE + KERNEL_SPACE_SIZE - (4 << 20);
 AddressSpace Paging::kernelAddressSpace;
@@ -103,7 +103,7 @@ void Paging::Initialize(multiboot_info_t *mboot)
     size_t byteCount = bitCount / 8;
     void *pageBitmapBits = moveMemTop(align(byteCount, PAGE_SIZE));
     void *pageBitmapStruct = moveMemTop(align(sizeof(Bitmap), PAGE_SIZE));
-    pageBitmap = new (pageBitmapStruct) Bitmap(bitCount, pageBitmapBits, false);
+    pageFrameBitmap = new (pageBitmapStruct) Bitmap(bitCount, pageBitmapBits, false);
 
     // allocate "4k range" page table
     kernel4kPT = (uint32_t *)moveMemTop(PAGE_SIZE);
@@ -118,18 +118,18 @@ void Paging::Initialize(multiboot_info_t *mboot)
 
     // map 4k region
     uintptr_t pa4k = ((uintptr_t)kernel4kPT) - KERNEL_BASE;
-    pageBitmap->SetBit(pa4k / PAGE_SIZE, true);
+    pageFrameBitmap->SetBit(pa4k / PAGE_SIZE, true);
     kernelPageDir[kernel4kVA >> 22] = pa4k | 0x03;
 
     // map kernel space
     uintptr_t heapStart = align((uintptr_t)moveMemTop(0), PAGE_SIZE);
     uint i = 0;
     for(; i < ((heapStart - KERNEL_BASE) / PAGE_SIZE); ++i)
-        pageBitmap->SetBit(i, true);
+        pageFrameBitmap->SetBit(i, true);
     for(uintptr_t va = KERNEL_BASE; va < heapStart; va += PAGE_SIZE)
     {
         uintptr_t pa = va - KERNEL_BASE;
-        pageBitmap->SetBit(pa / PAGE_SIZE, true);
+        pageFrameBitmap->SetBit(pa / PAGE_SIZE, true);
         MapPage(kernelAddressSpace, va, pa, false, true);
     }
 
@@ -139,7 +139,7 @@ void Paging::Initialize(multiboot_info_t *mboot)
         uint pdOffs = va >> LARGE_PAGE_SHIFT;
         if(kernelPageDir[pdOffs] & 1)
             continue;
-        uintptr_t pa = AllocPage();
+        uintptr_t pa = AllocFrame();
         void *pt = alloc4k(pa);
         Memory::Zero(pt, PAGE_SIZE);
         free4k(pt);
@@ -207,7 +207,7 @@ bool Paging::MapPage(AddressSpace pd, uintptr_t va, uintptr_t pa, bool user, boo
     uint32_t *pt = nullptr;
     if(!ptpa && !(pdflags & 1))
     {
-        ptpa = AllocPage();
+        ptpa = AllocFrame();
         if(ptpa == ~0)
         {
             free4k(pdir);
@@ -285,7 +285,7 @@ bool Paging::UnMapPage(AddressSpace pd, uintptr_t va)
 
     if(freept && va < KERNEL_BASE)
     {
-        FreePage(ptpa);
+        FreeFrame(ptpa);
         pdir[pdidx] = 0;
     }
 
@@ -356,7 +356,7 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
             }
             uint32_t *PTE = PT + ptidx;
             uintptr_t pa = *PTE & ~(PAGE_SIZE - 1);
-            FreePage(pa);
+            FreeFrame(pa);
             *PTE = 0;
             bool freept = true;
             for(uint i = 0; i < 1024; ++i)
@@ -371,7 +371,7 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
 
             if(freept && va < KERNEL_BASE)
             {
-                FreePage(ptpa);
+                FreeFrame(ptpa);
                 *PD = 0;
             }
         }
@@ -416,7 +416,7 @@ void Paging::CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, 
             uint32_t *PTE = PT + ptidx;
             uint32_t ptflags = *PTE & 0x3F;
             uintptr_t pa = *PTE & ~(PAGE_SIZE - 1);
-            uintptr_t dpa = AllocPage();
+            uintptr_t dpa = AllocFrame();
             if(dpa == ~0)
             {
                 free4k(PT);
@@ -499,66 +499,66 @@ uintptr_t Paging::GetFirstUsableAddress()
     return memoryTop;
 }
 
-uintptr_t Paging::AllocPage()
+uintptr_t Paging::AllocFrame()
 {
     bool cs = cpuDisableInterrupts();
-    uint bit = pageBitmap->FindFirst(false);
+    uint bit = pageFrameBitmap->FindFirst(false);
     if(bit == ~0)
     {
         cpuRestoreInterrupts(cs);
         return ~0;
     }
     uintptr_t addr = bit * PAGE_SIZE;
-    pageBitmap->SetBit(bit, true);
+    pageFrameBitmap->SetBit(bit, true);
     cpuRestoreInterrupts(cs);
     return addr;
 }
 
-uintptr_t Paging::AllocPage(size_t alignment)
+uintptr_t Paging::AllocFrame(size_t alignment)
 {
     if(alignment % PAGE_SIZE)
         return ~0; // alignment must be multiple of page size
     if(!alignment) alignment = PAGE_SIZE;
     uint bit = 0;
-    uint bitCount = pageBitmap->GetBitCount();
+    uint bitCount = pageFrameBitmap->GetBitCount();
     uint step = alignment / PAGE_SIZE;
     bool cs = cpuDisableInterrupts();
 
-    for(; bit < bitCount && pageBitmap->GetBit(bit); bit += step);
+    for(; bit < bitCount && pageFrameBitmap->GetBit(bit); bit += step);
     if(bit >= bitCount)
     {
         cpuRestoreInterrupts(cs);
         return ~0;
     }
 
-    pageBitmap->SetBit(bit, true);
+    pageFrameBitmap->SetBit(bit, true);
     cpuRestoreInterrupts(cs);
     return bit * PAGE_SIZE;
 }
 
-uintptr_t Paging::AllocPages(size_t n)
+uintptr_t Paging::AllocFrames(size_t n)
 {
     bool cs = cpuDisableInterrupts();
-    uint bit = pageBitmap->FindFirst(false, n);
+    uint bit = pageFrameBitmap->FindFirst(false, n);
     if(bit == ~0)
     {
         cpuRestoreInterrupts(cs);
         return ~0;
     }
     for(uint i = 0; i < n; ++i)
-        pageBitmap->SetBit(bit + i, true);
+        pageFrameBitmap->SetBit(bit + i, true);
     uintptr_t addr = bit * PAGE_SIZE;
     cpuRestoreInterrupts(cs);
     return addr;
 }
 
-uintptr_t Paging::AllocPages(size_t n, size_t alignment)
+uintptr_t Paging::AllocFrames(size_t n, size_t alignment)
 {
     if(alignment % PAGE_SIZE)
         return ~0; // alignment must be multiple of page size
     if(!alignment) alignment = PAGE_SIZE;
     uint bit = 0;
-    uint bitCount = pageBitmap->GetBitCount();
+    uint bitCount = pageFrameBitmap->GetBitCount();
     uint step = alignment / PAGE_SIZE;
     bool cs = cpuDisableInterrupts();
 
@@ -566,7 +566,7 @@ uintptr_t Paging::AllocPages(size_t n, size_t alignment)
     {
         int obit = bit;
         int okbits = 0;
-        for(; bit < bitCount && !pageBitmap->GetBit(bit) && okbits < n ; ++bit, ++okbits);
+        for(; bit < bitCount && !pageFrameBitmap->GetBit(bit) && okbits < n ; ++bit, ++okbits);
         if(okbits >= n)
         {
             bit = obit;
@@ -580,31 +580,31 @@ uintptr_t Paging::AllocPages(size_t n, size_t alignment)
     }
 
     for(int i = 0; i < n; ++ i)
-        pageBitmap->SetBit(bit + i, true);
+        pageFrameBitmap->SetBit(bit + i, true);
     cpuRestoreInterrupts(cs);
     return bit * PAGE_SIZE;
 }
 
-bool Paging::FreePage(uintptr_t pa)
+bool Paging::FreeFrame(uintptr_t pa)
 {
     uint bit = pa / PAGE_SIZE;
     bool cs = cpuDisableInterrupts();
-    bool state = pageBitmap->GetBit(bit);
+    bool state = pageFrameBitmap->GetBit(bit);
     if(!state)
     {
         cpuRestoreInterrupts(cs);
         return false;
     }
-    pageBitmap->SetBit(bit, false);
+    pageFrameBitmap->SetBit(bit, false);
     cpuRestoreInterrupts(cs);
     return true;
 }
 
-bool Paging::FreePages(uintptr_t pa, size_t n)
+bool Paging::FreeFrames(uintptr_t pa, size_t n)
 {
     for(uint i = 0; i < n; ++i)
     {
-        if(!FreePage(pa))
+        if(!FreeFrame(pa))
             return false;
         pa += PAGE_SIZE;
     }
@@ -622,7 +622,7 @@ void *Paging::AllocDMA(size_t size, size_t alignment)
 
     size = align(size, PAGE_SIZE);
     size_t nPages = size / PAGE_SIZE;
-    uintptr_t pa = AllocPages(nPages, alignment); // allocate n pages in ONE block
+    uintptr_t pa = AllocFrames(nPages, alignment); // allocate n pages in ONE block
     if(pa == ~0) return nullptr;
     bool ints = cpuDisableInterrupts();
     uintptr_t va = 0;
@@ -694,44 +694,44 @@ void Paging::FreeDMA(void *ptr)
         return;
     }
     UnMapPages(addressSpace, va, nPages);
-    FreePages(pa, nPages);
+    FreeFrames(pa, nPages);
     cpuRestoreInterrupts(ints);
 }
 
-size_t Paging::GetTotalPages()
+size_t Paging::GetTotalFrames()
 {
-    return pageBitmap->GetBitCount();
+    return pageFrameBitmap->GetBitCount();
 }
 
-size_t Paging::GetFreePages()
+size_t Paging::GetFreeFrames()
 {
     bool ints = cpuDisableInterrupts();
-    size_t res = pageBitmap->GetCountOf(false);
+    size_t res = pageFrameBitmap->GetCountOf(false);
     cpuRestoreInterrupts(ints);
     return res;
 }
 
-size_t Paging::GetUsedPages()
+size_t Paging::GetUsedFrames()
 {
     bool ints = cpuDisableInterrupts();
-    size_t res = pageBitmap->GetCountOf(true);
+    size_t res = pageFrameBitmap->GetCountOf(true);
     cpuRestoreInterrupts(ints);
     return res;
 }
 
 size_t Paging::GetTotalBytes()
 {
-    return PAGE_SIZE * GetTotalPages();
+    return PAGE_SIZE * GetTotalFrames();
 }
 
 size_t Paging::GetFreeBytes()
 {
-    return PAGE_SIZE * GetFreePages();
+    return PAGE_SIZE * GetFreeFrames();
 }
 
 size_t Paging::GetUsedBytes()
 {
-    return PAGE_SIZE * GetUsedPages();
+    return PAGE_SIZE * GetUsedFrames();
 }
 
 void Paging::DumpAddressSpace(AddressSpace as)

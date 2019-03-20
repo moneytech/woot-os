@@ -24,7 +24,7 @@ class Paging
 
     static uintptr_t memoryTop;
     static uint32_t *kernelPageDir;
-    static Bitmap *pageBitmap;
+    static Bitmap *pageFrameBitmap;
     static uint32_t *kernel4kPT;
     static uintptr_t kernel4kVA;
     static AddressSpace kernelAddressSpace;
@@ -50,19 +50,19 @@ public:
     static void CloneRange(AddressSpace dstPd, uintptr_t srcPd, uintptr_t startVA, size_t rangeSize);
     static uintptr_t GetPhysicalAddress(AddressSpace pd, uintptr_t va);
     static uintptr_t GetFirstUsableAddress();
-    static uintptr_t AllocPage();
-    static uintptr_t AllocPage(size_t alignment);
-    static uintptr_t AllocPages(size_t n);
-    static uintptr_t AllocPages(size_t n, size_t alignment);
-    static bool FreePage(uintptr_t pa);
-    static bool FreePages(uintptr_t pa, size_t n);
+    static uintptr_t AllocFrame();
+    static uintptr_t AllocFrame(size_t alignment);
+    static uintptr_t AllocFrames(size_t n);
+    static uintptr_t AllocFrames(size_t n, size_t alignment);
+    static bool FreeFrame(uintptr_t pa);
+    static bool FreeFrames(uintptr_t pa, size_t n);
     static void *AllocDMA(size_t size);
     static void *AllocDMA(size_t size, size_t alignment);
     static uintptr_t GetDMAPhysicalAddress(void *ptr);
     static void FreeDMA(void *ptr);
-    static size_t GetTotalPages();
-    static size_t GetFreePages();
-    static size_t GetUsedPages();
+    static size_t GetTotalFrames();
+    static size_t GetFreeFrames();
+    static size_t GetUsedFrames();
     static size_t GetTotalBytes();
     static size_t GetFreeBytes();
     static size_t GetUsedBytes();

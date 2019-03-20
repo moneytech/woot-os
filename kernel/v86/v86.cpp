@@ -200,7 +200,7 @@ void V86::InitializeProcess()
     // we need to map first meg (apart from first page so nullptr still works)
     for(uintptr_t va = 0; va < (1 << 20); va += PAGE_SIZE)
     {
-        uintptr_t pa = Paging::AllocPage();
+        uintptr_t pa = Paging::AllocFrame();
         if(!va) Process::GetCurrent()->V86PageZeroPhAddr = pa;
         Paging::MapPage(~0, va, pa, true, true);
     }

@@ -216,7 +216,7 @@ uintptr_t Process::brk(uintptr_t brk, bool allocPages)
         {
             for(uintptr_t va = MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
             {
-                uintptr_t pa = Paging::AllocPage();
+                uintptr_t pa = Paging::AllocFrame();
                 if(pa == ~0)
                     return CurrentBrk;
                 if(!Paging::MapPage(AddressSpace, va, pa, true, true))
@@ -230,7 +230,7 @@ uintptr_t Process::brk(uintptr_t brk, bool allocPages)
         for(uintptr_t va = mappedNeeded; va < MappedBrk; va += PAGE_SIZE)
         {
             uintptr_t pa = Paging::GetPhysicalAddress(AddressSpace, va);
-            if(pa != ~0) Paging::FreePage(pa);
+            if(pa != ~0) Paging::FreeFrame(pa);
             Paging::UnMapPage(AddressSpace, va);
         }
         MappedBrk = mappedNeeded;
@@ -375,7 +375,7 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     if(!AddressSpace)
     {
         deleteAddressSpace = true;
-        AddressSpace = Paging::AllocPage();
+        AddressSpace = Paging::AllocFrame();
         Paging::BuildAddressSpace(AddressSpace);
     }
 
@@ -821,7 +821,7 @@ Process::~Process()
     for(ELF *elf : Images)
         if(elf) delete elf;
     Paging::UnmapRange(AddressSpace, 0, KERNEL_BASE);
-    if(deleteAddressSpace) Paging::FreePage(AddressSpace);
+    if(deleteAddressSpace) Paging::FreeFrame(AddressSpace);
     if(CurrentDirectory) FileSystem::PutDEntry(CurrentDirectory);
     processList.Remove(this, nullptr, false);
     if(lockAcquired) listLock.Release();
