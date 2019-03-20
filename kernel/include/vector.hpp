@@ -42,6 +42,8 @@ class Vector
     }
 public:
     Vector() : Vector(0, 1, __SIZE_MAX__) {}
+    Vector(size_t preAlloc, size_t allocIncr) :
+        Vector(preAlloc, allocIncr, __SIZE_MAX__) {}
     Vector(size_t preAlloc, size_t allocIncr, size_t maxSize) :
         maxSize(maxSize),
         currentSize(0),
