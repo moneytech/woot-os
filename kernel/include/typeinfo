@@ -1,0 +1,29 @@
+#pragma once
+
+namespace __cxxabiv1
+{
+    class __class_type_info;
+}
+
+namespace std
+{
+    class type_info
+    {
+    public:
+        ~type_info();
+        const char *name() const;
+        bool before(const type_info &arg) const;
+        bool operator ==(const type_info &arg) const;
+        bool operator !=(const type_info &arg) const;
+        virtual bool __is_pointer_p() const;
+        virtual bool __is_function_p() const;
+        virtual bool __do_catch(const type_info *thr_type, void **thr_obj, unsigned outer) const;
+        virtual bool __do_upcast(const __cxxabiv1::__class_type_info *target, void **obj_ptr) const;
+    protected:
+        const char *__name;
+        explicit type_info(const char *n);
+    private:
+        type_info &operator =(const type_info &);
+        type_info(const type_info &);
+    };
+}

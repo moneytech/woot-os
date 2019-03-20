@@ -48,3 +48,9 @@ extern "C" void __cxa_pure_virtual()
 {
     cpuSystemHalt(0xCACACACA);
 }
+
+extern "C" void __cxa_bad_typeid()
+{
+    cpuSystemHalt(0x88008800);
+}
+

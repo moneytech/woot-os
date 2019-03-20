@@ -10,6 +10,7 @@ OBJS = boot/boot.o \
 	cmos.o \
 	cpu.o \
 	cxa.o \
+	cxxabi.o \
     debug.o \
     dentry.o \
     directoryentry.o \
@@ -56,6 +57,7 @@ OBJS = boot/boot.o \
 	thread.o \
 	time.o \
 	tokenizer.o \
+	typeinfo.o \
 	uuid.o \
 	v86/v86.o \
 	v86/v86asm.o \
@@ -83,7 +85,7 @@ COMPILE_FLAGS = -m32 -O0 -nostdinc -nostdlib -fno-stack-protector \
 	-fno-function-sections
 
 CFLAGS += $(COMPILE_FLAGS)
-CXXFLAGS += $(COMPILE_FLAGS) -fno-exceptions -fno-rtti
+CXXFLAGS += $(COMPILE_FLAGS) -fno-exceptions
 LDFLAGS += -melf_i386 -shared -Bsymbolic
 ASFLAGS +=
 ASMFLAGS +=
