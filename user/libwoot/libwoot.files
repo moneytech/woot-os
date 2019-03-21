@@ -1,7 +1,9 @@
 misc.c
 process.c
+rpc.c
 signal.c
 woot/process.h
+woot/rpc.h
 woot/signal.h
 woot/vkeys.h
 Makefile

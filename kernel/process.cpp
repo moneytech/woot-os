@@ -644,7 +644,8 @@ int Process::WaitThread(int handle, int timeout)
 {
     Thread *t = GetThread(handle);
     if(!t) return -EINVAL;
-    return t->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false) ? ESUCCESS : EBUSY;
+    int timeleft = t->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false);
+    return timeleft >= 0 ? timeleft : -EBUSY;
 }
 
 int Process::AbortThread(int handle, int retVal)
@@ -691,7 +692,8 @@ int Process::WaitProcess(int handle, int timeout)
 {
     Process *p = Process::GetProcess(handle);
     if(!p || !p->Finished) return -EINVAL;
-    return p->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false) ? ESUCCESS : EBUSY;
+    int timeleft = p->Finished->Wait(timeout < 0 ? 0 : timeout, timeout == 0, false);
+    return timeleft >= 0 ? timeleft : -EBUSY;
 }
 
 int Process::AbortProcess(int handle, int result)

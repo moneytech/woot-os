@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <woot/ipc.h>
+#include <woot/rpc.h>
 #include <woot/thread.h>
 #include <woot/video.h>
 
@@ -20,7 +22,7 @@ int main(int argc, char *argv[])
 
     setbuf(stdout, NULL);
 
-    printf("[windowmanager] Started window manager\n");
+    printf("[windowmanager] Started window manager (pid: %d)\n", getpid());
 
     int display = vidOpenDefaultDisplay();
     if(display < 0)
@@ -136,6 +138,14 @@ int main(int argc, char *argv[])
             else if(mouseY >= screenHeight) mouseY = screenHeight - 1;
 
             dwPixels[mouseY * screenWidth + mouseX] = 0x00FFFFFF;
+        }
+        else if(msg.Number == MSG_RPC_REQUEST)
+        {
+            if(!strcmp("GetMouseXY", msg.Data))
+            {
+                int xy[2] = { mouseX, mouseY };
+                rpcIPCReturn(msg.Source, msg.ID, xy, sizeof(xy));
+            }
         }
     }
 

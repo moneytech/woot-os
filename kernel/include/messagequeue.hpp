@@ -17,36 +17,40 @@ public:
     {
     }
 
-    T Read(int timeout)
+    T Read(int timeout, int *timeleft)
     {
         T val;
-        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
+        int _timeleft = m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false);
+        if(_timeleft < 0)
             return val;
         val = data[t];
         t = (t + 1) % cap;
         s.Signal(nullptr);
+        if(timeleft) *timeleft = _timeleft;
         return val;
     }
 
     int Read(T *buf, int timeout)
     {
         if(!buf) return -EINVAL;
-        if(!m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
-            return ETIMEOUT;
+        int timeleft = m.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false);
+        if(timeleft < 0)
+            return -ETIMEOUT;
         *buf = data[t];
         t = (t + 1) % cap;
         s.Signal(nullptr);
-        return ESUCCESS;
+        return timeleft;
     }
 
     int Write(T val, int timeout)
     {
-        if(!s.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false))
-            return ETIMEOUT;
+        int timeleft = s.Wait(timeout < 0 ? 0 : timeout, timeout == 0, false);
+        if(timeleft < 0)
+            return -ETIMEOUT;
         data[h] = val;
         h = (h + 1) % cap;
         m.Signal(nullptr);
-        return ESUCCESS;
+        return timeleft;
     }
 
     ~MessageQueue()

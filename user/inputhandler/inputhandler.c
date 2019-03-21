@@ -19,7 +19,8 @@ static int kbdThread(int arg)
     inpGetDeviceName(handle, devName, sizeof(devName));
     for(int i = 0; !done; ++i)
     {
-        if(inpGetEvent(handle, 1000, &event)) continue;
+        if(inpGetEvent(handle, 1000, &event) < 0)
+            continue;
         //printf("key: %d %s\n", event.Key, event.Flags & INP_KBD_EVENT_FLAG_RELEASE ? "released" : "pressed");
 
         if(keyboardOwner >= 0)
@@ -45,7 +46,8 @@ static int mouseThread(int arg)
     inpGetDeviceName(handle, devName, sizeof(devName));
     for(int i = 0; !done; ++i)
     {
-        if(inpGetEvent(handle, 1000, &event)) continue;
+        if(inpGetEvent(handle, 1000, &event) < 0)
+            continue;
         //printf("mouse delta: %d %d, buttons: pressed: %d held: %d released: %d\n",
         //       event.Delta[0], event.Delta[1],
         //       event.ButtonsPressed, event.ButtonsHeld, event.ButtonsReleased);
@@ -116,7 +118,7 @@ int main()
     ipcMessage_t msg;
     for(;;)
     {
-        if(ipcGetMessage(&msg, -1))
+        if(ipcGetMessage(&msg, -1) < 0)
             break;
         ipcProcessMessage(&msg);
         if(msg.Number == MSG_QUIT)

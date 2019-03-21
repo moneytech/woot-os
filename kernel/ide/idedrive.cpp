@@ -187,7 +187,7 @@ int IDEDrive::sectorTransfer(bool write, void *buffer, uint64_t start, int64_t c
 
     _outb(Controller->BM, write ? 0x01 : 0x09); // start reading/writing
 
-    bool ok = TransferDone->Wait(5000, false, false);
+    bool ok = TransferDone->Wait(5000, false, false) >= 0;
     if(!ok)
     {
         //printf("IDE drive read timeout! status: %.2x\n", inb(ctrl->Base + 7));

@@ -19,7 +19,16 @@
 #define MSG_RELEASE_MOUSE           104
 #define MSG_MOUSE_EVENT             105
 
+#define MSG_RPC_REQUEST             200
+#define MSG_RPC_RESPONSE            201
+
 #include <inputdevtypes.h>
+
+struct ipcRPCResponse
+{
+    int RequestMessageID;
+    unsigned char Results[MSG_PAYLOAD_SIZE - sizeof(int)];
+};
 
 struct ipcMessage
 {
@@ -29,5 +38,6 @@ struct ipcMessage
         unsigned char Data[MSG_PAYLOAD_SIZE];
         struct inpKeyboardEvent Keyboard;
         struct inpMouseEvent Mouse;
+        struct ipcRPCResponse RPCResponse;
     };
 };

@@ -397,7 +397,7 @@ int AHCIDrive::sectorTransfer(bool write, void *buffer, uint64_t start, int64_t 
 
     // run the command
     parent->Registers->CI = 1;
-    if(!parent->Interrupt->Wait(5000, false, false))
+    if(parent->Interrupt->Wait(5000, false, false) < 0)
         return -EBUSY;
 
     if(parent->Registers->TFD & ATA_DEV_ERR)
@@ -749,7 +749,7 @@ int AHCIDrive::Port::IdentifyDrive(ATAIdentifyResponse *resp)
 
     // run the command
     Registers->CI = 1;
-    if(!Interrupt->Wait(5000, false, false))
+    if(Interrupt->Wait(5000, false, false) < 0)
     {
         Paging::FreeDMA(respBuf);
         return -EBUSY;

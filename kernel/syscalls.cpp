@@ -706,8 +706,8 @@ long SysCalls::sys_indev_get_event(uintptr_t *args)
     InputDevice *indev = (InputDevice *)Process::GetCurrent()->GetHandleData(args[1], Process::Handle::HandleType::Object);
     if(!indev) return -EINVAL;
     InputDevice::Event event;
-    int res = indev->GetEvent(&event, args[2]);
-    if(res) return res;
+    int timeleft = indev->GetEvent(&event, args[2]);
+    if(timeleft < 0) return timeleft;
     union
     {
         uint8_t *raw;
@@ -758,7 +758,7 @@ long SysCalls::sys_indev_get_event(uintptr_t *args)
         break;
     }
 
-    return ESUCCESS;
+    return timeleft;
 }
 
 long SysCalls::sys_thread_create(uintptr_t *args)

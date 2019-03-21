@@ -55,17 +55,18 @@ int InputDevice::GetEvent(Event *event, uint timeout)
 {
     if(!mutex.Acquire(timeout >= 0 ? timeout : 0, false))
         return -EBUSY;
-    if(!eventSem.Wait(timeout, false, true))
+    int timeleft = eventSem.Wait(timeout, false, true);
+    if(timeleft < 0)
     {
         mutex.Release();
-        return ETIMEOUT;
+        return -ETIMEOUT;
     }
     bool ok = false;
     if(event) *event = events.Read(&ok);
     else events.Read(&ok);
     cpuEnableInterrupts();
     mutex.Release();
-    return ok ? ESUCCESS : -EIO;
+    return ok ? timeleft : -EIO;
 }
 
 void InputDevice::GetKey(char *buf, size_t bufSize)

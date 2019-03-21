@@ -1,5 +1,6 @@
 #include <cpu.hpp>
 #include <debug.hpp>
+#include <errno.h>
 #include <semaphore.hpp>
 #include <thread.hpp>
 
@@ -13,7 +14,7 @@ Semaphore::Semaphore(int count, const char *name) :
 {
 }
 
-bool Semaphore::Wait(uint timeout, bool tryWait, bool disableInts)
+int Semaphore::Wait(uint timeout, bool tryWait, bool disableInts)
 {
     bool is = cpuDisableInterrupts();
     Thread *ct = Thread::GetCurrent();
@@ -22,33 +23,33 @@ bool Semaphore::Wait(uint timeout, bool tryWait, bool disableInts)
         --Count;
         if(!disableInts)
             cpuRestoreInterrupts(is);
-        return true;
+        return timeout;
     }
     if(tryWait)
     {
         cpuRestoreInterrupts(is); // ignore disableInts on failure
-        return false;
+        return -EBUSY;
     }
     if(Waiters->Write(ct))
     {
-        bool success = true;
+        int timeleft = timeout ? timeout : 1;
 
         ct->WaitingSemaphore = this;
-        if(timeout) success = ct->Sleep(timeout, true) != 0;
+        if(timeout) timeleft = ct->Sleep(timeout, true);
         else ct->Suspend();
         ct->WaitingSemaphore = nullptr;
 
-        if(!success) Waiters->RemoveFirst(ct);
+        if(!timeleft) Waiters->RemoveFirst(ct);
         else --Count;
 
-        if(!disableInts || !success)
+        if(!disableInts || !timeleft)
             cpuRestoreInterrupts(is);
-        return success;
+        return timeleft ? timeleft : -EBUSY;
     }
     // if no free waiter slots then print message and fail
     cpuRestoreInterrupts(is); // ignore disableInts on failure
     DEBUG("!!! Semaphore ran out of free waiter slots !!!\n");
-    return false;
+    return -ENOMEM;
 }
 
 void Semaphore::Signal(Ints::State *state)

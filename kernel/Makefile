@@ -16,7 +16,6 @@ OBJS = boot/boot.o \
     directoryentry.o \
 	drive.o \
 	elf.o \
-	except.o \
     ext2/ext2.o \
     file.o \
     filestream.o \
