@@ -16,6 +16,7 @@ OBJS = boot/boot.o \
     directoryentry.o \
 	drive.o \
 	elf.o \
+	except.o \
     ext2/ext2.o \
     file.o \
     filestream.o \
@@ -38,6 +39,7 @@ OBJS = boot/boot.o \
 	module.o \
 	mutex.o \
     namedmutex.o \
+    namedobject.o \
 	new.o \
 	objectqueue.o \
 	objecttree.o \

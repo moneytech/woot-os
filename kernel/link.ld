@@ -6,11 +6,10 @@ PHDRS
 SECTIONS
 {
     KERNEL_BASE = 0xC0000000;
-
     . = KERNEL_BASE + 0x00101000;
-    . = ALIGN(4096);
 
-    .text.boot : AT(ADDR(.text.boot) - KERNEL_BASE) { *(.text.boot*) }
+    . = ALIGN(4096);
+    .text.boot : AT(ADDR(.text.boot) - KERNEL_BASE) { *(.text.boot*) } : text
 
     . = ALIGN(4096);
     _utext_start = .;
@@ -18,7 +17,7 @@ SECTIONS
     _utext_end = ALIGN(4096);
 
     _text_start = .;
-    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) } : text
+    .text : AT(ADDR(.text) - KERNEL_BASE) { *(.text*) }
     _text_end = .;
 
     . = ALIGN(4096);

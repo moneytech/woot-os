@@ -59,6 +59,7 @@ asm(
 
 #define MAX_SYSCALLS 1024
 
+#ifdef __clang__
 long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 {
     [SYS_EXIT] = sys_exit,
@@ -85,6 +86,8 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_MUNMAP] = sys_munmap,
     [SYS_RT_SIGPROCMASK] = sys_rt_sigprocmask,
     [SYS_LSEEK] = sys_lseek,
+
+    nullptr, nullptr, nullptr, nullptr,
 
     [SYS_FB_GET_COUNT] = sys_fb_get_count,
     [SYS_FB_OPEN] = sys_fb_open,
@@ -131,6 +134,27 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
     [SYS_SIGNAL_RETURN] = sys_signal_return,
     [SYS_SIGNAL_GET_CURRENT] = sys_signal_get_current
 };
+#else // __clang__
+long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
+{
+    /*0*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*16*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*327*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*48*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*64*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*80*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*96*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*112*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*128*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*144*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*160*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*176*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*192*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*208*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*225*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /*240*/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+#endif // __clang__
 
 long SysCalls::handler(uintptr_t *args)
 {
