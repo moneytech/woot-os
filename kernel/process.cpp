@@ -200,8 +200,9 @@ void Process::freeHandleSlot(int handle)
 uintptr_t Process::brk(uintptr_t brk, bool allocPages)
 {
     brk = align(brk, PAGE_SIZE);
+    uintptr_t obrk = CurrentBrk;
 
-    if(brk < MinBrk || brk > MaxBrk)
+    if(brk < MinBrk || brk > MaxBrk)// || brk <= CurrentBrk)
         return (brk = CurrentBrk);
 
     uintptr_t mappedNeeded = align(brk, PAGE_SIZE);
@@ -231,7 +232,7 @@ uintptr_t Process::brk(uintptr_t brk, bool allocPages)
         }
         MappedBrk = mappedNeeded;
     }
-
+    //DEBUG("[process] %d brk %p -> %p %d\n", ID, obrk, brk, allocPages);
     CurrentBrk = brk;
     return brk;
 }
@@ -365,6 +366,7 @@ Process::Process(const char *name, Thread *mainThread, uintptr_t addressSpace, b
     Parent(Process::GetCurrent()),
     Name(String::Duplicate(name)),
     AddressSpace(addressSpace),
+    CurrentMMapBrk(0x80000000),
     MemoryLock(true, "processMemoryLock"),
     SelfDestruct(selfDestruct)
 {
@@ -506,9 +508,29 @@ uintptr_t Process::SBrk(intptr_t incr, bool allocPages)
 {
     if(!MemoryLock.Acquire(5000, false))
         return ~0;
+    uintptr_t obrk = CurrentBrk;
     uintptr_t res = this->brk(CurrentBrk + incr, allocPages);
     MemoryLock.Release();
-    return res;
+    return obrk;
+}
+
+uintptr_t Process::MMapSBrk(intptr_t incr, bool allocPages)
+{
+    if(!MemoryLock.Acquire(5000, false))
+        return ~0;
+    uintptr_t oEBrk = CurrentMMapBrk;
+    CurrentMMapBrk += incr;
+    CurrentMMapBrk = align(CurrentMMapBrk, PAGE_SIZE);
+    for(uintptr_t va = oEBrk; allocPages && va < CurrentMMapBrk; va += PAGE_SIZE)
+    {
+        if(va < KERNEL_BASE)
+        {
+            uintptr_t pa = Paging::AllocFrame();
+            Paging::MapPage(AddressSpace, va, pa, true, true);
+        }
+    }
+    MemoryLock.Release();
+    return oEBrk;
 }
 
 int Process::Open(const char *filename, int flags)
@@ -602,7 +624,7 @@ int Process::NewThread(const char *name, void *entry, uintptr_t arg, int *retVal
         return res;
     }
 
-    t->PThread = (struct pthread *)CurrentBrk; SBrk(PAGE_SIZE, true);
+    t->PThread = (struct pthread *)SBrk(PAGE_SIZE, true);
     t->PThread->self = t->PThread;
 
     t->Enable();

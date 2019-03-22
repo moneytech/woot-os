@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <woot/ipc.h>
+#include <woot/pixmap.h>
 #include <woot/rpc.h>
 #include <woot/thread.h>
 #include <woot/video.h>
@@ -59,55 +60,31 @@ int main(int argc, char *argv[])
         return -errno;
     }
 
-    memset(pixels, 0x00, mi.Pitch * mi.Height);
-
-    // do some libpng testing
-    printf("libpng ver: %s\n", png_get_libpng_ver(NULL));
-    FILE *f = fopen("/logo.png", "rb");
-    if(f)
+    pmPixelFormat_t fbFormat =
     {
-        char header[8];
-        fread(header, 1, sizeof(header), f);
-        if(!png_sig_cmp(header, 0, 8))
-        {
-            png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-            if(png_ptr)
-            {
-                png_infop info_ptr = png_create_info_struct(png_ptr);
-                if(info_ptr)
-                {
-                    png_init_io(png_ptr, f);
-                    png_set_sig_bytes(png_ptr, sizeof(header));
-                    png_read_info(png_ptr, info_ptr);
+        mi.BitsPerPixel,
+        mi.AlphaBits,
+        mi.RedBits,
+        mi.GreenBits,
+        mi.BlueBits,
+        mi.AlphaShift,
+        mi.RedShift,
+        mi.GreenShift,
+        mi.BlueShift
+    };
 
-                    int width = png_get_image_width(png_ptr, info_ptr);
-                    int height = png_get_image_height(png_ptr, info_ptr);
-                    png_byte color_type = png_get_color_type(png_ptr, info_ptr);
-                    png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-                    size_t pitch = png_get_rowbytes(png_ptr, info_ptr);
+    pmPixMap_t *fbPixMap = pmFromMemory(mi.Width, mi.Height, mi.Pitch, &fbFormat, pixels, 0);
+    pmClear(fbPixMap, pmColorBlue);
+    printf("[windowmanager] Pixels at %p\n", pixels);
 
-                    printf("png: width: %d height %d color_type: %d bit_depth: %d pitch: %d\n",
-                           width, height, color_type, bit_depth, pitch);
-
-                    png_bytep *row_pointers = (png_bytep *)malloc(sizeof(png_bytep) * height);
-                    for(int y = 0; y < height; ++y)
-                        row_pointers[y] = (png_byte *)malloc(pitch);
-
-                    png_read_image(png_ptr, row_pointers);
-
-                    for(int y = 0; y < height; ++y)
-                        memcpy(((char *)pixels) + mi.Pitch * y, row_pointers[y], pitch);
-
-                    for(int y = 0; y < height; ++y)
-                        free(row_pointers[y]);
-                    free(row_pointers);
-
-                    png_destroy_info_struct(png_ptr, &info_ptr);
-                }
-                png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-            } else printf("png_create_read_struct failed");
-        } else printf("png_sig_cmp failed\n");
-        fclose(f);
+    pmPixMap_t *logo = pmLoadPNG("WOOT_OS:/logo.png");
+    if(logo)
+    {
+        pmAlphaBlit(fbPixMap, logo, 0, 0,
+                    (mi.Width - logo->Contents.Width) / 2,
+                    (mi.Height - logo->Contents.Height) / 2,
+                    logo->Contents.Width, logo->Contents.Height);
+        pmDelete(logo);
     }
 
     ipcSendMessage(0, MSG_ACQUIRE_KEYBOARD, MSG_FLAG_NONE, NULL, 0);
@@ -166,6 +143,8 @@ int main(int argc, char *argv[])
     printf("[windowmanager] Closing window manager\n");
     ipcSendMessage(0, MSG_RELEASE_KEYBOARD, MSG_FLAG_NONE, NULL, 0);
     ipcSendMessage(0, MSG_RELEASE_MOUSE, MSG_FLAG_NONE, NULL, 0);
+
+    pmDelete(fbPixMap);
 
     ipcUnMapSharedMem(shMemHandle, shMem);
     ipcCloseSharedMem(shMemHandle);

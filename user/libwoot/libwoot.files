@@ -1,4 +1,8 @@
+pixmap.c
+rectangle.c
 wm.c
+woot/pixmap.h
+woot/rectangle.h
 woot/wm.h
 misc.c
 process.c

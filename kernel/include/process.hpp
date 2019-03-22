@@ -94,6 +94,7 @@ public:
     uintptr_t MinBrk;
     uintptr_t MaxBrk;
     uintptr_t CurrentBrk;
+    uintptr_t CurrentMMapBrk;
     uintptr_t MappedBrk;
 
     List<Thread *> Threads;
@@ -123,6 +124,7 @@ public:
     bool ApplyRelocations();
     uintptr_t Brk(uintptr_t brk, bool allocPages);
     uintptr_t SBrk(intptr_t incr, bool allocPages);
+    uintptr_t MMapSBrk(intptr_t incr, bool allocPages);
 
     int Open(const char *filename, int flags);
     int OpenObject(const char *name);

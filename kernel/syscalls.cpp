@@ -292,56 +292,7 @@ long SysCalls::sys_gettid(uintptr_t *args)
 long SysCalls::sys_brk(uintptr_t *args)
 {
     //DEBUG("sys_brk(%p)\n", args[1]);
-    uintptr_t brk = args[1];
-    Process *cp = Process::GetCurrent();
-    if(!cp) return ~0;
-    if(!cp->MemoryLock.Acquire(5000, false))
-        return ~0;
-
-    brk = align(brk, PAGE_SIZE);
-
-    if(brk < cp->MinBrk || brk > cp->MaxBrk)
-    {
-        brk = cp->CurrentBrk;
-        cp->MemoryLock.Release();
-        return brk;
-    }
-
-    uintptr_t mappedNeeded = align(brk, PAGE_SIZE);
-
-    if(mappedNeeded > cp->MappedBrk)
-    {   // alloc and map needed memory
-        for(uintptr_t va = cp->MappedBrk; va < mappedNeeded; va += PAGE_SIZE)
-        {
-            uintptr_t pa = Paging::AllocFrame();
-            if(pa == ~0)
-            {
-                cp->MemoryLock.Release();;
-                return cp->CurrentBrk;
-            }
-            if(!Paging::MapPage(cp->AddressSpace, va, pa, true, true))
-            {
-                cp->MemoryLock.Release();;
-                return cp->CurrentBrk;
-            }
-        }
-        cp->MappedBrk = mappedNeeded;
-    }
-    else
-    {   // unmap and free excess memory
-        for(uintptr_t va = mappedNeeded; va < cp->MappedBrk; va += PAGE_SIZE)
-        {
-            uintptr_t pa = Paging::GetPhysicalAddress(cp->AddressSpace, va);
-            if(pa != ~0)
-                Paging::FreeFrame(pa);
-            Paging::UnMapPage(cp->AddressSpace, va);
-        }
-        cp->MappedBrk = mappedNeeded;
-    }
-
-    cp->CurrentBrk = brk;
-    cp->MemoryLock.Release();
-    return brk;
+    return Process::GetCurrent()->Brk(args[1], true);
 }
 
 long SysCalls::sys_getcwd(uintptr_t *args)
@@ -399,21 +350,21 @@ long SysCalls::sys_mmap(uintptr_t *args)
 long SysCalls::sys_mmap2(uintptr_t *args)
 {
     uintptr_t addr = args[1];
-    size_t length = (size_t)args[2];
+    size_t length = (size_t)align(args[2], PAGE_SIZE);
     int prot = (int)args[3];
     int flags = (int)args[4];
     int handle = (int)args[5];
     uintptr_t pgoffset = args[6];
 
-    //DEBUG("sys_mmap(%p, %p, %p, %p, %d, %p)\n", addr, length, prot, flags, fd, pgoffset);
+    //DEBUG("sys_mmap(%p, %p, %p, %p, %d, %p)\n", addr, length, prot, flags, handle, pgoffset);
 
     if(addr >= KERNEL_BASE)
         return -1;
 
     if(!addr)
-    {   // emulate with sbrk
-        addr = Process::GetCurrent()->SBrk(0, true);
-        Process::GetCurrent()->SBrk(length, true);
+    {
+        Process *cp = Process::GetCurrent();
+        addr = cp->MMapSBrk(length, true);
     }
     else
     {
@@ -611,10 +562,7 @@ long SysCalls::sys_fb_map_pixels(uintptr_t *args)
     cp->MemoryLock.Acquire(0, false);
 
     if(!startVA)
-    {
-        startVA = cp->SBrk(0, false);
-        cp->SBrk(fbSize, false);
-    }
+        startVA = cp->SBrk(fbSize, false);
     uintptr_t endVA = startVA + fbSize;
 
     uintptr_t pa = fb->GetBuffer();
@@ -886,11 +834,7 @@ long SysCalls::sys_ipc_map_shmem(uintptr_t *args)
     NamedSharedMem *shm = dynamic_cast<NamedSharedMem *>(no);
     if(!shm) return -EINVAL;
 
-    if(!va)
-    {
-        va = cp->SBrk(0, false);
-        cp->SBrk(shm->GetSize(), false);
-    }
+    if(!va) va = cp->SBrk(shm->GetSize(), false);
 
     int res = shm->Map(cp, va, true, flags & 1);
     if(res < 0) return res;
