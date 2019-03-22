@@ -64,6 +64,12 @@ class SysCalls
 
     static long sys_ipc_send_message(uintptr_t *args);
     static long sys_ipc_get_message(uintptr_t *args);
+    static long sys_ipc_create_shmem(uintptr_t *args);
+    static long sys_ipc_open_shmem(uintptr_t *args);
+    static long sys_ipc_close_shmem(uintptr_t *args);
+    static long sys_ipc_get_shmem_size(uintptr_t *args);
+    static long sys_ipc_map_shmem(uintptr_t *args);
+    static long sys_ipc_unmap_shmem(uintptr_t *args);
 
     static long sys_process_create(uintptr_t *args);
     static long sys_process_delete(uintptr_t *args);

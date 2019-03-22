@@ -21,6 +21,8 @@
 
 #define MSG_RPC_REQUEST             200
 #define MSG_RPC_RESPONSE            201
+#define MSG_RPC_FIND_SERVER         202
+#define MSG_RPC_FIND_SERVER_RESP    203
 
 #include <inputdevtypes.h>
 

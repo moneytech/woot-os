@@ -15,6 +15,7 @@ class DEntry;
 class ELF;
 class File;
 class NamedMutex;
+class NamedObject;
 class Semaphore;
 class Thread;
 
@@ -33,6 +34,7 @@ public:
             Object,
             Thread,
             Process,
+            NamedObject,
             Mutex,
             Semaphore
         } Type;
@@ -43,6 +45,7 @@ public:
             ObjectTree::Item *Object;
             ::Thread *Thread;
             ::Process *Process;
+            ::NamedObject *NamedObject;
             ::Mutex *Mutex;
             ::Semaphore *Semaphore;
         };
@@ -52,6 +55,7 @@ public:
         Handle(ObjectTree::Item *obj);
         Handle(::Thread *thread);
         Handle(::Process *process);
+        Handle(::NamedObject *namedObject);
     };
 private:
     static Sequencer<pid_t> id;
@@ -141,6 +145,10 @@ public:
     Process *GetProcess(int handle);
     int WaitProcess(int handle, int timeout);
     int AbortProcess(int handle, int result);
+
+    // named object support routines
+    int CreateNamedObjectHandle(NamedObject *no);
+    NamedObject *GetNamedObject(int handle);
 
     int NewMutex();
     Mutex *GetMutex(int idx);

@@ -27,3 +27,33 @@ int ipcProcessMessage(ipcMessage_t *msg)
         ipcSendMessage(msg->Source, MSG_PONG, MSG_FLAG_NONE, NULL, 0);
     return 0;
 }
+
+int ipcCreateSharedMem(const char *name, size_t size)
+{
+    return syscall(SYS_IPC_CREATE_SHMEM, name, size);
+}
+
+int ipcOpenSharedMem(const char *name)
+{
+    return syscall(SYS_IPC_OPEN_SHMEM, name);
+}
+
+int ipcCloseSharedMem(int handle)
+{
+    return syscall(SYS_IPC_CLOSE_SHMEM, handle);
+}
+
+size_t ipcGetSharedMemSize(int handle)
+{
+    return syscall(SYS_IPC_GET_SHMEM_SIZE, handle);
+}
+
+void *ipcMapSharedMem(int handle, void *hint, unsigned flags)
+{
+    return (void *)syscall(SYS_IPC_MAP_SHMEM, handle, hint, flags);
+}
+
+int ipcUnMapSharedMem(int handle, void *addr)
+{
+    return syscall(SYS_IPC_UNMAP_SHMEM, handle, addr);
+}

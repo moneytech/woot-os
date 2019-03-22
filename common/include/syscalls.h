@@ -59,6 +59,12 @@
 // IPC
 #define SYS_IPC_SEND_MESSAGE    112
 #define SYS_IPC_GET_MESSAGE     113
+#define SYS_IPC_CREATE_SHMEM    114
+#define SYS_IPC_OPEN_SHMEM      115
+#define SYS_IPC_CLOSE_SHMEM     116
+#define SYS_IPC_GET_SHMEM_SIZE  117
+#define SYS_IPC_MAP_SHMEM       118
+#define SYS_IPC_UNMAP_SHMEM     119
 
 // process control
 #define SYS_PROCESS_CREATE      128

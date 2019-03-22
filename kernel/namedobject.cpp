@@ -1,6 +1,8 @@
+#include <debug.hpp>
 #include <errno.h>
 #include <namedobject.hpp>
 #include <string.hpp>
+#include <typeinfo>
 
 List<NamedObject *> NamedObject::objects;
 Mutex NamedObject::lock(false, "namedobject");
@@ -17,6 +19,19 @@ NamedObject::NamedObject(const char *name) :
 NamedObject::~NamedObject()
 {
     if(name) delete[] name;
+}
+
+void NamedObject::Dump()
+{
+    DEBUG("Shared objects:\n");
+    if(!Lock())
+    {
+        DEBUG("Couldn't lock NamedObject\n");
+        return;
+    }
+    for(NamedObject *no : objects)
+        DEBUG("  %s (%s; %d)\n", no->name, typeid(*no).name(), no->refCount);
+    UnLock();
 }
 
 bool NamedObject::Lock()

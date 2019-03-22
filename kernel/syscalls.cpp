@@ -11,6 +11,7 @@
 #include <ipc.hpp>
 #include <kdefs.h>
 #include <ktypes.h>
+#include <sharedmem.h>
 #include <paging.hpp>
 #include <process.hpp>
 #include <pthreaddef.h>
@@ -119,6 +120,12 @@ long (*SysCalls::handlers[MAX_SYSCALLS])(uintptr_t *args) =
 
     [SYS_IPC_SEND_MESSAGE] = sys_ipc_send_message,
     [SYS_IPC_GET_MESSAGE] = sys_ipc_get_message,
+    [SYS_IPC_CREATE_SHMEM] = sys_ipc_create_shmem,
+    [SYS_IPC_OPEN_SHMEM] = sys_ipc_open_shmem,
+    [SYS_IPC_CLOSE_SHMEM] = sys_ipc_close_shmem,
+    [SYS_IPC_GET_SHMEM_SIZE] = sys_ipc_get_shmem_size,
+    [SYS_IPC_MAP_SHMEM] = sys_ipc_map_shmem,
+    [SYS_IPC_UNMAP_SHMEM] = sys_ipc_unmap_shmem,
 
     [SYS_PROCESS_CREATE] = sys_process_create,
     [SYS_PROCESS_DELETE] = sys_process_delete,
@@ -825,6 +832,84 @@ long SysCalls::sys_ipc_send_message(uintptr_t *args)
 long SysCalls::sys_ipc_get_message(uintptr_t *args)
 {
     return IPC::GetMessage((ipcMessage *)args[1], (int)args[2]);
+}
+
+long SysCalls::sys_ipc_create_shmem(uintptr_t *args)
+{
+    const char *name = (const char *)args[1];
+    size_t size = align(args[2], PAGE_SIZE);
+    if(!size) return -EINVAL;
+    NamedSharedMem *shm = new NamedSharedMem(name, size, false);
+    return Process::GetCurrent()->CreateNamedObjectHandle(shm);
+}
+
+long SysCalls::sys_ipc_open_shmem(uintptr_t *args)
+{
+    const char *name = (const char *)args[1];
+    NamedObject *no = NamedObject::Get(name);
+    if(!no) return -ENOENT;
+    NamedSharedMem *shm = dynamic_cast<NamedSharedMem *>(no);
+    if(!shm)
+    {
+        no->Put();
+        return -EINVAL;
+    }
+    int handle = Process::GetCurrent()->CreateNamedObjectHandle(shm);
+    if(handle < 0)
+        no->Put();
+    return handle;
+}
+
+long SysCalls::sys_ipc_close_shmem(uintptr_t *args)
+{
+    return Process::GetCurrent()->Close(args[1]);
+}
+
+long SysCalls::sys_ipc_get_shmem_size(uintptr_t *args)
+{
+    NamedObject *no = Process::GetCurrent()->GetNamedObject(args[1]);
+    if(!no) return -errno;
+    NamedSharedMem *shm = dynamic_cast<NamedSharedMem *>(no);
+    if(!shm) return -EINVAL;
+    return shm->GetSize();
+}
+
+long SysCalls::sys_ipc_map_shmem(uintptr_t *args)
+{
+    int handle = args[1];
+    uintptr_t va = args[2];
+    uint flags = args[3];
+
+    Process *cp = Process::GetCurrent();
+    NamedObject *no = cp->GetNamedObject(handle);
+    if(!no) return -errno;
+    NamedSharedMem *shm = dynamic_cast<NamedSharedMem *>(no);
+    if(!shm) return -EINVAL;
+
+    if(!va)
+    {
+        va = cp->SBrk(0, false);
+        cp->SBrk(shm->GetSize(), false);
+    }
+
+    int res = shm->Map(cp, va, true, flags & 1);
+    if(res < 0) return res;
+
+    return va;
+}
+
+long SysCalls::sys_ipc_unmap_shmem(uintptr_t *args)
+{
+    int handle = args[1];
+    uintptr_t va = args[2];
+
+    Process *cp = Process::GetCurrent();
+    NamedObject *no = cp->GetNamedObject(handle);
+    if(!no) return -errno;
+    NamedSharedMem *shm = dynamic_cast<NamedSharedMem *>(no);
+    if(!shm) return -EINVAL;
+
+    return shm->UnMap(cp, va);
 }
 
 long SysCalls::sys_process_create(uintptr_t *args)

@@ -112,6 +112,12 @@ int main(int argc, char *argv[])
 
     ipcSendMessage(0, MSG_ACQUIRE_KEYBOARD, MSG_FLAG_NONE, NULL, 0);
     ipcSendMessage(0, MSG_ACQUIRE_MOUSE, MSG_FLAG_NONE, NULL, 0);
+
+    int shMemHandle = ipcCreateSharedMem("testshmem", mi.Pitch * mi.Height);
+    printf("[windowmanager] shMemHandle: %d\n", shMemHandle);
+    void *shMem = ipcMapSharedMem(shMemHandle, NULL, IPC_SHMEM_WRITE_FLAG);
+    printf("[windowmanager] shMem: %p\n", shMem);
+
     threadDaemonize();
 
     ipcMessage_t msg;
@@ -146,11 +152,23 @@ int main(int argc, char *argv[])
                 int xy[2] = { mouseX, mouseY };
                 rpcIPCReturn(msg.Source, msg.ID, xy, sizeof(xy));
             }
+            else if(!strcmp("BlitShared", msg.Data))
+            {
+                if(shMem) memcpy(pixels, shMem, mi.Pitch * mi.Height);
+                else printf("[windowmanager] BlitShared failed\n");
+                rpcIPCReturn(msg.Source, msg.ID, NULL, 0);
+            }
         }
+        else if(msg.Number == MSG_RPC_FIND_SERVER && !strcmp("windowmanager", msg.Data))
+            rpcIPCFindServerRespond(msg.Source, msg.ID);
     }
 
     printf("[windowmanager] Closing window manager\n");
     ipcSendMessage(0, MSG_RELEASE_KEYBOARD, MSG_FLAG_NONE, NULL, 0);
     ipcSendMessage(0, MSG_RELEASE_MOUSE, MSG_FLAG_NONE, NULL, 0);
+
+    ipcUnMapSharedMem(shMemHandle, shMem);
+    ipcCloseSharedMem(shMemHandle);
+
     return 0;
 }

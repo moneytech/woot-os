@@ -1,3 +1,5 @@
+wm.c
+woot/wm.h
 misc.c
 process.c
 rpc.c

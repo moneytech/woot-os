@@ -21,6 +21,7 @@
 #include <heap.hpp>
 #include <inputdevice.hpp>
 #include <memory.hpp>
+#include <namedobject.hpp>
 #include <objecttree.hpp>
 #include <paging.hpp>
 #include <random.hpp>
@@ -125,6 +126,7 @@ extern "C" int kmain(uint32_t magic, multiboot_info_t *mboot)
     initFinished.Wait(0, false, false);
     delete initProc;
 
+    NamedObject::Dump();
     //DEBUG("Object tree dump:\n");
     //ObjectTree::Objects->DebugDump();
     DEBUG("[main] Memory usage: %d/%d kiB\n", Paging::GetUsedBytes() >> 10, Paging::GetTotalBytes() >> 10);

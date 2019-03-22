@@ -2,6 +2,7 @@
 
 #include <list.hpp>
 #include <mutex.hpp>
+#include <namedobject.hpp>
 #include <types.hpp>
 #include <vector.hpp>
 
@@ -30,5 +31,12 @@ public:
     int Map(Process *proc, uintptr_t va, bool user, bool write);
     int UnMap(Process *proc, uintptr_t va);
     void UnLock();
+    size_t GetSize() const;
     ~SharedMem();
+};
+
+class NamedSharedMem : public NamedObject, public SharedMem
+{
+public:
+    NamedSharedMem(const char *name, size_t size, bool cont);
 };

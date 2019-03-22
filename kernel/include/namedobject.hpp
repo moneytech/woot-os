@@ -20,6 +20,7 @@ protected:
 public:
     typedef bool (*Comparer)(NamedObject *obj, VarArgs args);
 
+    static void Dump();
     static bool Lock();
     static void UnLock();
     static NamedObject *Get(const char *name);

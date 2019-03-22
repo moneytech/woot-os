@@ -11,10 +11,24 @@
 #include <woot/signal.h>
 #include <woot/thread.h>
 #include <woot/video.h>
+#include <woot/wm.h>
 
 int main(int argc, char *argv[])
 {
     setbuf(stdout, NULL);
+
+    int res = wmInitialize();
+    const char *wmServer = wmGetServer();
+    if(res < 0) printf("[usertest] wmInitialize() failed\n");
+    else printf("[usertest] Window manager server: '%s'\n", wmServer);
+
+    int shMemHandle = ipcOpenSharedMem("testshmem");
+    void *shMem = NULL;
+    if(shMemHandle)
+    {
+        shMem = ipcMapSharedMem(shMemHandle, NULL, IPC_SHMEM_WRITE_FLAG);
+        if(shMem) memset(shMem, 0xFFFFFFFF, 1024 * 8);
+    }
 
     ipcMessage_t msg;
     for(int i = 0;; ++i)
@@ -23,10 +37,12 @@ int main(int argc, char *argv[])
         ipcProcessMessage(&msg);
         if(msg.Number == MSG_QUIT)
             break;
-        //threadSleep(THREAD_SELF, 1000);
-        int xy[2] = { -1, -1 };
-        rpcCall("proc://4", "GetMouseXY", NULL, 0, &xy, sizeof(xy), 1000);
-        printf("[usertest] mouse: x: %d y: %d\n", xy[0], xy[1]);
+
+        if(shMem) asm("rep stosl":: "D"(shMem), "c"(1024 * 768), "a"(rand()));
+        rpcCall(wmServer, "BlitShared", NULL, 0, NULL, 0, 1000);
     }
+
+    ipcUnMapSharedMem(shMemHandle, shMem);
+    ipcCloseSharedMem(shMemHandle);
     return 0;
 }

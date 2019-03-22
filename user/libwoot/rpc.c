@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -11,9 +12,42 @@ static size_t startsWith(const char *str, const char *prefix)
     return !strncmp(str, prefix, l) ? l : 0;
 }
 
-int rpcFindServer(const char *type, char *addr, size_t addrBufSize)
+int rpcFindServer(const char *type, char *addr, size_t addrBufSize, int timeout)
 {
-    return -ENOSYS;
+    if(!timeout) return -EINVAL;
+
+    size_t payloadSize = strlen(type) + 1;
+    if(payloadSize > MSG_PAYLOAD_SIZE)
+        return -EINVAL;
+
+    int id = ipcSendMessage(0, MSG_RPC_FIND_SERVER, MSG_FLAG_NONE, (void *)type, payloadSize);
+    if(id < 0) return id;
+
+    ipcMessage_t msgBuf;
+
+    // wait for response
+    int timeleft = timeout;
+    while(timeout < 0 || timeleft > 0)
+    {
+        int res = ipcGetMessage(&msgBuf, timeleft);
+        if(res < 0) return res;
+        timeleft = res;
+        ipcProcessMessage(&msgBuf);
+        if(msgBuf.Number == MSG_RPC_FIND_SERVER_RESP && msgBuf.RPCResponse.RequestMessageID == id)
+        {   // we have response
+            if(addr) snprintf(addr, addrBufSize, "proc://%d", msgBuf.Source);
+            return timeleft;
+        }
+    }
+    return -ENOENT;
+}
+
+int rpcIPCFindServerRespond(pid_t dst, int reqMsgId)
+{
+    struct ipcRPCResponse r;
+    memset(&r, 0, sizeof(r));
+    r.RequestMessageID = reqMsgId;
+    return ipcSendMessage(dst, MSG_RPC_FIND_SERVER_RESP, MSG_FLAG_NONE, &r, sizeof(r.RequestMessageID));
 }
 
 int rpcCall(const char *addr, const char *proc, void *args, size_t argsSize, void *respBuf, size_t respBufSize, int timeout)
@@ -48,11 +82,17 @@ int rpcCall(const char *addr, const char *proc, void *args, size_t argsSize, voi
         {
             int res = ipcGetMessage(&msgBuf, timeleft);
             if(res < 0) return res;
-            timeleft -= res;
+            timeleft = res;
             ipcProcessMessage(&msgBuf);
-            if(msgBuf.Number == MSG_RPC_RESPONSE && msgBuf.Source == pid && msgBuf.RPCResponse.RequestMessageID == reqMsgId)
+            if(msgBuf.Number == MSG_RPC_RESPONSE && msgBuf.Source == pid &&
+                    msgBuf.RPCResponse.RequestMessageID == reqMsgId)
             {   // we have response
-                if(respBuf) memcpy(respBuf, msgBuf.RPCResponse.Results, sizeof(msgBuf.RPCResponse.Results) < respBufSize ? sizeof(msgBuf.RPCResponse.Results) : respBufSize);
+                if(respBuf)
+                {
+                    memcpy(respBuf, msgBuf.RPCResponse.Results,
+                           sizeof(msgBuf.RPCResponse.Results) < respBufSize ?
+                               sizeof(msgBuf.RPCResponse.Results) : respBufSize);
+                }
                 return timeleft;
             }
         }

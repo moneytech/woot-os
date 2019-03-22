@@ -78,6 +78,11 @@ void SharedMem::UnLock()
     return lock.Release();
 }
 
+size_t SharedMem::GetSize() const
+{
+    return pageCount << PAGE_SHIFT;
+}
+
 SharedMem::~SharedMem()
 {
     Lock();
@@ -92,4 +97,9 @@ SharedMem::~SharedMem()
 bool SharedMem::Mapping::operator ==(SharedMem::Mapping &b)
 {
     return this->Owner == b.Owner && this->VA == b.VA;
+}
+
+NamedSharedMem::NamedSharedMem(const char *name, size_t size, bool cont) :
+    NamedObject(name), SharedMem(size, cont)
+{
 }

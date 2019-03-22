@@ -5,6 +5,7 @@
 #include <filesystem.hpp>
 #include <memory.hpp>
 #include <mutex.hpp>
+#include <namedobject.hpp>
 #include <objecttree.hpp>
 #include <process.hpp>
 #include <paging.hpp>
@@ -17,11 +18,6 @@
 #include <tokenizer.hpp>
 
 extern "C" void userThreadReturn();
-/*extern "C" __attribute__((section(".text.user"))) long utrSyscall(int no, ...)
-{
-    asm("sysenter");
-    return 0;
-}*/
 
 #define MAKE_STR(s) #s
 #define STRINGIFY(s) MAKE_STR(s)
@@ -569,6 +565,12 @@ int Process::Close(int handle)
         UnLock();
         return ESUCCESS;
     }
+    else if(h.Type == Handle::HandleType::NamedObject)
+    {
+        int res = h.NamedObject->Put();
+        UnLock();
+        return res;
+    }
     UnLock();
     return -EBADF;
 }
@@ -704,6 +706,24 @@ int Process::AbortProcess(int handle, int result)
     return ESUCCESS;
 }
 
+int Process::CreateNamedObjectHandle(NamedObject *no)
+{
+    if(!Lock()) return -errno;
+    int res = allocHandleSlot(Handle(no));
+    if(res < 0)
+        return res;
+    UnLock();
+    return res;
+}
+
+NamedObject *Process::GetNamedObject(int handle)
+{
+    if(!Lock()) return nullptr;
+    NamedObject *no = static_cast<NamedObject *>(GetHandleData(handle, Handle::HandleType::NamedObject));
+    UnLock();
+    return no;
+}
+
 int Process::NewMutex()
 {
     return -ENOSYS;
@@ -817,7 +837,7 @@ Process::~Process()
 
     int i = 0;
     for(Handle h : Handles)
-        Close(i);
+        Close(i++);
 
     bool lockAcquired = listLock.Acquire(0, true);
     for(ELF *elf : Images)
@@ -865,5 +885,11 @@ Process::Handle::Handle(::Thread *thread) :
 Process::Handle::Handle(::Process *process) :
     Type(HandleType::Process),
     Process(process)
+{
+}
+
+Process::Handle::Handle(::NamedObject *namedObject) :
+    Type(HandleType::NamedObject),
+    NamedObject(namedObject)
 {
 }
