@@ -339,14 +339,16 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
 
     for(uint pdidx = startPD; pdidx < endPD; ++pdidx)
     {
+        uint32_t *PDE = PD + pdidx;
+        if(!(*PDE & 1)) continue;
+
         for(uint ptidx = 0; ptidx < PAGE_SIZE / 4; ++ptidx)
         {
             uintptr_t va = pdidx << 22 | ptidx << 12;
             if(va < startVA || (va >= (startVA + rangeSize)))
                 continue;
-            uint32_t *PDE = PD + pdidx;
-            if(!(*PDE & 1)) continue;
-            uintptr_t ptpa = *PDE & ~(PAGE_SIZE - 1);
+
+            uintptr_t ptpa = *PDE & PAGE_MASK;
             uint32_t *PT = (uint32_t *)alloc4k(ptpa);
             if(!PT)
             {
@@ -354,8 +356,9 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
                 cpuRestoreInterrupts(cs);
                 return;
             }
+
             uint32_t *PTE = PT + ptidx;
-            uintptr_t pa = *PTE & ~(PAGE_SIZE - 1);
+            uintptr_t pa = *PTE & PAGE_MASK;
             FreeFrame(pa);
             *PTE = 0;
             bool freept = true;
@@ -372,7 +375,7 @@ void Paging::UnmapRange(AddressSpace pd, uintptr_t startVA, size_t rangeSize)
             if(freept && va < KERNEL_BASE)
             {
                 FreeFrame(ptpa);
-                *PD = 0;
+                *PDE = 0;
             }
         }
     }
