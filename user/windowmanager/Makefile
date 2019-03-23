@@ -7,6 +7,7 @@ CXX ?= clang++
 
 TOP_DIR ?= ../..
 BIN_FILE = $(TOP_DIR)/root/bin/$(OUTFILE)
+CUR_FILE = $(TOP_DIR)/root/normal.cur
 START_FILE = $(TOP_DIR)/user/lib/crt1.o
 LIBC_FILE = $(TOP_DIR)/user/lib/libc.so
 
@@ -20,9 +21,12 @@ all: $(OUTFILE)
 $(OUTFILE): $(OBJS) $(START_FILE) $(LIBC_FILE)
 	$(CC) $(LDFLAGS) $(START_FILE) $(OBJS) -o $(OUTFILE) -lc -lwoot -lpng16 -lgcc
 
-install: $(BIN_FILE)
+install: $(BIN_FILE) $(CUR_FILE)
 
 $(BIN_FILE): $(OUTFILE)
+	cp $? $@
+
+$(CUR_FILE): normal.cur
 	cp $? $@
 
 clean:

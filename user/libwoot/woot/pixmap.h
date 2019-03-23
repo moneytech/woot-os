@@ -56,6 +56,9 @@ extern pmColor_t pmColorYellow;
 extern pmColor_t pmColorWhite;
 extern pmColor_t pmColorTransparent;
 
+extern pmPixelFormat_t pmFormatA8R8G8B8;
+extern pmPixelFormat_t pmFormatA0R8B8G8;
+
 int pmFormatEqual(pmPixelFormat_t a, pmPixelFormat_t b);
 int pmFormatEqualP(pmPixelFormat_t *a, pmPixelFormat_t *b);
 unsigned pmFormatPixelsToBytes(pmPixelFormat_t format, unsigned pixels);
@@ -80,6 +83,7 @@ pmPixMap_t *pmFromMemory(int width, int height, int pitch, pmPixelFormat_t *form
 pmPixMap_t *pmFromPixMap(pmPixMap_t *src, pmPixelFormat_t *format);
 pmPixMap_t *pmSubPixMap(pmPixMap_t *src, int x, int y, int w, int h);
 pmPixMap_t *pmLoadPNG(const char *filename);
+pmPixMap_t *pmLoadCUR(const char *filename, unsigned idx, int *hotX, int *hotY);
 void pmSetPaletteEntry(pmPixMap_t *pixMap, unsigned idx, pmColor_t color);
 rcRectangle_t pmGetRectangle(pmPixMap_t *pixMap);
 unsigned pmGetPitch(pmPixMap_t *pixMap);

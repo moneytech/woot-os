@@ -74,10 +74,14 @@ int main(int argc, char *argv[])
     };
 
     pmPixMap_t *fbPixMap = pmFromMemory(mi.Width, mi.Height, mi.Pitch, &fbFormat, pixels, 0);
-    pmClear(fbPixMap, pmColorBlue);
+    pmClear(fbPixMap, pmColorFromRGB(96, 64, 24));
     printf("[windowmanager] Pixels at %p\n", pixels);
 
-    pmPixMap_t *logo = pmLoadPNG("WOOT_OS:/logo.png");
+    int cursorHotX = 0;
+    int cursorHotY = 0;
+    pmPixMap_t *cursor = pmLoadCUR("/normal.cur", 0, &cursorHotX, &cursorHotY);
+
+    pmPixMap_t *logo = pmLoadPNG("/logo.png");
     if(logo)
     {
         pmAlphaBlit(fbPixMap, logo, 0, 0,
@@ -98,8 +102,6 @@ int main(int argc, char *argv[])
     threadDaemonize();
 
     ipcMessage_t msg;
-
-    uint32_t *dwPixels = (uint32_t *)pixels;
     int mouseX = screenWidth / 2, mouseY = screenHeight / 2;
     for(;;)
     {
@@ -119,8 +121,6 @@ int main(int argc, char *argv[])
             else if(mouseX >= screenWidth) mouseX = screenWidth - 1;
             if(mouseY < 0) mouseY = 0;
             else if(mouseY >= screenHeight) mouseY = screenHeight - 1;
-
-            dwPixels[mouseY * screenWidth + mouseX] = 0x00FFFFFF;
         }
         else if(msg.Number == MSG_RPC_REQUEST)
         {
@@ -138,12 +138,14 @@ int main(int argc, char *argv[])
         }
         else if(msg.Number == MSG_RPC_FIND_SERVER && !strcmp("windowmanager", msg.Data))
             rpcIPCFindServerRespond(msg.Source, msg.ID);
+        if(cursor) pmAlphaBlit(fbPixMap, cursor, 0, 0, mouseX - cursorHotX, mouseY - cursorHotY, -1, -1);
     }
 
     printf("[windowmanager] Closing window manager\n");
     ipcSendMessage(0, MSG_RELEASE_KEYBOARD, MSG_FLAG_NONE, NULL, 0);
     ipcSendMessage(0, MSG_RELEASE_MOUSE, MSG_FLAG_NONE, NULL, 0);
 
+    pmDelete(cursor);
     pmDelete(fbPixMap);
 
     ipcUnMapSharedMem(shMemHandle, shMem);

@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <png.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <woot/pixmap.h>
@@ -8,6 +9,61 @@
 #define swap(type, a, b) { type tmp = a; a = b; b = tmp; }
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define max(a, b) ((a) > (b) ? (a) : (b))
+
+#pragma pack(push, 1)
+typedef struct BMPImageHeader
+{
+    uint32_t Size;
+    uint32_t Width;
+    int32_t Height;
+    uint16_t Planes;
+    uint16_t BitCount;
+    uint32_t Compression;
+    uint32_t SizeImage;
+    uint32_t XPelsPerMeter;
+    uint32_t YPelsPerMeter;
+    uint32_t ClrUsed;
+    uint32_t ClrImportant;
+} BMPImageHeader_t;
+
+typedef struct BMPFileHeader
+{
+    uint16_t Type;
+    uint32_t Size;
+    uint16_t Reserved[2];
+    uint32_t OffBits;
+    BMPImageHeader_t Image;
+} BMPFileHeader_t;
+
+typedef struct IconDir
+{
+    uint16_t Reserved;
+    uint16_t Type;
+    uint16_t ImageCount;
+} IconDir_t;
+
+typedef struct IconDirEntry
+{
+    uint8_t Width;
+    uint8_t Height;
+    uint8_t PaletteColors;
+    uint8_t Reserved;
+    union
+    {
+        uint16_t ColorPlanes;
+        uint16_t HotspotX;
+    };
+    union
+    {
+        uint16_t BPP;
+        uint16_t HotspotY;
+    };
+    uint32_t DataSize;
+    uint32_t DataOffset;
+} IconDirEntry_t;
+#pragma pack(pop)
+
+#define BMP_MAGIC 0x4D42
 
 pmColor_t pmColorBlack = { 0xFF, 0x00, 0x00, 0x00 };
 pmColor_t pmColorBlue = { 0xFF, 0x00, 0x00, 0xAA };
@@ -26,6 +82,9 @@ pmColor_t pmColorBrightMagenta = { 0xFF, 0xFF, 0x55, 0xFF };
 pmColor_t pmColorYellow = { 0xFF, 0xFF, 0xFF, 0x55 };
 pmColor_t pmColorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
 pmColor_t pmColorTransparent = { 0x00, 0x00, 0x00, 0x00 };
+
+pmPixelFormat_t pmFormatA8R8G8B8 = { 32, 8, 8, 8, 8, 24, 16, 8, 0 };
+pmPixelFormat_t pmFormatA0R8B8G8 = { 32, 0, 8, 8, 8, 0, 16, 8, 0 };
 
 static void wmemset(void *ptr, unsigned value, unsigned long num);
 static void lmemset(void *ptr, unsigned value, unsigned long num);
@@ -454,6 +513,76 @@ pmPixMap_t *pmLoadPNG(const char *filename)
     return pm;
 }
 
+pmPixMap_t *pmLoadCUR(const char *filename, unsigned idx, int *hotX, int *hotY)
+{
+    if(!filename) return NULL;
+    FILE *f = fopen(filename, "rb");
+    if(!f) return NULL;
+    IconDir_t id;
+    if(fread(&id, sizeof(id), 1, f) != 1)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    if(id.Reserved != 0 || id.Type != 2 || id.ImageCount < 1 || idx >= id.ImageCount)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    IconDirEntry_t ide;
+    for(int i = 0; i <= idx; ++i)
+    {
+        if(fread(&ide, sizeof(ide), 1, f) != 1)
+        {
+            fclose(f);
+            return NULL;
+        }
+    }
+
+    int w = ide.Width ? ide.Width : 256;
+    int h = ide.Height ? ide.Height : 256;
+    if(ide.PaletteColors != 0)
+    {   // palettized immages not supported
+        fclose(f);
+        return NULL;
+    }
+    if(hotX) *hotX = ide.HotspotX;
+    if(hotY) *hotY = ide.HotspotY;
+
+    if(fseek(f, ide.DataOffset, SEEK_SET))
+    {
+        fclose(f);
+        return NULL;
+    }
+    BMPImageHeader_t bi;
+    if(fread(&bi, sizeof(bi), 1, f) != 1)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    void *pixels = calloc(1, ide.DataSize);
+    if(!pixels)
+    {
+        fclose(f);
+        return NULL;
+    }
+
+    if(fread(pixels, ide.DataSize - sizeof(bi), 1, f) != 1)
+    {
+        free(pixels);
+        fclose(f);
+        return NULL;
+    }
+    fclose(f);
+    pmPixMap_t *pm = pmFromMemory(w, h, 4 * w, &pmFormatA8R8G8B8, pixels, 1);
+    if(bi.Height > 0)
+        pmVFlip(pm);
+    return pm;
+}
+
 void pmSetPaletteEntry(pmPixMap_t *pixMap, unsigned idx, pmColor_t color)
 {
     if(!pixMap || !pixMap->Palette || idx >= (1 << pixMap->Format.BPP))
@@ -684,7 +813,11 @@ void pmBlit(pmPixMap_t *dst, pmPixMap_t *src, int sx, int sy, int x, int y, int 
         h += sy;
         sy = 0;
     }
-    if(w < 0 || h < 0 || x >= dst->Contents.Width || y >= dst->Contents.Height)
+
+    if(w < 0) w = src->Contents.Width;
+    if(h < 0) h = src->Contents.Height;
+
+    if(x >= dst->Contents.Width || y >= dst->Contents.Height)
         return;
 
     int x2 = min(dst->Contents.Width, x + w);
@@ -804,7 +937,11 @@ void pmAlphaBlit(pmPixMap_t *dst, pmPixMap_t *src, int sx, int sy, int x, int y,
         h += sy;
         sy = 0;
     }
-    if(w < 0 || h < 0 || x >= dst->Contents.Width || y >= dst->Contents.Height)
+
+    if(w < 0) w = src->Contents.Width;
+    if(h < 0) h = src->Contents.Height;
+
+    if(x >= dst->Contents.Width || y >= dst->Contents.Height)
         return;
 
     int x2 = min(dst->Contents.Width, x + w);
