@@ -56,6 +56,7 @@ extern pmColor_t pmColorYellow;
 extern pmColor_t pmColorWhite;
 extern pmColor_t pmColorTransparent;
 
+extern pmPixelFormat_t pmFormatInvalid;
 extern pmPixelFormat_t pmFormatA8R8G8B8;
 extern pmPixelFormat_t pmFormatA0R8B8G8;
 

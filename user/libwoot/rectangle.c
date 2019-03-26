@@ -52,3 +52,13 @@ int rcContainsPointP(rcRectangle_t *rect, int x, int y)
 {
     return x >= rect->X && y >= rect->Y && x < (rect->X + rect->Width) && y < (rect->Y + rect->Height);
 }
+
+int rcIsEmpty(rcRectangle_t rect)
+{
+    return rcIsEmptyP(&rect);
+}
+
+int rcIsEmptyP(rcRectangle_t *rect)
+{
+    return rect->Width <= 0 || rect->Height <= 0;
+}

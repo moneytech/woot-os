@@ -18,6 +18,8 @@ rcRectangle_t rcIntersect(rcRectangle_t a, rcRectangle_t b);
 rcRectangle_t rcIntersectP(rcRectangle_t *a, rcRectangle_t *b);
 int rcContainsPoint(rcRectangle_t rect, int x, int y);
 int rcContainsPointP(rcRectangle_t *rect, int x, int y);
+int rcIsEmpty(rcRectangle_t rect);
+int rcIsEmptyP(rcRectangle_t *rect);
 
 #ifdef __cplusplus
 }

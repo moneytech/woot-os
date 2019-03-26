@@ -1,3 +1,8 @@
+cxx.cpp
+list.hpp
+vector.hpp
+wm.cpp
 Makefile
 normal.cur
-wm.c
+window.cpp
+window.hpp

@@ -26,10 +26,12 @@
 
 #include <inputdevtypes.h>
 
+#define MSG_RPC_RESP_PAYLOAD_SIZE (MSG_PAYLOAD_SIZE - sizeof(int))
+
 struct ipcRPCResponse
 {
     int RequestMessageID;
-    unsigned char Results[MSG_PAYLOAD_SIZE - sizeof(int)];
+    unsigned char Results[MSG_RPC_RESP_PAYLOAD_SIZE];
 };
 
 struct ipcMessage

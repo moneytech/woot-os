@@ -83,6 +83,7 @@ pmColor_t pmColorYellow = { 0xFF, 0xFF, 0xFF, 0x55 };
 pmColor_t pmColorWhite = { 0xFF, 0xFF, 0xFF, 0xFF };
 pmColor_t pmColorTransparent = { 0x00, 0x00, 0x00, 0x00 };
 
+pmPixelFormat_t pmFormatInvalid = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 pmPixelFormat_t pmFormatA8R8G8B8 = { 32, 8, 8, 8, 8, 24, 16, 8, 0 };
 pmPixelFormat_t pmFormatA0R8B8G8 = { 32, 0, 8, 8, 8, 0, 16, 8, 0 };
 
@@ -197,7 +198,7 @@ unsigned pmFormatPixelsToBytesP(pmPixelFormat_t *format, unsigned pixels)
 
 pmColor_t pmColorFromRGB(unsigned char r, unsigned char g, unsigned char b)
 {
-    union pmColor color;
+    pmColor_t color;
     color.A = 255;
     color.R = r;
     color.G = g;
@@ -207,7 +208,7 @@ pmColor_t pmColorFromRGB(unsigned char r, unsigned char g, unsigned char b)
 
 pmColor_t pmColorFromARGB(unsigned char a, unsigned char r, unsigned char g, unsigned char b)
 {
-    union pmColor color;
+    pmColor_t color;
     color.A = a;
     color.R = r;
     color.G = g;
@@ -287,7 +288,7 @@ pmPixMap_t *pmCreate(int width, int height, pmPixelFormat_t *format)
 {
     if(width < 1 || height < 1 || !isDepthSupported(format->BPP))
         return NULL;
-    struct pmPixMap *pixMap = (struct pmPixMap *)calloc(1, sizeof(struct pmPixMap));
+    pmPixMap_t *pixMap = (struct pmPixMap *)calloc(1, sizeof(struct pmPixMap));
     if(!pixMap) return NULL;
     pixMap->Contents.Width = width;
     pixMap->Contents.Height = height;
