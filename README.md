@@ -7,3 +7,4 @@ To build, just run `make` in top directory. With a little bit of luck everything
 This version is not very interactive for now, since  the main goal of this version (0.3) is to move  window manager and most of the input stuff to userspace. To do that, somewhat stable userspace environment needs to be implemented first. So don't expect Quake II to be running that soon :)
 
 Previous versions of this project can be found [here](https://github.com/pvc988/woot).
+64 bit version is here [here](https://github.com/pvc988/woot64).
